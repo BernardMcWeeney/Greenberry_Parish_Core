@@ -1,0 +1,235 @@
+<?php
+/**
+ * Assets - Scripts and Styles.
+ *
+ * @package ParishCore
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Parish_Assets class.
+ */
+class Parish_Assets {
+
+	/**
+	 * Singleton instance.
+	 *
+	 * @var Parish_Assets|null
+	 */
+	private static ?Parish_Assets $instance = null;
+
+	/**
+	 * Get singleton instance.
+	 */
+	public static function instance(): Parish_Assets {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+	/**
+	 * Constructor.
+	 */
+	private function __construct() {
+		// Admin assets.
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+
+		// Front-end assets.
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_front_assets' ) );
+	}
+
+	/**
+	 * Enqueue admin assets for Parish Core pages.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_admin_assets( string $hook ): void {
+		// Only load on Parish Core pages.
+		if ( ! $this->is_parish_page( $hook ) ) {
+			return;
+		}
+
+		// WordPress script dependencies for the shared utils file.
+		$deps = array(
+			'wp-element',
+			'wp-components',
+			'wp-api-fetch',
+			'wp-i18n',
+			'wp-date',
+		);
+
+		/**
+		 * 1) Shared utilities (creates window.ParishCoreAdmin and uses window.parishCore)
+		 */
+		wp_enqueue_script(
+			'parish-admin-utils',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-utils.js',
+			$deps,
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		// Localized data for the app (attached to the utils handle so it's available before modules run).
+		wp_localize_script(
+			'parish-admin-utils',
+			'parishCore',
+			array(
+				'apiUrl'   => rest_url( 'parish/v1/' ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'adminUrl' => admin_url(),
+				'siteUrl'  => home_url(),
+				'page'     => $this->get_current_page( $hook ), // dashboard, about, mass-times, etc.
+				'isAdmin'  => current_user_can( 'manage_options' ),
+				'settings' => Parish_Core::get_settings(),
+				'version'  => PARISH_CORE_VERSION,
+			)
+		);
+
+		/**
+		 * 2) Feature modules (all depend on utils)
+		 *    Make sure these filenames exist in assets/js/.
+		 *    - parish-core-admin-dashboard.js
+		 *    - parish-core-admin-about.js
+		 *    - parish-core-admin-mass-times.js
+		 *    - parish-core-admin-events.js
+		 *    - parish-core-admin-readings.js
+		 *    - parish-core-admin-settings.js
+		 */
+
+		wp_enqueue_script(
+			'parish-admin-dashboard',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-dashboard.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'parish-admin-about',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-about.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'parish-admin-mass-times',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-mass-times.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'parish-admin-events',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-events.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'parish-admin-readings',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-readings.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'parish-admin-settings',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-settings.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		/**
+		 * 3) Router & bootstrap (loads last, depends on all modules)
+		 *    File: assets/js/parish-core-admin-app.js
+		 */
+		wp_enqueue_script(
+			'parish-admin-app',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-app.js',
+			array(
+				'parish-admin-utils',
+				'parish-admin-dashboard',
+				'parish-admin-about',
+				'parish-admin-mass-times',
+				'parish-admin-events',
+				'parish-admin-readings',
+				'parish-admin-settings',
+			),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		// WordPress components styles.
+		wp_enqueue_style( 'wp-components' );
+
+		// Admin CSS.
+		wp_enqueue_style(
+			'parish-admin',
+			PARISH_CORE_URL . 'assets/css/admin.css',
+			array( 'wp-components' ),
+			PARISH_CORE_VERSION
+		);
+
+		// Media uploader for About Parish page.
+		if ( $hook === 'parish_page_parish-about' ) {
+			wp_enqueue_media();
+		}
+	}
+
+	/**
+	 * Check if current admin page is a Parish Core page.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	private function is_parish_page( string $hook ): bool {
+		$parish_pages = array(
+			'toplevel_page_parish-core',
+			'parish_page_parish-about',
+			'parish_page_parish-mass-times',
+			'parish_page_parish-events',
+			'parish_page_parish-readings',
+			'parish_page_parish-settings',
+		);
+
+		return in_array( $hook, $parish_pages, true );
+	}
+
+	/**
+	 * Get current page identifier for the React app.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	private function get_current_page( string $hook ): string {
+		$map = array(
+			'toplevel_page_parish-core'     => 'dashboard',
+			'parish_page_parish-about'      => 'about',
+			'parish_page_parish-mass-times' => 'mass-times',
+			'parish_page_parish-events'     => 'events',
+			'parish_page_parish-readings'   => 'readings',
+			'parish_page_parish-settings'   => 'settings',
+		);
+
+		return $map[ $hook ] ?? 'unknown';
+	}
+
+	/**
+	 * Enqueue front-end assets.
+	 */
+	public function enqueue_front_assets(): void {
+		wp_enqueue_style(
+			'parish-front',
+			PARISH_CORE_URL . 'assets/css/front.css',
+			array(),
+			PARISH_CORE_VERSION
+		);
+	}
+}

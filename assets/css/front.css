@@ -1,0 +1,82 @@
+/* Base wrappers */
+.parish-readings-content,
+.parish-reflection,
+.parish-mass-times,
+.parish-events,
+.parish-churches,
+.parish-clergy,
+.parish-contact,
+.parish-prayers,
+.parish-feast-days{margin:1.5em 0;font-size:1rem;line-height:1.6}
+
+/* Generic lists */
+.parish-mass-times ul,
+.parish-events ul,
+.parish-clergy ul,
+.parish-prayers ul,
+.parish-readings-content ul,
+.parish-feast-days .feast-list,
+.parish-mass-readings .readings-list{list-style:disc;margin:0 0 0 1.25em;padding:0}
+.parish-mass-times li,
+.parish-events li,
+.parish-clergy li,
+.parish-prayers li,
+.parish-readings-content li,
+.parish-feast-days .feast-item{margin:.25em 0;padding:0;border:0;background:none;display:list-item}
+
+/* Reflection */
+.parish-reflection blockquote{margin:0;font-style:italic}
+.parish-reflection cite{display:block;margin-top:.5em;font-size:.9em;color:#555;font-style:normal}
+
+/* Mass times headings */
+.parish-mass-times .mass-day{margin-bottom:1em}
+.parish-mass-times h4{margin:.5em 0;font-size:1.05em;font-weight:600}
+.parish-mass-times .livestream-badge{font-size:.8em;color:#c00;font-weight:600;background:none;padding:0}
+
+/* Events extras */
+.parish-events .event-date,
+.parish-events .event-location{display:block;font-size:.9em;color:#555}
+
+/* Churches – simple block list */
+.parish-churches .church-item{margin-bottom:1em;padding:0;border:0;box-shadow:none}
+.parish-churches h4{margin:.25em 0;font-size:1.05em}
+.parish-churches p{margin:0}
+
+/* Clergy */
+.parish-clergy strong{font-weight:600}
+
+/* Contact */
+.parish-contact{padding:0;background:none;border:0}
+.parish-contact p{margin:0 0 .75em}
+.parish-contact p:last-child{margin-bottom:0}
+.parish-contact a{text-decoration:underline}
+
+/* Prayers */
+.parish-prayers .prayer-item{margin-bottom:1.5em;padding-bottom:0;border-bottom:0}
+.parish-prayers h4{margin:.25em 0;font-size:1.05em}
+.parish-prayers .prayer-text{line-height:1.7}
+
+/* Readings */
+.parish-readings-content{padding:0;background:none;border:0}
+.parish-readings-content.parish-readings-empty{text-align:left;font-style:italic;color:#666}
+.parish-readings-content dl{margin:0}
+.parish-readings-content dt,
+.parish-readings-content dd{display:inline;margin:0;padding:0;border:0;line-height:1.6}
+.parish-readings-content dt{font-weight:600}
+.parish-readings-content dt::after{content:": "}
+.parish-readings-content dd::after{content:"\A";white-space:pre}
+.parish-mass-readings .readings-list dt,
+.parish-mass-readings .readings-list dd{padding:0;background:none;border-radius:0;margin:0}
+
+
+/* Feast days */
+.parish-feast-days .feast-title{font-weight:600}
+.parish-feast-days .liturgical-colour,
+.parish-feast-days .feast-rank{display:block;font-size:.9em;color:#555}
+
+/* Mobile tweaks */
+@media(max-width:600px){
+ .parish-readings-content,
+ .parish-reflection,
+ .parish-contact{padding:0}
+}

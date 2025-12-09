@@ -1,0 +1,1053 @@
+/**
+ * Parish Core Admin Styles v3.0.0
+ * Clean, modern, accessible design
+ */
+
+/* ==========================================================================
+   GENERAL LAYOUT
+   ========================================================================== */
+.parish-dashboard,
+.parish-about-page,
+.parish-mass-times-page,
+.parish-events-page,
+.parish-readings-page,
+.parish-settings-page {
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 20px 0;
+}
+
+/* Loading State */
+.parish-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 20px;
+	text-align: center;
+}
+
+.parish-loading .components-spinner {
+	margin-bottom: 12px;
+}
+
+.parish-loading p {
+	color: #666;
+	margin: 0;
+}
+
+/* Save Bar */
+.parish-save-bar {
+	position: sticky;
+	bottom: 0;
+	background: #f0f0f1;
+	border-top: 1px solid #ddd;
+	padding: 16px 20px;
+	margin: 24px -20px 0;
+	z-index: 100;
+}
+
+/* Page Header */
+.page-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.page-header .description {
+	margin: 0;
+	color: #666;
+}
+
+/* ==========================================================================
+   DASHBOARD
+   ========================================================================== */
+.dashboard-banner {
+	margin-bottom: 20px;
+	border-radius: 8px;
+	overflow: hidden;
+	max-height: 200px;
+}
+
+.dashboard-banner img {
+	width: 100%;
+	height: 200px;
+	object-fit: cover;
+}
+
+.dashboard-header {
+	margin-bottom: 24px;
+	padding: 24px;
+	background: #fff;
+	border-radius: 8px;
+	border: 1px solid #ddd;
+}
+
+.dashboard-header h1 {
+	margin: 0 0 4px 0;
+	font-size: 24px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.dashboard-header .parish-logo {
+	width: 64px;
+	height: 64px;
+	object-fit: contain;
+	border-radius: 8px;
+	background: #f9f9f9;
+	padding: 4px;
+}
+
+.dashboard-header .diocese-link {
+	margin: 0;
+	color: #666;
+	font-size: 14px;
+}
+
+.dashboard-header .diocese-link a {
+	color: #2271b1;
+	text-decoration: none;
+}
+
+.dashboard-header .diocese-link a:hover {
+	text-decoration: underline;
+}
+
+/* Dashboard Grid */
+.dashboard-grid {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: 24px;
+}
+
+@media (max-width: 1200px) {
+	.dashboard-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.dashboard-card {
+	margin-bottom: 16px;
+}
+
+.dashboard-card .components-card__header {
+	padding: 16px 20px;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.dashboard-card .components-card__body {
+	padding: 20px;
+}
+
+.dashboard-card .components-card__footer {
+	padding: 12px 20px;
+	border-top: 1px solid #e0e0e0;
+	background: #f9f9f9;
+}
+
+.dashboard-card .components-card__footer a {
+	color: #2271b1;
+	text-decoration: none;
+	font-size: 13px;
+}
+
+/* Quick Actions */
+.quick-actions-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 12px;
+}
+
+.quick-action-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 20px 16px;
+	background: #f6f7f7;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	text-decoration: none;
+	color: #1d2327;
+	transition: all 0.2s ease;
+	text-align: center;
+}
+
+.quick-action-item:hover {
+	background: #fff;
+	border-color: #2271b1;
+	color: #2271b1;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quick-action-item .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	margin-bottom: 10px;
+	color: #2271b1;
+}
+
+.quick-action-item span:last-child {
+	font-size: 13px;
+	font-weight: 500;
+}
+
+/* Stats Grid */
+.stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+	gap: 12px;
+}
+
+.stat-item-link {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 16px 12px;
+	background: #f6f7f7;
+	border-radius: 8px;
+	text-decoration: none;
+	color: inherit;
+	transition: all 0.2s ease;
+	position: relative;
+}
+
+.stat-item-link:hover {
+	background: #e8f4fc;
+	color: #2271b1;
+}
+
+.stat-count {
+	font-size: 32px;
+	font-weight: 600;
+	color: #1d2327;
+	line-height: 1;
+}
+
+.stat-item-link:hover .stat-count {
+	color: #2271b1;
+}
+
+.stat-label {
+	font-size: 12px;
+	color: #666;
+	margin-top: 6px;
+}
+
+.stat-draft {
+	font-size: 11px;
+	color: #999;
+}
+
+.stat-add {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	font-size: 11px;
+	color: #2271b1;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.stat-item-link:hover .stat-add {
+	opacity: 1;
+}
+
+/* Mass Times List */
+.mass-times-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.mass-times-list li {
+	padding: 10px 0;
+	border-bottom: 1px solid #f0f0f1;
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.mass-times-list li:last-child {
+	border-bottom: none;
+}
+
+.mass-times-list em {
+	color: #666;
+	font-size: 13px;
+}
+
+/* Week Schedule */
+.week-schedule {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 8px;
+}
+
+@media (max-width: 900px) {
+	.week-schedule {
+		grid-template-columns: repeat(4, 1fr);
+	}
+}
+
+.week-day {
+	background: #f6f7f7;
+	border-radius: 6px;
+	padding: 12px;
+	text-align: center;
+	min-height: 80px;
+}
+
+.week-day.is-today {
+	background: #e8f4fc;
+	border: 2px solid #2271b1;
+}
+
+.week-day h4 {
+	margin: 0 0 8px 0;
+	font-size: 12px;
+	font-weight: 600;
+	color: #666;
+	text-transform: uppercase;
+}
+
+.week-day.is-today h4 {
+	color: #2271b1;
+}
+
+.week-day .mass-entry {
+	font-size: 13px;
+	margin-bottom: 4px;
+}
+
+.week-day .no-mass {
+	color: #999;
+	font-size: 12px;
+}
+
+.live-dot {
+	color: #d63638;
+	font-size: 10px;
+	margin-left: 4px;
+}
+
+/* Readings Card */
+.readings-card .readings-list {
+	margin: 0;
+}
+
+.readings-card dt {
+	font-weight: 600;
+	color: #2271b1;
+	font-size: 12px;
+	text-transform: uppercase;
+	margin-top: 12px;
+}
+
+.readings-card dt:first-child {
+	margin-top: 0;
+}
+
+.readings-card dd {
+	margin: 6px 0 0 0;
+	font-size: 14px;
+	line-height: 1.5;
+	color: #444;
+}
+
+/* Liturgical Card */
+.liturgical-card {
+	border: none !important;
+}
+
+.liturgical-card .components-card__body {
+	padding: 24px;
+}
+
+.liturgical-season {
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	opacity: 0.9;
+}
+
+.liturgical-week {
+	font-size: 14px;
+	margin-top: 4px;
+	opacity: 0.9;
+}
+
+.liturgical-feast {
+	font-size: 18px;
+	font-weight: 600;
+	margin-top: 8px;
+}
+
+.liturgical-date {
+	font-size: 13px;
+	margin-top: 8px;
+	opacity: 0.9;
+}
+
+.liturgical-color-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+	font-size: 12px;
+	text-transform: capitalize;
+}
+
+.liturgical-color-badge {
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+}
+
+/* Reflection Card */
+.reflection-card blockquote {
+	margin: 0;
+	font-style: italic;
+	font-size: 15px;
+	line-height: 1.6;
+}
+
+.reflection-card cite {
+	display: block;
+	margin-top: 12px;
+	font-size: 13px;
+	color: #666;
+	font-style: normal;
+}
+
+/* Recent Items List */
+.recent-items-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.recent-items-list li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 0;
+	border-bottom: 1px solid #f0f0f1;
+	gap: 12px;
+}
+
+.recent-items-list li:last-child {
+	border-bottom: none;
+}
+
+.recent-items-list .item-title {
+	color: #1d2327;
+	text-decoration: none;
+	flex: 1;
+}
+
+.recent-items-list a.item-title:hover {
+	color: #2271b1;
+}
+
+.recent-items-list .item-date {
+	font-size: 12px;
+	color: #999;
+	white-space: nowrap;
+}
+
+/* Resources List */
+.resources-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.resources-list li {
+	margin-bottom: 6px;
+}
+
+.resources-list a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border-radius: 6px;
+	text-decoration: none;
+	color: #1d2327;
+	transition: background 0.2s;
+}
+
+.resources-list a:hover {
+	background: #e8e8e8;
+}
+
+.resources-list .dashicons {
+	color: #2271b1;
+}
+
+/* Dashboard Footer */
+.dashboard-footer {
+	margin-top: 40px;
+	padding-top: 20px;
+	border-top: 1px solid #ddd;
+	text-align: center;
+}
+
+.dashboard-footer p {
+	color: #666;
+	font-size: 13px;
+}
+
+.dashboard-footer a {
+	color: #2271b1;
+}
+
+/* Livestream Badge */
+.livestream-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	background: #d63638;
+	color: #fff;
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-weight: 500;
+}
+
+/* Empty Text */
+.empty-text {
+	color: #666;
+	font-style: italic;
+}
+
+/* ==========================================================================
+   ABOUT PARISH
+   ========================================================================== */
+.parish-about-page .media-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 24px;
+	margin: 16px 0;
+}
+
+@media (max-width: 782px) {
+	.parish-about-page .media-fields {
+		grid-template-columns: 1fr;
+	}
+}
+
+.parish-media-uploader .media-preview {
+	margin-top: 8px;
+}
+
+.parish-media-uploader .preview-image {
+	max-width: 200px;
+	max-height: 100px;
+	object-fit: contain;
+	border-radius: 4px;
+	margin-bottom: 8px;
+	display: block;
+	background: #f0f0f1;
+}
+
+.list-item-card {
+	margin-bottom: 12px;
+	background: #f9f9f9;
+}
+
+.list-item-card .components-card__body {
+	padding: 16px;
+}
+
+/* ==========================================================================
+   MASS TIMES
+   ========================================================================== */
+.mass-times-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+	.mass-times-grid {
+		grid-template-columns: repeat(4, 1fr);
+	}
+}
+
+@media (max-width: 782px) {
+	.mass-times-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.mass-day-column {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 16px;
+	min-height: 150px;
+}
+
+.mass-day-column h3 {
+	margin: 0 0 12px 0;
+	font-size: 14px;
+	font-weight: 600;
+	padding-bottom: 10px;
+	border-bottom: 2px solid #2271b1;
+	color: #1d2327;
+}
+
+.mass-item {
+	padding: 12px;
+	background: #f6f7f7;
+	border-radius: 6px;
+	margin-bottom: 8px;
+	cursor: pointer;
+	transition: all 0.2s;
+	position: relative;
+}
+
+.mass-item:hover {
+	background: #e8f4fc;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mass-item.inactive {
+	opacity: 0.5;
+}
+
+.mass-time {
+	font-weight: 600;
+	font-size: 16px;
+	color: #2271b1;
+}
+
+.mass-church {
+	font-size: 12px;
+	color: #666;
+	margin-top: 2px;
+}
+
+.mass-notes {
+	font-size: 11px;
+	color: #888;
+	margin-top: 4px;
+	font-style: italic;
+}
+
+.no-masses {
+	color: #999;
+	font-size: 13px;
+	font-style: italic;
+}
+
+/* ==========================================================================
+   EVENTS CALENDAR
+   ========================================================================== */
+.calendar-nav {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.current-month {
+	font-size: 18px;
+	font-weight: 600;
+	min-width: 180px;
+	text-align: center;
+}
+
+.month-view {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden;
+	margin-bottom: 24px;
+}
+
+.calendar-header {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	background: #f6f7f7;
+	border-bottom: 1px solid #ddd;
+}
+
+.calendar-day-header {
+	padding: 12px;
+	text-align: center;
+	font-weight: 600;
+	font-size: 12px;
+	color: #666;
+	text-transform: uppercase;
+}
+
+.calendar-body {
+	display: flex;
+	flex-direction: column;
+}
+
+.calendar-week {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.calendar-week:last-child {
+	border-bottom: none;
+}
+
+.calendar-day {
+	min-height: 100px;
+	padding: 8px;
+	border-right: 1px solid #f0f0f1;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.calendar-day:last-child {
+	border-right: none;
+}
+
+.calendar-day:hover {
+	background: #f6f7f7;
+}
+
+.calendar-day.empty {
+	background: #fafafa;
+	cursor: default;
+}
+
+.calendar-day.today {
+	background: #e8f4fc;
+}
+
+.day-number {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	font-size: 14px;
+	font-weight: 500;
+	margin-bottom: 4px;
+}
+
+.calendar-day.today .day-number {
+	background: #2271b1;
+	color: #fff;
+	border-radius: 50%;
+}
+
+.calendar-event {
+	font-size: 11px;
+	padding: 3px 6px;
+	border-radius: 4px;
+	margin-bottom: 3px;
+	color: #fff;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+
+.calendar-event:hover {
+	opacity: 0.9;
+}
+
+.more-events {
+	font-size: 11px;
+	color: #666;
+	padding: 2px 6px;
+}
+
+/* ==========================================================================
+   READINGS API
+   ========================================================================== */
+.parish-readings-page .endpoints-list {
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.endpoints-header,
+.endpoint-row {
+	display: grid;
+	grid-template-columns: 2fr 1.5fr 1.5fr 100px;
+	gap: 12px;
+	padding: 12px 16px;
+	align-items: center;
+}
+
+.endpoints-header {
+	background: #f6f7f7;
+	font-weight: 600;
+	font-size: 12px;
+	text-transform: uppercase;
+	color: #666;
+	border-bottom: 1px solid #ddd;
+}
+
+.endpoint-row {
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.endpoint-row:last-child {
+	border-bottom: none;
+}
+
+.endpoint-row:hover {
+	background: #f9f9f9;
+}
+
+.ep-name {
+	font-weight: 500;
+}
+
+.ep-shortcode {
+	font-size: 12px;
+	background: #f0f0f1;
+	padding: 4px 8px;
+	border-radius: 4px;
+}
+
+.ep-date {
+	font-size: 12px;
+	color: #666;
+}
+
+.endpoints-actions {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+}
+
+.api-status {
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 4px;
+}
+
+.api-status.ok {
+	background: #d4edda;
+	color: #155724;
+}
+
+/* ==========================================================================
+   SETTINGS
+   ========================================================================== */
+.parish-settings-tabs .components-tab-panel__tabs {
+	margin-bottom: 20px;
+	border-bottom: 1px solid #ddd;
+}
+
+.parish-settings-tabs .components-tab-panel__tabs button {
+	padding: 12px 20px;
+	font-size: 14px;
+}
+
+.feature-toggles-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 8px;
+}
+
+.feature-toggles-grid .components-toggle-control {
+	margin-bottom: 0;
+}
+
+/* Color Fields */
+.color-fields-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin: 20px 0;
+}
+
+.color-field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.color-field label {
+	font-size: 13px;
+	font-weight: 500;
+	color: #1d2327;
+}
+
+.color-input-wrap {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.color-input-wrap input[type="color"] {
+	width: 48px;
+	height: 36px;
+	padding: 2px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.color-input-wrap .color-text {
+	flex: 1;
+	font-family: monospace;
+	font-size: 13px;
+	padding: 6px 10px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+/* Shortcode Reference */
+.shortcode-reference {
+	margin-top: 10px;
+}
+
+.shortcode-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+
+.shortcode-table th,
+.shortcode-table td {
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.shortcode-table th {
+	background: #f6f7f7;
+	font-weight: 600;
+	font-size: 12px;
+	text-transform: uppercase;
+	color: #666;
+}
+
+.shortcode-table code {
+	background: #f0f0f1;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.shortcode-table .attrs {
+	font-size: 11px;
+	color: #666;
+}
+
+.shortcode-examples {
+	margin-top: 20px;
+	padding: 16px;
+	background: #f6f7f7;
+	border-radius: 6px;
+}
+
+.shortcode-examples h4 {
+	margin: 0 0 12px 0;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.shortcode-examples pre {
+	margin: 0;
+	padding: 12px;
+	background: #1d2327;
+	color: #fff;
+	border-radius: 4px;
+	font-size: 12px;
+	overflow-x: auto;
+}
+
+/* ==========================================================================
+   MODALS
+   ========================================================================== */
+.parish-modal .components-modal__content {
+	min-width: 500px;
+	max-width: 600px;
+}
+
+@media (max-width: 640px) {
+	.parish-modal .components-modal__content {
+		min-width: auto;
+		width: 95vw;
+	}
+}
+
+.modal-form {
+	padding: 16px 0;
+}
+
+.modal-form .components-base-control {
+	margin-bottom: 16px;
+}
+
+.modal-actions {
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+	margin-top: 16px;
+}
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 782px) {
+	.parish-dashboard,
+	.parish-about-page,
+	.parish-mass-times-page,
+	.parish-events-page,
+	.parish-readings-page,
+	.parish-settings-page {
+		padding: 10px;
+	}
+
+	.dashboard-header {
+		padding: 16px;
+	}
+
+	.dashboard-header h1 {
+		font-size: 20px;
+	}
+
+	.quick-actions-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.page-header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.calendar-nav {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.endpoints-header,
+	.endpoint-row {
+		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+
+	.endpoints-header {
+		display: none;
+	}
+
+	.endpoint-row {
+		padding: 16px;
+		border-bottom: 1px solid #ddd;
+	}
+}
