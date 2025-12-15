@@ -87,6 +87,26 @@ class Parish_REST_API {
 		register_rest_route( $this->namespace, '/liturgical', array(
 			'methods' => 'GET', 'callback' => array( $this, 'get_liturgical_data' ), 'permission_callback' => array( $this, 'can_edit' ),
 		));
+
+		// Slider Settings.
+		register_rest_route( $this->namespace, '/slider/settings', array(
+			array( 'methods' => 'GET', 'callback' => array( $this, 'get_slider_settings' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'POST', 'callback' => array( $this, 'update_slider_settings' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		// Slider Dynamic Sources.
+		register_rest_route( $this->namespace, '/slider/sources', array(
+			'methods' => 'GET', 
+			'callback' => array( $this, 'get_slider_sources' ), 
+			'permission_callback' => array( $this, 'can_edit' ),
+		));
+
+		// Slider Preview (public for frontend).
+		register_rest_route( $this->namespace, '/slider/preview', array(
+			'methods' => 'GET', 
+			'callback' => array( $this, 'get_slider_preview' ), 
+			'permission_callback' => '__return_true',
+		));
 	}
 
 	public function can_edit(): bool { return current_user_can( 'edit_posts' ); }
@@ -156,7 +176,7 @@ class Parish_REST_API {
 	}
 
 	private function get_enabled_features(): array {
-		$features = array( 'death_notices', 'baptism_notices', 'wedding_notices', 'churches', 'schools', 'cemeteries', 'groups', 'newsletters', 'news', 'gallery', 'reflections', 'mass_times', 'events', 'liturgical', 'prayers' );
+		$features = array( 'death_notices', 'baptism_notices', 'wedding_notices', 'churches', 'schools', 'cemeteries', 'groups', 'newsletters', 'news', 'gallery', 'reflections', 'mass_times', 'events', 'liturgical', 'prayers', 'slider' );
 		$enabled = array();
 		foreach ( $features as $f ) { $enabled[ $f ] = Parish_Core::is_feature_enabled( $f ); }
 		return $enabled;
@@ -175,84 +195,33 @@ class Parish_REST_API {
 	}
 
 	private function get_content_stats(): array {
-	// Map of CPT => feature key.
-	$types = array(
-		'parish_death_notice' => array(
-			'label'   => __( 'Death Notices', 'parish-core' ),
-			'feature' => 'death_notices',
-		),
-		'parish_baptism'      => array(
-			'label'   => __( 'Baptisms', 'parish-core' ),
-			'feature' => 'baptism_notices',
-		),
-		'parish_wedding'      => array(
-			'label'   => __( 'Weddings', 'parish-core' ),
-			'feature' => 'wedding_notices',
-		),
-		'parish_church'       => array(
-			'label'   => __( 'Churches', 'parish-core' ),
-			'feature' => 'churches',
-		),
-		'parish_school'       => array(
-			'label'   => __( 'Schools', 'parish-core' ),
-			'feature' => 'schools',
-		),
-		'parish_cemetery'     => array(
-			'label'   => __( 'Cemeteries', 'parish-core' ),
-			'feature' => 'cemeteries',
-		),
-		'parish_group'        => array(
-			'label'   => __( 'Parish Groups', 'parish-core' ),
-			'feature' => 'groups',
-		),
-		'parish_newsletter'   => array(
-			'label   '=> __( 'Newsletters', 'parish-core' ),
-			'feature' => 'newsletters',
-		),
-		'parish_news'         => array(
-			'label'   => __( 'Parish News', 'parish-core' ),
-			'feature' => 'news',
-		),
-		'parish_gallery'      => array(
-			'label'   => __( 'Gallery', 'parish-core' ),
-			'feature' => 'gallery',
-		),
-		'parish_reflection'   => array(
-			'label'   => __( 'Reflections', 'parish-core' ),
-			'feature' => 'reflections',
-		),
-		'parish_prayer'       => array(
-			'label'   => __( 'Prayers', 'parish-core' ),
-			'feature' => 'prayers',
-		),
-	);
-
-	$stats = array();
-
-	foreach ( $types as $post_type => $cfg ) {
-		// Skip if the feature is disabled or CPT doesn’t exist.
-		if (
-			! Parish_Core::is_feature_enabled( $cfg['feature'] )
-			|| ! post_type_exists( $post_type )
-		) {
-			continue;
-		}
-
-		$count_obj = wp_count_posts( $post_type );
-
-		$published = isset( $count_obj->publish ) ? (int) $count_obj->publish : 0;
-		$draft     = isset( $count_obj->draft )   ? (int) $count_obj->draft   : 0;
-
-		$stats[ $post_type ] = array(
-			'label'     => $cfg['label'],
-			'published' => $published,
-			'draft'     => $draft,
+		$types = array(
+			'parish_death_notice' => array( 'label' => __( 'Death Notices', 'parish-core' ), 'feature' => 'death_notices' ),
+			'parish_baptism'      => array( 'label' => __( 'Baptisms', 'parish-core' ), 'feature' => 'baptism_notices' ),
+			'parish_wedding'      => array( 'label' => __( 'Weddings', 'parish-core' ), 'feature' => 'wedding_notices' ),
+			'parish_church'       => array( 'label' => __( 'Churches', 'parish-core' ), 'feature' => 'churches' ),
+			'parish_school'       => array( 'label' => __( 'Schools', 'parish-core' ), 'feature' => 'schools' ),
+			'parish_cemetery'     => array( 'label' => __( 'Cemeteries', 'parish-core' ), 'feature' => 'cemeteries' ),
+			'parish_group'        => array( 'label' => __( 'Parish Groups', 'parish-core' ), 'feature' => 'groups' ),
+			'parish_newsletter'   => array( 'label' => __( 'Newsletters', 'parish-core' ), 'feature' => 'newsletters' ),
+			'parish_news'         => array( 'label' => __( 'Parish News', 'parish-core' ), 'feature' => 'news' ),
+			'parish_gallery'      => array( 'label' => __( 'Gallery', 'parish-core' ), 'feature' => 'gallery' ),
+			'parish_reflection'   => array( 'label' => __( 'Reflections', 'parish-core' ), 'feature' => 'reflections' ),
+			'parish_prayer'       => array( 'label' => __( 'Prayers', 'parish-core' ), 'feature' => 'prayers' ),
 		);
+
+		$stats = array();
+		foreach ( $types as $post_type => $cfg ) {
+			if ( ! Parish_Core::is_feature_enabled( $cfg['feature'] ) || ! post_type_exists( $post_type ) ) {
+				continue;
+			}
+			$count_obj = wp_count_posts( $post_type );
+			$published = isset( $count_obj->publish ) ? (int) $count_obj->publish : 0;
+			$draft     = isset( $count_obj->draft )   ? (int) $count_obj->draft   : 0;
+			$stats[ $post_type ] = array( 'label' => $cfg['label'], 'published' => $published, 'draft' => $draft );
+		}
+		return $stats;
 	}
-
-	return $stats;
-}
-
 
 	private function get_liturgical_info(): array {
 		$info = array( 'date' => current_time( 'Y-m-d' ), 'formatted_date' => current_time( 'l, F j, Y' ), 'season' => $this->calculate_liturgical_season(), 'week' => $this->get_liturgical_week(), 'color' => '', 'feast_day' => '', 'celebrations' => array() );
@@ -362,6 +331,131 @@ class Parish_REST_API {
 	}
 
 	// =========================================================================
+	// SLIDER
+	// =========================================================================
+	public function get_slider_settings(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Slider' ) ) {
+			return rest_ensure_response( array( 'error' => 'Slider module not available.' ) );
+		}
+
+		$slider   = Parish_Slider::instance();
+		$settings = $slider->get_slider_settings();
+
+		// Enhance slides with image data.
+		if ( ! empty( $settings['slides'] ) ) {
+			foreach ( $settings['slides'] as &$slide ) {
+				if ( ! empty( $slide['image_id'] ) ) {
+					$slide['image_url']  = wp_get_attachment_url( $slide['image_id'] );
+					$slide['image_data'] = array(
+						'id'  => $slide['image_id'],
+						'url' => $slide['image_url'],
+					);
+				}
+			}
+		}
+
+		return rest_ensure_response( $settings );
+	}
+
+	public function update_slider_settings( \WP_REST_Request $request ): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Slider' ) ) {
+			return rest_ensure_response( array( 'success' => false, 'message' => 'Slider module not available.' ) );
+		}
+
+		$slider = Parish_Slider::instance();
+		$params = $request->get_json_params();
+
+		// Sanitize settings.
+		$sanitized = array(
+			'enabled'          => isset( $params['enabled'] ) ? (bool) $params['enabled'] : true,
+			'autoplay'         => isset( $params['autoplay'] ) ? (bool) $params['autoplay'] : true,
+			'autoplay_speed'   => isset( $params['autoplay_speed'] ) ? absint( $params['autoplay_speed'] ) : 5000,
+			'transition_speed' => isset( $params['transition_speed'] ) ? absint( $params['transition_speed'] ) : 1000,
+			'show_arrows'      => isset( $params['show_arrows'] ) ? (bool) $params['show_arrows'] : true,
+			'show_dots'        => isset( $params['show_dots'] ) ? (bool) $params['show_dots'] : true,
+			'pause_on_hover'   => isset( $params['pause_on_hover'] ) ? (bool) $params['pause_on_hover'] : true,
+			'height_desktop'   => isset( $params['height_desktop'] ) ? absint( $params['height_desktop'] ) : 700,
+			'height_tablet'    => isset( $params['height_tablet'] ) ? absint( $params['height_tablet'] ) : 500,
+			'height_mobile'    => isset( $params['height_mobile'] ) ? absint( $params['height_mobile'] ) : 400,
+			'overlay_color'    => isset( $params['overlay_color'] ) ? sanitize_hex_color( $params['overlay_color'] ) : '#4A8391',
+			'overlay_opacity'  => isset( $params['overlay_opacity'] ) ? floatval( $params['overlay_opacity'] ) : 0.7,
+			'overlay_gradient' => isset( $params['overlay_gradient'] ) ? (bool) $params['overlay_gradient'] : true,
+			'slides'           => array(),
+		);
+
+		// Sanitize slides.
+		if ( ! empty( $params['slides'] ) && is_array( $params['slides'] ) ) {
+			foreach ( $params['slides'] as $slide ) {
+				$sanitized_slide = array(
+					'id'         => sanitize_text_field( $slide['id'] ?? '' ),
+					'type'       => in_array( $slide['type'] ?? '', array( 'manual', 'dynamic' ), true ) ? $slide['type'] : 'manual',
+					'enabled'    => isset( $slide['enabled'] ) ? (bool) $slide['enabled'] : true,
+					'image_id'   => absint( $slide['image_id'] ?? 0 ),
+					'image_url'  => esc_url_raw( $slide['image_url'] ?? '' ),
+					'text_align' => in_array( $slide['text_align'] ?? '', array( 'left', 'center', 'right' ), true ) ? $slide['text_align'] : 'left',
+					'cta_text'   => sanitize_text_field( $slide['cta_text'] ?? '' ),
+					'cta_link'   => esc_url_raw( $slide['cta_link'] ?? '' ),
+				);
+
+				if ( $sanitized_slide['type'] === 'manual' ) {
+					$sanitized_slide['title']       = sanitize_text_field( $slide['title'] ?? '' );
+					$sanitized_slide['subtitle']    = sanitize_text_field( $slide['subtitle'] ?? '' );
+					$sanitized_slide['description'] = sanitize_textarea_field( $slide['description'] ?? '' );
+				} else {
+					// Dynamic slide.
+					$sanitized_slide['source']               = sanitize_text_field( $slide['source'] ?? '' );
+					$sanitized_slide['title_override']       = sanitize_text_field( $slide['title_override'] ?? '' );
+					$sanitized_slide['subtitle_override']    = sanitize_text_field( $slide['subtitle_override'] ?? '' );
+					$sanitized_slide['description_override'] = sanitize_textarea_field( $slide['description_override'] ?? '' );
+				}
+
+				$sanitized['slides'][] = $sanitized_slide;
+			}
+		}
+
+		$slider->update_slider_settings( $sanitized );
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Slider settings saved.', 'parish-core' ),
+		) );
+	}
+
+	public function get_slider_sources(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Slider' ) ) {
+			return rest_ensure_response( array() );
+		}
+
+		$slider  = Parish_Slider::instance();
+		$sources = $slider->get_dynamic_sources();
+
+		$output = array();
+		foreach ( $sources as $key => $source ) {
+			$output[ $key ] = array(
+				'name'        => $source['name'],
+				'description' => $source['description'],
+				'icon'        => $source['icon'],
+			);
+		}
+
+		return rest_ensure_response( $output );
+	}
+
+	public function get_slider_preview(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Slider' ) ) {
+			return rest_ensure_response( array() );
+		}
+
+		$slider = Parish_Slider::instance();
+		$slides = $slider->get_slides();
+
+		return rest_ensure_response( array(
+			'settings' => $slider->get_slider_settings(),
+			'slides'   => $slides,
+		) );
+	}
+
+	// =========================================================================
 	// SETTINGS
 	// =========================================================================
 	public function get_settings(): \WP_REST_Response {
@@ -382,6 +476,7 @@ class Parish_REST_API {
 			'enable_mass_times' => (bool) ( $s['enable_mass_times'] ?? true ),
 			'enable_events' => (bool) ( $s['enable_events'] ?? true ),
 			'enable_liturgical' => (bool) ( $s['enable_liturgical'] ?? true ),
+			'enable_slider' => (bool) ( $s['enable_slider'] ?? true ),
 			'readings_api_key' => $s['readings_api_key'] ?? '',
 			'admin_colors_enabled' => (bool) ( $s['admin_colors_enabled'] ?? false ),
 			'admin_color_menu_text' => $s['admin_color_menu_text'] ?? '#ffffff',
@@ -397,7 +492,7 @@ class Parish_REST_API {
 
 	public function update_settings( \WP_REST_Request $request ): \WP_REST_Response {
 		$params = $request->get_json_params();
-		$toggles = array( 'enable_death_notices', 'enable_baptism_notices', 'enable_wedding_notices', 'enable_churches', 'enable_schools', 'enable_cemeteries', 'enable_groups', 'enable_newsletters', 'enable_news', 'enable_gallery', 'enable_reflections', 'enable_prayers', 'enable_mass_times', 'enable_events', 'enable_liturgical', 'admin_colors_enabled' );
+		$toggles = array( 'enable_death_notices', 'enable_baptism_notices', 'enable_wedding_notices', 'enable_churches', 'enable_schools', 'enable_cemeteries', 'enable_groups', 'enable_newsletters', 'enable_news', 'enable_gallery', 'enable_reflections', 'enable_prayers', 'enable_mass_times', 'enable_events', 'enable_liturgical', 'enable_slider', 'admin_colors_enabled' );
 		$colors = array( 'admin_color_menu_text', 'admin_color_base_menu', 'admin_color_highlight', 'admin_color_notification', 'admin_color_background', 'admin_color_links', 'admin_color_buttons', 'admin_color_form_inputs' );
 		$sanitized = array();
 		foreach ( $toggles as $key ) { if ( isset( $params[ $key ] ) ) $sanitized[ $key ] = (bool) $params[ $key ]; }

@@ -1,3 +1,7 @@
+/* ==========================================================================
+   Parish Core - Frontend shortcode styles (front.css)
+   ========================================================================== */
+
 /* Base wrappers */
 .parish-readings-content,
 .parish-reflection,
@@ -7,76 +11,413 @@
 .parish-clergy,
 .parish-contact,
 .parish-prayers,
-.parish-feast-days{margin:1.5em 0;font-size:1rem;line-height:1.6}
+.parish-feast-days,
+.parish-liturgical-day,
+.parish-liturgical-week,
+.parish-rosary-days,
+.parish-rosary-today,
+.parish-rosary-week,
+.parish-rosary-series,
+.parish-rosary-mysteries {
+	margin: 1.5em 0;
+	font-size: 1rem;
+	line-height: 1.6;
+}
 
-/* Generic lists */
+/* ==========================================================================
+   CONSISTENT RHYTHM for the 3 problematic shortcodes
+   ========================================================================== */
+.parish-readings-content.parish-feast-days,
+.parish-readings-content.parish-mass-readings,
+.parish-readings-content.parish-liturgical-day {
+	--parish-row-gap: 0.55em;
+}
+
+/* Generic UL lists (only ULs — do not style DLs like lists) */
 .parish-mass-times ul,
 .parish-events ul,
 .parish-clergy ul,
 .parish-prayers ul,
-.parish-readings-content ul,
-.parish-feast-days .feast-list,
-.parish-mass-readings .readings-list{list-style:disc;margin:0 0 0 1.25em;padding:0}
+.parish-readings-content ul {
+	list-style: disc;
+	margin: 0 0 0 1.25em;
+	padding: 0;
+}
+
 .parish-mass-times li,
 .parish-events li,
 .parish-clergy li,
 .parish-prayers li,
-.parish-readings-content li,
-.parish-feast-days .feast-item{margin:.25em 0;padding:0;border:0;background:none;display:list-item}
+.parish-readings-content li {
+	margin: 0.25em 0;
+	padding: 0;
+	border: 0;
+	background: none;
+}
 
 /* Reflection */
-.parish-reflection blockquote{margin:0;font-style:italic}
-.parish-reflection cite{display:block;margin-top:.5em;font-size:.9em;color:#555;font-style:normal}
+.parish-reflection blockquote { margin: 0; font-style: italic; }
+.parish-reflection cite {
+	display: block;
+	margin-top: 0.5em;
+	font-size: 0.9em;
+	color: #555;
+	font-style: normal;
+}
 
 /* Mass times headings */
-.parish-mass-times .mass-day{margin-bottom:1em}
-.parish-mass-times h4{margin:.5em 0;font-size:1.05em;font-weight:600}
-.parish-mass-times .livestream-badge{font-size:.8em;color:#c00;font-weight:600;background:none;padding:0}
+.parish-mass-times .mass-day { margin-bottom: 1em; }
+.parish-mass-times h4 { margin: 0.5em 0; font-size: 1.05em; font-weight: 600; }
+.parish-mass-times .livestream-badge {
+	font-size: 0.8em;
+	color: #c00;
+	font-weight: 600;
+	background: none;
+	padding: 0;
+}
 
 /* Events extras */
 .parish-events .event-date,
-.parish-events .event-location{display:block;font-size:.9em;color:#555}
+.parish-events .event-location {
+	display: block;
+	font-size: 0.9em;
+	color: #555;
+}
 
 /* Churches – simple block list */
-.parish-churches .church-item{margin-bottom:1em;padding:0;border:0;box-shadow:none}
-.parish-churches h4{margin:.25em 0;font-size:1.05em}
-.parish-churches p{margin:0}
+.parish-churches .church-item { margin-bottom: 1em; padding: 0; border: 0; box-shadow: none; }
+.parish-churches h4 { margin: 0.25em 0; font-size: 1.05em; }
+.parish-churches p { margin: 0; }
 
 /* Clergy */
-.parish-clergy strong{font-weight:600}
+.parish-clergy strong { font-weight: 600; }
 
 /* Contact */
-.parish-contact{padding:0;background:none;border:0}
-.parish-contact p{margin:0 0 .75em}
-.parish-contact p:last-child{margin-bottom:0}
-.parish-contact a{text-decoration:underline}
+.parish-contact { padding: 0; background: none; border: 0; }
+.parish-contact p { margin: 0 0 0.75em; }
+.parish-contact p:last-child { margin-bottom: 0; }
+.parish-contact a { text-decoration: underline; }
 
 /* Prayers */
-.parish-prayers .prayer-item{margin-bottom:1.5em;padding-bottom:0;border-bottom:0}
-.parish-prayers h4{margin:.25em 0;font-size:1.05em}
-.parish-prayers .prayer-text{line-height:1.7}
+.parish-prayers .prayer-item { margin-bottom: 1.5em; padding-bottom: 0; border-bottom: 0; }
+.parish-prayers h4 { margin: 0.25em 0; font-size: 1.05em; }
+.parish-prayers .prayer-text { line-height: 1.7; }
 
-/* Readings */
-.parish-readings-content{padding:0;background:none;border:0}
-.parish-readings-content.parish-readings-empty{text-align:left;font-style:italic;color:#666}
-.parish-readings-content dl{margin:0}
-.parish-readings-content dt,
-.parish-readings-content dd{display:inline;margin:0;padding:0;border:0;line-height:1.6}
-.parish-readings-content dt{font-weight:600}
-.parish-readings-content dt::after{content:": "}
-.parish-readings-content dd::after{content:"\A";white-space:pre}
-.parish-mass-readings .readings-list dt,
-.parish-mass-readings .readings-list dd{padding:0;background:none;border-radius:0;margin:0}
+/* ==========================================================================
+   READINGS (mass_reading_details) — mobile-friendly wrapping + consistent gaps
+   ========================================================================== */
+.parish-readings-content { padding: 0; background: none; border: 0; }
+.parish-readings-content.parish-readings-empty { text-align: left; font-style: italic; color: #666; }
 
+.parish-readings-content.parish-mass-readings .readings-rows {
+	margin: 0;
+	padding: 0;
+}
 
-/* Feast days */
-.parish-feast-days .feast-title{font-weight:600}
-.parish-feast-days .liturgical-colour,
-.parish-feast-days .feast-rank{display:block;font-size:.9em;color:#555}
+.parish-readings-content.parish-mass-readings .reading-row {
+	margin: 0 0 var(--parish-row-gap) 0;
+}
 
-/* Mobile tweaks */
-@media(max-width:600px){
- .parish-readings-content,
- .parish-reflection,
- .parish-contact{padding:0}
+.parish-readings-content.parish-mass-readings .reading-row:last-child {
+	margin-bottom: 0;
+}
+
+.parish-readings-content.parish-mass-readings .reading-label {
+	font-weight: 700;
+}
+
+.parish-readings-content.parish-mass-readings .reading-sep,
+.parish-readings-content.parish-mass-readings .reading-text {
+	font-weight: 400;
+}
+
+/* (Back-compat) If any theme/templates still output DL markup, keep it readable */
+.parish-readings-content.parish-mass-readings dl {
+	margin: 0;
+}
+.parish-readings-content.parish-mass-readings dt {
+	font-weight: 700;
+}
+.parish-readings-content.parish-mass-readings dd {
+	margin: 0 0 var(--parish-row-gap) 0;
+}
+
+/* ==========================================================================
+   FEAST DAY DETAILS (feast_day_details) — inline rank + same colour + gaps
+   ========================================================================== */
+.parish-readings-content.parish-feast-days .feast-entry {
+	margin: 0 0 1.1em 0;
+}
+.parish-readings-content.parish-feast-days .feast-entry:last-child {
+	margin-bottom: 0;
+}
+
+/* Important: p margins inside this block are controlled here to beat theme defaults */
+.parish-readings-content.parish-feast-days .feast-row {
+	margin: 0 0 var(--parish-row-gap) 0;
+}
+.parish-readings-content.parish-feast-days .feast-row:last-child {
+	margin-bottom: 0;
+}
+
+.parish-readings-content.parish-feast-days .feast-label {
+	font-weight: 700;
+}
+
+.parish-readings-content.parish-feast-days .feast-title {
+	font-weight: 600;
+}
+
+.parish-readings-content.parish-feast-days .liturgical-colour-badge {
+	display: inline-block;
+	padding: 0.15em 0.55em;
+	border-radius: 0.35em;
+	font-weight: 700;
+	font-size: 0.9em;
+	line-height: 1.2;
+	vertical-align: middle;
+
+	background: var(--liturgical-badge-bg, #808080);
+	color: var(--liturgical-badge-fg, #fff);
+	border: 1px solid var(--liturgical-badge-border, rgba(0, 0, 0, 0.08));
+}
+
+/* Rank MUST be inline + inherit colour */
+.parish-readings-content.parish-feast-days .feast-rank {
+	display: inline;
+	color: inherit;
+	font-size: 1em;
+	font-weight: 400;
+}
+
+/* Back-compat (if any older markup still outputs a UL) */
+.parish-feast-days .feast-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.parish-feast-days .feast-item {
+	margin: 0.4em 0;
+	padding: 0;
+	border: 0;
+	background: none;
+}
+
+/* ==========================================================================
+   LITURGICAL DAY (liturgical_day) — remove card look + match same gaps
+   ========================================================================== */
+.parish-readings-content.parish-liturgical-day {
+	padding: 0;
+	background: none;
+	border-radius: 0;
+}
+
+/* Beat theme p spacing to match the other blocks */
+.parish-readings-content.parish-liturgical-day .liturgical-info p {
+	margin: 0 0 var(--parish-row-gap) 0;
+}
+.parish-readings-content.parish-liturgical-day .liturgical-info p:last-child {
+	margin-bottom: 0;
+}
+
+.parish-readings-content.parish-liturgical-day strong {
+	font-weight: 700;
+}
+
+.parish-liturgical-day a {
+	color: #2271b1;
+	text-decoration: none;
+}
+.parish-liturgical-day a:hover {
+	text-decoration: underline;
+}
+
+/* ==========================================================================
+   LITURGICAL WEEK
+   ========================================================================== */
+.parish-liturgical-week { padding: 0; }
+.parish-liturgical-week .week-info { margin-bottom: 20px; }
+.parish-liturgical-week h4 { margin: 0 0 16px 0; font-size: 1.1em; }
+
+.rosary-schedule-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.rosary-schedule-table th,
+.rosary-schedule-table td {
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid #eee;
+}
+.rosary-schedule-table th {
+	background: #f5f5f5;
+	font-weight: 600;
+}
+.rosary-schedule-table a {
+	color: #2271b1;
+	text-decoration: none;
+}
+.rosary-schedule-table a:hover {
+	text-decoration: underline;
+}
+
+/* ==========================================================================
+   ROSARY DAYS
+   ========================================================================== */
+.parish-rosary-days { padding: 0; }
+.parish-rosary-days .rosary-season { margin-bottom: 20px; }
+.parish-rosary-days .rosary-series-list { display: grid; gap: 20px; }
+.parish-rosary-days .rosary-series-item {
+	padding: 16px;
+	background: #f9f9f9;
+	border-radius: 8px;
+	border-left: 4px solid #2271b1;
+}
+.parish-rosary-days .rosary-series-item h4 { margin: 0 0 8px 0; }
+.parish-rosary-days .rosary-series-item h4 a { color: #2271b1; text-decoration: none; }
+.parish-rosary-days .rosary-series-item h4 a:hover { text-decoration: underline; }
+.parish-rosary-days .series-days { margin: 0 0 8px 0; font-weight: 600; color: #333; }
+.parish-rosary-days .series-description { margin: 0; color: #666; font-size: 0.95em; }
+
+/* ==========================================================================
+   ROSARY TODAY
+   ========================================================================== */
+.parish-rosary-today { padding: 0; }
+.parish-rosary-today .rosary-today-simple { margin: 0; }
+.parish-rosary-today .rosary-today-simple a {
+	color: #2271b1;
+	text-decoration: none;
+	font-weight: 600;
+}
+.parish-rosary-today .rosary-today-simple a:hover { text-decoration: underline; }
+.parish-rosary-today .rosary-today-link {
+	display: inline-block;
+	padding: 10px 20px;
+	background: #2271b1;
+	color: #fff;
+	border-radius: 6px;
+	text-decoration: none;
+	font-weight: 600;
+}
+.parish-rosary-today .rosary-today-link:hover { background: #1a5a8e; }
+.parish-rosary-today .rosary-today-full {
+	padding: 20px;
+	background: #f9f9f9;
+	border-radius: 8px;
+}
+.parish-rosary-today .rosary-title { margin: 0 0 12px 0; font-size: 1.3em; }
+.parish-rosary-today .rosary-title a { color: #2271b1; text-decoration: none; }
+.parish-rosary-today .rosary-title a:hover { text-decoration: underline; }
+.parish-rosary-today .rosary-description { margin: 0 0 16px 0; color: #555; }
+.parish-rosary-today .rosary-mysteries-list { margin: 0 0 16px 0; padding-left: 24px; }
+.parish-rosary-today .rosary-mysteries-list li { margin-bottom: 6px; }
+.parish-rosary-today .rosary-season-note { margin: 0; color: #888; }
+
+/* ==========================================================================
+   ROSARY WEEK
+   ========================================================================== */
+.parish-rosary-week { padding: 0; }
+.parish-rosary-week .rosary-season { margin-bottom: 16px; }
+.parish-rosary-week .rosary-week-list { list-style: none; margin: 0; padding: 0; }
+.parish-rosary-week .rosary-week-list li { padding: 12px 16px; border-bottom: 1px solid #eee; }
+.parish-rosary-week .rosary-week-list li:last-child { border-bottom: none; }
+.parish-rosary-week .rosary-week-list li.is-today {
+	background: #e8f4fc;
+	border-radius: 6px;
+	font-weight: 600;
+}
+.parish-rosary-week .rosary-week-list a { color: #2271b1; text-decoration: none; }
+.parish-rosary-week .rosary-week-list a:hover { text-decoration: underline; }
+
+.rosary-week-table { width: 100%; border-collapse: collapse; }
+.rosary-week-table th,
+.rosary-week-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #eee; }
+.rosary-week-table th { background: #f5f5f5; font-weight: 600; }
+.rosary-week-table tr.is-today { background: #e8f4fc; }
+.rosary-week-table .today-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	background: #2271b1;
+	color: #fff;
+	font-size: 0.75em;
+	border-radius: 4px;
+	margin-left: 8px;
+	font-weight: normal;
+}
+.rosary-week-table a { color: #2271b1; text-decoration: none; }
+.rosary-week-table a:hover { text-decoration: underline; }
+
+/* ==========================================================================
+   ROSARY SERIES
+   ========================================================================== */
+.parish-rosary-series { padding: 0; }
+.parish-rosary-series .rosary-season { margin-bottom: 20px; }
+.parish-rosary-series .rosary-series-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 20px;
+}
+.parish-rosary-series .rosary-series-card {
+	padding: 20px;
+	background: #f9f9f9;
+	border-radius: 8px;
+	border-top: 4px solid #2271b1;
+}
+.parish-rosary-series .rosary-series-card h4 { margin: 0 0 12px 0; }
+.parish-rosary-series .rosary-series-card h4 a { color: #2271b1; text-decoration: none; }
+.parish-rosary-series .rosary-series-card h4 a:hover { text-decoration: underline; }
+.parish-rosary-series .series-description { margin: 0 0 12px 0; color: #555; font-size: 0.95em; }
+.parish-rosary-series .series-days { margin: 0; padding-top: 12px; border-top: 1px solid #ddd; font-size: 0.9em; }
+
+/* Mystery-specific colors */
+.parish-rosary-series .rosary-series-card:nth-child(1) { border-top-color: #FFD700; }
+.parish-rosary-series .rosary-series-card:nth-child(2) { border-top-color: #C41E3A; }
+.parish-rosary-series .rosary-series-card:nth-child(3) { border-top-color: #FFFFFF; border-top: 4px solid #ddd; }
+.parish-rosary-series .rosary-series-card:nth-child(4) { border-top-color: #87CEEB; }
+
+/* ==========================================================================
+   ROSARY MYSTERIES
+   ========================================================================== */
+.parish-rosary-mysteries { padding: 0; }
+.parish-rosary-mysteries .mysteries-section {
+	margin-bottom: 30px;
+	padding: 20px;
+	background: #f9f9f9;
+	border-radius: 8px;
+}
+.parish-rosary-mysteries .mysteries-section:last-child { margin-bottom: 0; }
+.parish-rosary-mysteries .mysteries-section h3 {
+	margin: 0 0 12px 0;
+	padding-bottom: 12px;
+	border-bottom: 2px solid #2271b1;
+}
+.parish-rosary-mysteries .mysteries-description {
+	margin: 0 0 16px 0;
+	color: #555;
+	font-style: italic;
+}
+.parish-rosary-mysteries .mysteries-list { margin: 0; padding-left: 24px; }
+.parish-rosary-mysteries .mysteries-list li { margin-bottom: 8px; font-size: 1.05em; }
+.parish-rosary-mysteries .mysteries-list li:last-child { margin-bottom: 0; }
+
+/* Anchor styling for direct links */
+.parish-rosary-mysteries .mysteries-section:target { animation: highlight-section 2s ease-out; }
+@keyframes highlight-section { from { background: #d4edfc; } to { background: #f9f9f9; } }
+
+#joyful h3 { border-bottom-color: #FFD700; }
+#sorrowful h3 { border-bottom-color: #C41E3A; }
+#glorious h3 { border-bottom-color: #8B00FF; }
+#luminous h3 { border-bottom-color: #87CEEB; }
+
+/* ==========================================================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
+@media (max-width: 600px) {
+	.parish-rosary-series .rosary-series-grid { grid-template-columns: 1fr; }
+	.rosary-schedule-table,
+	.rosary-week-table { font-size: 0.9em; }
+	.rosary-schedule-table th,
+	.rosary-schedule-table td,
+	.rosary-week-table th,
+	.rosary-week-table td { padding: 10px; }
 }

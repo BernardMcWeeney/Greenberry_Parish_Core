@@ -99,6 +99,7 @@
 					'[parish_mass_times day="Sunday" format="simple"]\n' +
 						'[parish_events limit="5" type="sacrament"]\n' +
 						'[daily_readings]\n' +
+						'[parish_slider]\n' +
 						'[parish_contact]'
 				)
 			)
@@ -139,7 +140,7 @@
 					setSaving(false);
 					setNotice({
 						type: 'success',
-						message: 'Settings saved! Refresh to see color changes.',
+						message: 'Settings saved! Refresh to see changes.',
 					});
 				})
 				.catch(function (err) {
@@ -169,6 +170,7 @@
 			{ key: 'enable_mass_times', label: 'Mass Times' },
 			{ key: 'enable_events', label: 'Events Calendar' },
 			{ key: 'enable_liturgical', label: 'Liturgical Calendar' },
+			{ key: 'enable_slider', label: 'Hero Slider' },
 		];
 
 		const colorFields = [

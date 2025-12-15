@@ -4,32 +4,44 @@
 (function (window) {
 	'use strict';
 
-	const { el, render, config } = window.ParishCoreAdmin;
-	const {
-		Dashboard,
-		AboutParish,
-		MassTimes,
-		EventsCalendar,
-		ReadingsAPI,
-		Settings,
-	} = window.ParishCoreAdmin;
+	var ParishCoreAdmin = window.ParishCoreAdmin;
+	
+	if (!ParishCoreAdmin || !ParishCoreAdmin.el || !ParishCoreAdmin.render) {
+		console.error('ParishCoreAdmin not loaded');
+		return;
+	}
+
+	var el = ParishCoreAdmin.el;
+	var render = ParishCoreAdmin.render;
+	var config = ParishCoreAdmin.config || {};
 
 	function App() {
-		const page = config.page || 'dashboard';
+		var page = config.page || 'dashboard';
+
+		// Get components from ParishCoreAdmin
+		var Dashboard = ParishCoreAdmin.Dashboard;
+		var AboutParish = ParishCoreAdmin.AboutParish;
+		var MassTimes = ParishCoreAdmin.MassTimes;
+		var EventsCalendar = ParishCoreAdmin.EventsCalendar;
+		var SliderSettings = ParishCoreAdmin.SliderSettings;
+		var ReadingsAPI = ParishCoreAdmin.ReadingsAPI;
+		var Settings = ParishCoreAdmin.Settings;
 
 		switch (page) {
 			case 'dashboard':
-				return el(Dashboard);
+				return Dashboard ? el(Dashboard) : el('p', null, 'Loading Dashboard...');
 			case 'about':
-				return el(AboutParish);
+				return AboutParish ? el(AboutParish) : el('p', null, 'Loading About Parish...');
 			case 'mass-times':
-				return el(MassTimes);
+				return MassTimes ? el(MassTimes) : el('p', null, 'Loading Mass Times...');
 			case 'events':
-				return el(EventsCalendar);
+				return EventsCalendar ? el(EventsCalendar) : el('p', null, 'Loading Events...');
+			case 'slider':
+				return SliderSettings ? el(SliderSettings) : el('p', null, 'Loading Slider Settings...');
 			case 'readings':
-				return el(ReadingsAPI);
+				return ReadingsAPI ? el(ReadingsAPI) : el('p', null, 'Loading Readings API...');
 			case 'settings':
-				return el(Settings);
+				return Settings ? el(Settings) : el('p', null, 'Loading Settings...');
 			default:
 				return el('p', null, 'Unknown page: ' + page);
 		}
@@ -41,6 +53,7 @@
 			'parish-about-app',
 			'parish-mass-times-app',
 			'parish-events-app',
+			'parish-slider-app',
 			'parish-readings-app',
 			'parish-settings-app',
 		];

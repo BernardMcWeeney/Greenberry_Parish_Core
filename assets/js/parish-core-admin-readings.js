@@ -142,6 +142,14 @@
 				  })
 				: [];
 
+		// Separate fetchable and computed endpoints
+		const fetchableEndpoints = endpoints.filter(function (ep) {
+			return ep.fetchable !== false;
+		});
+		const computedEndpoints = endpoints.filter(function (ep) {
+			return ep.fetchable === false;
+		});
+
 		return el(
 			'div',
 			{ className: 'parish-readings-page' },
@@ -164,7 +172,7 @@
 					PanelBody,
 					{ title: 'API Configuration', initialOpen: true },
 					el(TextControl, {
-						label: 'API Key',
+						label: 'Catholic Readings API Key',
 						type: 'password',
 						value: settings.readings_api_key || '',
 						onChange: function (v) {
@@ -174,7 +182,7 @@
 								})
 							);
 						},
-						help: 'Enter your Catholic Readings API key',
+						help: 'Enter your Catholic Readings API key. Note: Liturgy.day endpoints do not require an API key.',
 					}),
 					el(
 						Flex,
@@ -195,11 +203,11 @@
 				),
 				el(
 					PanelBody,
-					{ title: 'Endpoints', initialOpen: true },
+					{ title: 'API Endpoints', initialOpen: true },
 					el(
 						'p',
 						{ className: 'description' },
-						'Fetch readings from the API. Data is cached for 24 hours.'
+						'Fetch readings from external APIs. Data is cached for 24 hours. Liturgy.day endpoints (Liturgical Day, Week, Rosary Days) do not require an API key.'
 					),
 					el(
 						'div',
@@ -212,14 +220,33 @@
 							el('span', null, 'Last Fetched'),
 							el('span', null, 'Action')
 						),
-						endpoints.map(function (ep) {
+						fetchableEndpoints.map(function (ep) {
+							// Check if this endpoint requires API key
+							var requiresKey = ep.requires_key !== false;
+							var canFetch = !requiresKey || status.api_key_set;
+							
 							return el(
 								'div',
 								{ key: ep.key, className: 'endpoint-row' },
 								el(
 									'span',
 									{ className: 'ep-name' },
-									ep.name
+									ep.name,
+									!requiresKey && el(
+										'span',
+										{ 
+											className: 'no-key-badge',
+											style: { 
+												marginLeft: '8px', 
+												fontSize: '10px', 
+												background: '#d4edda', 
+												color: '#155724',
+												padding: '2px 6px',
+												borderRadius: '3px'
+											}
+										},
+										'No API key needed'
+									)
 								),
 								el(
 									'code',
@@ -237,7 +264,7 @@
 										isSecondary: true,
 										isSmall: true,
 										isBusy: fetching[ep.key],
-										disabled: !status.api_key_set,
+										disabled: !canFetch,
 										onClick: function () {
 											fetchEndpoint(ep.key);
 										},
@@ -255,11 +282,57 @@
 							{
 								isPrimary: true,
 								isBusy: fetching.all,
-								disabled: !status.api_key_set,
 								onClick: fetchAll,
 							},
 							'Fetch All Readings'
 						)
+					)
+				),
+				computedEndpoints.length > 0 && el(
+					PanelBody,
+					{ title: 'Computed Shortcodes', initialOpen: true },
+					el(
+						'p',
+						{ className: 'description' },
+						'These shortcodes use data from the API endpoints above and do not need separate fetching.'
+					),
+					el(
+						'div',
+						{ className: 'endpoints-list computed-list' },
+						el(
+							'div',
+							{ className: 'endpoints-header' },
+							el('span', null, 'Shortcode'),
+							el('span', null, 'Code'),
+							el('span', null, 'Data Source'),
+							el('span', null, 'Status')
+						),
+						computedEndpoints.map(function (ep) {
+							return el(
+								'div',
+								{ key: ep.key, className: 'endpoint-row computed-row' },
+								el(
+									'span',
+									{ className: 'ep-name' },
+									ep.name
+								),
+								el(
+									'code',
+									{ className: 'ep-shortcode' },
+									ep.shortcode
+								),
+								el(
+									'span',
+									{ className: 'ep-note' },
+									ep.note || (ep.schedule === 'static' ? 'Static content' : 'Computed')
+								),
+								el(
+									'span',
+									{ className: 'ep-status ok' },
+									'✓ Ready'
+								)
+							);
+						})
 					)
 				)
 			)

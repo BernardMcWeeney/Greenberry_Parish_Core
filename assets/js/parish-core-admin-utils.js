@@ -5,42 +5,42 @@
 	'use strict';
 
 	if (!window.wp || !window.wp.element || !window.wp.components || !window.wp.apiFetch) {
+		console.warn('Parish Core Admin: Required WordPress dependencies not loaded');
 		return;
 	}
 
-	const {
-		createElement: el,
-		render,
-		useState,
-		useEffect,
-		Fragment,
-	} = wp.element;
+	var wpElement = window.wp.element;
+	var wpComponents = window.wp.components;
 
-	const {
-		Panel,
-		PanelBody,
-		TextControl,
-		TextareaControl,
-		ToggleControl,
-		Button,
-		Spinner,
-		Notice,
-		Card,
-		CardHeader,
-		CardBody,
-		CardFooter,
-		Flex,
-		FlexItem,
-		FlexBlock,
-		SelectControl,
-		BaseControl,
-		Modal,
-		TabPanel,
-	} = wp.components;
+	var el = wpElement.createElement;
+	var render = wpElement.render;
+	var useState = wpElement.useState;
+	var useEffect = wpElement.useEffect;
+	var Fragment = wpElement.Fragment;
 
-	const apiFetch = wp.apiFetch;
-	const config = window.parishCore || {};
-	const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+	var Panel = wpComponents.Panel;
+	var PanelBody = wpComponents.PanelBody;
+	var TextControl = wpComponents.TextControl;
+	var TextareaControl = wpComponents.TextareaControl;
+	var ToggleControl = wpComponents.ToggleControl;
+	var Button = wpComponents.Button;
+	var Spinner = wpComponents.Spinner;
+	var Notice = wpComponents.Notice;
+	var Card = wpComponents.Card;
+	var CardHeader = wpComponents.CardHeader;
+	var CardBody = wpComponents.CardBody;
+	var CardFooter = wpComponents.CardFooter;
+	var Flex = wpComponents.Flex;
+	var FlexItem = wpComponents.FlexItem;
+	var FlexBlock = wpComponents.FlexBlock;
+	var SelectControl = wpComponents.SelectControl;
+	var BaseControl = wpComponents.BaseControl;
+	var Modal = wpComponents.Modal;
+	var TabPanel = wpComponents.TabPanel;
+
+	var apiFetch = window.wp.apiFetch;
+	var config = window.parishCore || {};
+	var days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 	function LoadingSpinner(props) {
 		return el(
@@ -56,14 +56,14 @@
 	}
 
 	function MediaUploader(props) {
-		const label = props.label;
-		const value = props.value || {};
-		const onChange = props.onChange;
+		var label = props.label;
+		var value = props.value || {};
+		var onChange = props.onChange;
 
-		const openMedia = function () {
-			const frame = wp.media({ title: label, multiple: false, library: { type: 'image' } });
+		var openMedia = function () {
+			var frame = wp.media({ title: label, multiple: false, library: { type: 'image' } });
 			frame.on('select', function () {
-				const att = frame.state().get('selection').first().toJSON();
+				var att = frame.state().get('selection').first().toJSON();
 				onChange(att.id, att.url);
 			});
 			frame.open();
@@ -101,44 +101,45 @@
 		);
 	}
 
+	// Export everything to ParishCoreAdmin
 	window.ParishCoreAdmin = window.ParishCoreAdmin || {};
 	Object.assign(window.ParishCoreAdmin, {
 		// React glue
-		el,
-		render,
-		useState,
-		useEffect,
-		Fragment,
+		el: el,
+		render: render,
+		useState: useState,
+		useEffect: useEffect,
+		Fragment: Fragment,
 
 		// WP components
-		Panel,
-		PanelBody,
-		TextControl,
-		TextareaControl,
-		ToggleControl,
-		Button,
-		Spinner,
-		Notice,
-		Card,
-		CardHeader,
-		CardBody,
-		CardFooter,
-		Flex,
-		FlexItem,
-		FlexBlock,
-		SelectControl,
-		BaseControl,
-		Modal,
-		TabPanel,
+		Panel: Panel,
+		PanelBody: PanelBody,
+		TextControl: TextControl,
+		TextareaControl: TextareaControl,
+		ToggleControl: ToggleControl,
+		Button: Button,
+		Spinner: Spinner,
+		Notice: Notice,
+		Card: Card,
+		CardHeader: CardHeader,
+		CardBody: CardBody,
+		CardFooter: CardFooter,
+		Flex: Flex,
+		FlexItem: FlexItem,
+		FlexBlock: FlexBlock,
+		SelectControl: SelectControl,
+		BaseControl: BaseControl,
+		Modal: Modal,
+		TabPanel: TabPanel,
 
 		// WP data
-		apiFetch,
-		config,
-		days,
+		apiFetch: apiFetch,
+		config: config,
+		days: days,
 
 		// Helpers
-		LoadingSpinner,
-		generateId,
-		MediaUploader,
+		LoadingSpinner: LoadingSpinner,
+		generateId: generateId,
+		MediaUploader: MediaUploader,
 	});
 })(window);

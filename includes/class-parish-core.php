@@ -47,6 +47,10 @@ class Parish_Core {
 			Parish_CPT::instance();
 		}
 
+		if ( class_exists( 'Parish_Slider' ) ) {
+			Parish_Slider::instance();
+		}
+
 		// Meta fields.
 		if ( class_exists( 'Parish_Meta' ) ) {
 			Parish_Meta::instance();

@@ -114,6 +114,18 @@ class Parish_Admin_UI {
 			);
 		}
 
+		// Hero Slider (Editor level).
+		if ( Parish_Core::is_feature_enabled( 'slider' ) ) {
+			add_submenu_page(
+				'parish-core',
+				__( 'Hero Slider', 'parish-core' ),
+				__( 'Slider', 'parish-core' ),
+				'edit_posts',
+				'parish-slider',
+				array( $this, 'render_slider_page' )
+			);
+		}
+
 		// Readings API (Admin only).
 		if ( Parish_Core::is_feature_enabled( 'liturgical' ) ) {
 			add_submenu_page(
@@ -152,6 +164,7 @@ class Parish_Admin_UI {
 			'parish-about',
 			'parish-mass-times',
 			'parish-events',
+			'parish-slider',
 			'parish-readings',
 		);
 
@@ -250,6 +263,23 @@ class Parish_Admin_UI {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Parish Events Calendar', 'parish-core' ); ?></h1>
 			<div id="parish-events-app">
+				<div class="parish-loading">
+					<span class="spinner is-active"></span>
+					<p><?php esc_html_e( 'Loading...', 'parish-core' ); ?></p>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render Slider Settings page.
+	 */
+	public function render_slider_page(): void {
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Hero Slider', 'parish-core' ); ?></h1>
+			<div id="parish-slider-app">
 				<div class="parish-loading">
 					<span class="spinner is-active"></span>
 					<p><?php esc_html_e( 'Loading...', 'parish-core' ); ?></p>

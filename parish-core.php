@@ -3,7 +3,7 @@
  * Plugin Name: Parish Core
  * Plugin URI: https://github.com/greenberry/parish-core
  * Description: A comprehensive parish management system for Catholic parishes.
- * Version: 3.0.0
+ * Version: 4.0.0
  * Author: Greenberry
  * Author URI: https://greenberry.ie
  * License: GPL v2 or later
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'PARISH_CORE_VERSION', '3.0.0' );
+define( 'PARISH_CORE_VERSION', '4.0.0' );
 define( 'PARISH_CORE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PARISH_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'PARISH_CORE_BASENAME', plugin_basename( __FILE__ ) );
@@ -69,6 +69,7 @@ function parish_core_includes(): void {
 		'class-parish-assets.php',
 		'class-parish-readings.php',
 		'class-parish-admin-colors.php',
+		'class-parish-slider.php',
 	);
 
 	foreach ( $includes as $file ) {
@@ -153,6 +154,7 @@ function parish_core_get_default_settings(): array {
 		'enable_events'           => true,
 		'enable_liturgical'       => true,
 		'enable_prayers'          => true,
+		'enable_slider'           => true, // Hero Slider feature
 
 		// Readings API settings (admin only).
 		'readings_api_key'        => '',
@@ -360,10 +362,104 @@ function parish_core_get_shortcode_reference(): array {
 		array(
 			'shortcode'   => '[feast_day_details]',
 			'name'        => __( 'Feast Day Details', 'parish-core' ),
-			'description' => __( 'Display today\'s liturgical feast information', 'parish-core' ),
+			'description' => __( 'Display today\'s liturgical feast with colored indicator', 'parish-core' ),
 			'attributes'  => array(),
 			'example'     => '[feast_day_details]',
 			'feature'     => 'liturgical',
+		),
+		// Liturgical Day
+		array(
+			'shortcode'   => '[liturgical_day]',
+			'name'        => __( 'Liturgical Day', 'parish-core' ),
+			'description' => __( 'Display liturgical information for today (season, cycles, rosary)', 'parish-core' ),
+			'attributes'  => array(
+				'link_rosary' => __( 'URL to rosary page for linking (e.g., "/rosary")', 'parish-core' ),
+			),
+			'example'     => '[liturgical_day link_rosary="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+		// Liturgical Week
+		array(
+			'shortcode'   => '[liturgical_week]',
+			'name'        => __( 'Liturgical Week', 'parish-core' ),
+			'description' => __( 'Display liturgical information for the week with rosary schedule', 'parish-core' ),
+			'attributes'  => array(
+				'link_rosary' => __( 'URL to rosary page for linking', 'parish-core' ),
+			),
+			'example'     => '[liturgical_week link_rosary="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+		// Rosary Days
+		array(
+			'shortcode'   => '[rosary_days]',
+			'name'        => __( 'Rosary Days', 'parish-core' ),
+			'description' => __( 'Display which days of the week each rosary series is prayed', 'parish-core' ),
+			'attributes'  => array(
+				'link_rosary' => __( 'URL to rosary page for linking', 'parish-core' ),
+			),
+			'example'     => '[rosary_days link_rosary="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+		// Rosary Today
+		array(
+			'shortcode'   => '[rosary_today]',
+			'name'        => __( 'Today\'s Rosary', 'parish-core' ),
+			'description' => __( 'Display which rosary mysteries to pray today with optional link', 'parish-core' ),
+			'attributes'  => array(
+				'link'           => __( 'URL to rosary page (adds #joyful, #sorrowful, etc.)', 'parish-core' ),
+				'show_link'      => __( '"yes" or "no" to show/hide link (default: yes)', 'parish-core' ),
+				'format'         => __( '"full", "simple", or "link-only"', 'parish-core' ),
+				'show_mysteries' => __( '"yes" to list all 5 mysteries (default: no)', 'parish-core' ),
+			),
+			'example'     => '[rosary_today link="/rosary" format="full" show_mysteries="yes"]',
+			'feature'     => 'liturgical',
+		),
+		// Rosary Week
+		array(
+			'shortcode'   => '[rosary_week]',
+			'name'        => __( 'Weekly Rosary Schedule', 'parish-core' ),
+			'description' => __( 'Display rosary mysteries for each day of the week', 'parish-core' ),
+			'attributes'  => array(
+				'link'       => __( 'URL to rosary page for linking', 'parish-core' ),
+				'show_today' => __( '"yes" or "no" to highlight today (default: yes)', 'parish-core' ),
+				'format'     => __( '"table" or "list" (default: table)', 'parish-core' ),
+			),
+			'example'     => '[rosary_week link="/rosary" format="table"]',
+			'feature'     => 'liturgical',
+		),
+		// Rosary Series
+		array(
+			'shortcode'   => '[rosary_series]',
+			'name'        => __( 'Rosary Series Overview', 'parish-core' ),
+			'description' => __( 'Display all four rosary series with days prayed during current season', 'parish-core' ),
+			'attributes'  => array(
+				'link'   => __( 'URL to rosary page for linking', 'parish-core' ),
+				'series' => __( 'Specific series: "joyful", "sorrowful", "glorious", "luminous"', 'parish-core' ),
+			),
+			'example'     => '[rosary_series link="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+		// Rosary Mysteries
+		array(
+			'shortcode'   => '[rosary_mysteries]',
+			'name'        => __( 'Rosary Mysteries List', 'parish-core' ),
+			'description' => __( 'Display the five mysteries of each rosary series (great for rosary pages)', 'parish-core' ),
+			'attributes'  => array(
+				'series' => __( 'Specific series or leave empty for all four', 'parish-core' ),
+			),
+			'example'     => '[rosary_mysteries series="joyful"]',
+			'feature'     => 'liturgical',
+		),
+		// Hero Slider
+		array(
+			'shortcode'   => '[parish_slider]',
+			'name'        => __( 'Hero Slider', 'parish-core' ),
+			'description' => __( 'Display the homepage hero slider with manual and dynamic slides', 'parish-core' ),
+			'attributes'  => array(
+				'class' => __( 'Additional CSS class for styling', 'parish-core' ),
+			),
+			'example'     => '[parish_slider]',
+			'feature'     => 'slider',
 		),
 	);
 }

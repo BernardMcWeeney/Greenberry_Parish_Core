@@ -82,7 +82,7 @@ class Parish_Assets {
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'adminUrl' => admin_url(),
 				'siteUrl'  => home_url(),
-				'page'     => $this->get_current_page( $hook ), // dashboard, about, mass-times, etc.
+				'page'     => $this->get_current_page( $hook ),
 				'isAdmin'  => current_user_can( 'manage_options' ),
 				'settings' => Parish_Core::get_settings(),
 				'version'  => PARISH_CORE_VERSION,
@@ -91,15 +91,7 @@ class Parish_Assets {
 
 		/**
 		 * 2) Feature modules (all depend on utils)
-		 *    Make sure these filenames exist in assets/js/.
-		 *    - parish-core-admin-dashboard.js
-		 *    - parish-core-admin-about.js
-		 *    - parish-core-admin-mass-times.js
-		 *    - parish-core-admin-events.js
-		 *    - parish-core-admin-readings.js
-		 *    - parish-core-admin-settings.js
 		 */
-
 		wp_enqueue_script(
 			'parish-admin-dashboard',
 			PARISH_CORE_URL . 'assets/js/parish-core-admin-dashboard.js',
@@ -132,6 +124,15 @@ class Parish_Assets {
 			true
 		);
 
+		// Slider module - depends on utils for shared components
+		wp_enqueue_script(
+			'parish-admin-slider',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-slider.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
 		wp_enqueue_script(
 			'parish-admin-readings',
 			PARISH_CORE_URL . 'assets/js/parish-core-admin-readings.js',
@@ -150,7 +151,6 @@ class Parish_Assets {
 
 		/**
 		 * 3) Router & bootstrap (loads last, depends on all modules)
-		 *    File: assets/js/parish-core-admin-app.js
 		 */
 		wp_enqueue_script(
 			'parish-admin-app',
@@ -161,6 +161,7 @@ class Parish_Assets {
 				'parish-admin-about',
 				'parish-admin-mass-times',
 				'parish-admin-events',
+				'parish-admin-slider',
 				'parish-admin-readings',
 				'parish-admin-settings',
 			),
@@ -179,8 +180,8 @@ class Parish_Assets {
 			PARISH_CORE_VERSION
 		);
 
-		// Media uploader for About Parish page.
-		if ( $hook === 'parish_page_parish-about' ) {
+		// Media uploader for About Parish and Slider pages.
+		if ( $hook === 'parish_page_parish-about' || $hook === 'parish_page_parish-slider' ) {
 			wp_enqueue_media();
 		}
 	}
@@ -196,6 +197,7 @@ class Parish_Assets {
 			'parish_page_parish-about',
 			'parish_page_parish-mass-times',
 			'parish_page_parish-events',
+			'parish_page_parish-slider',
 			'parish_page_parish-readings',
 			'parish_page_parish-settings',
 		);
@@ -214,6 +216,7 @@ class Parish_Assets {
 			'parish_page_parish-about'      => 'about',
 			'parish_page_parish-mass-times' => 'mass-times',
 			'parish_page_parish-events'     => 'events',
+			'parish_page_parish-slider'     => 'slider',
 			'parish_page_parish-readings'   => 'readings',
 			'parish_page_parish-settings'   => 'settings',
 		);
@@ -225,11 +228,46 @@ class Parish_Assets {
 	 * Enqueue front-end assets.
 	 */
 	public function enqueue_front_assets(): void {
+		// Main front-end styles.
 		wp_enqueue_style(
 			'parish-front',
 			PARISH_CORE_URL . 'assets/css/front.css',
 			array(),
 			PARISH_CORE_VERSION
 		);
+
+		// Slider styles - always load on front page or if shortcode detected.
+		global $post;
+		$should_load_slider = false;
+
+		if ( is_front_page() || is_home() ) {
+			$should_load_slider = true;
+		}
+
+		if ( is_a( $post, 'WP_Post' ) ) {
+			if ( has_shortcode( $post->post_content, 'parish_slider' ) ) {
+				$should_load_slider = true;
+			}
+			if ( function_exists( 'has_block' ) && has_block( 'parish-core/slider', $post ) ) {
+				$should_load_slider = true;
+			}
+		}
+
+		if ( $should_load_slider ) {
+			wp_enqueue_style(
+				'parish-slider',
+				PARISH_CORE_URL . 'assets/css/slider.css',
+				array(),
+				PARISH_CORE_VERSION
+			);
+
+			wp_enqueue_script(
+				'parish-slider',
+				PARISH_CORE_URL . 'assets/js/parish-slider.js',
+				array(),
+				PARISH_CORE_VERSION,
+				true
+			);
+		}
 	}
 }
