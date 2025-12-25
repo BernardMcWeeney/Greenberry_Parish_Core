@@ -1,0 +1,26 @@
+{
+	"name": "parish-core",
+	"version": "4.0.0",
+	"description": "Parish Core WordPress Plugin - Block Bindings for Parish CPTs",
+	"author": "Greenberry",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"start": "wp-scripts start --webpack-src-dir=src --output-path=build",
+		"build": "wp-scripts build --webpack-src-dir=src --output-path=build",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"lint:js": "wp-scripts lint-js src/",
+		"format": "wp-scripts format src/"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.9.0"
+	},
+	"files": [
+		"assets/",
+		"build/",
+		"includes/",
+		"languages/",
+		"parish-core.php",
+		"readme.md",
+		"uninstall.php"
+	]
+}

@@ -1,5 +1,7 @@
 /**
  * Parish Core Admin - Mass Times
+ *
+ * Simple 7-day schedule management for mass times with church and livestream support.
  */
 (function (window) {
 	'use strict';
@@ -10,327 +12,284 @@
 		useEffect,
 		Button,
 		Notice,
-		Modal,
-		SelectControl,
 		TextControl,
-		TextareaControl,
+		SelectControl,
 		ToggleControl,
 		Flex,
 		apiFetch,
-		days,
 		LoadingSpinner,
-		generateId,
 	} = window.ParishCoreAdmin;
 
-	function MassModal(props) {
-		const mass = props.mass;
-		const churches = props.churches || [];
-		const onSave = props.onSave;
-		const onDelete = props.onDelete;
-		const onClose = props.onClose;
+	// Days of the week
+	const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-		const [form, setForm] = useState(mass);
-		const upd = function (k, v) {
-			setForm(function (p) {
-				return Object.assign({}, p, { [k]: v });
-			});
-		};
+	// Event types
+	const EVENT_TYPES = [
+		{ label: 'Mass', value: 'mass' },
+		{ label: 'Confession', value: 'confession' },
+		{ label: 'Adoration', value: 'adoration' },
+		{ label: 'Rosary', value: 'rosary' },
+		{ label: 'Stations of the Cross', value: 'stations' },
+		{ label: 'Benediction', value: 'benediction' },
+		{ label: 'Vespers', value: 'vespers' },
+		{ label: 'Novena', value: 'novena' },
+		{ label: 'Other', value: 'other' },
+	];
 
-		return el(
-			Modal,
-			{ title: 'Mass Time', onRequestClose: onClose, className: 'parish-modal' },
-			el(
-				'div',
-				{ className: 'modal-form' },
-				el(SelectControl, {
-					label: 'Day',
-					value: form.day,
-					options: days.map(function (d) {
-						return { label: d, value: d };
-					}),
-					onChange: function (v) {
-						upd('day', v);
-					},
-				}),
-				el(TextControl, {
-					label: 'Time',
-					type: 'time',
-					value: form.time,
-					onChange: function (v) {
-						upd('time', v);
-					},
-				}),
-				churches.length > 0 &&
-					el(SelectControl, {
-						label: 'Church',
-						value: form.church_id,
-						options: [{ label: '-- Select --', value: 0 }].concat(
-							churches.map(function (c) {
-								return { label: c.title, value: c.id };
-							})
-						),
-						onChange: function (v) {
-							upd('church_id', parseInt(v, 10));
-						},
-					}),
-				el(ToggleControl, {
-					label: 'Livestreamed',
-					checked: form.is_livestreamed,
-					onChange: function (v) {
-						upd('is_livestreamed', v);
-					},
-				}),
-				form.is_livestreamed &&
-					el(TextControl, {
-						label: 'Livestream URL',
-						type: 'url',
-						value: form.livestream_url,
-						onChange: function (v) {
-							upd('livestream_url', v);
-						},
-					}),
-				el(TextareaControl, {
-					label: 'Notes',
-					value: form.notes,
-					rows: 2,
-					onChange: function (v) {
-						upd('notes', v);
-					},
-				}),
-				el(ToggleControl, {
-					label: 'Active',
-					checked: form.active,
-					onChange: function (v) {
-						upd('active', v);
-					},
-				})
-			),
-			el(
-				'div',
-				{ className: 'modal-actions' },
-				el(
-					Flex,
-					{ justify: 'space-between' },
-					el(
-						Button,
-						{ isDestructive: true, onClick: onDelete },
-						'Delete'
+	/**
+	 * Time slot component with church selector and livestream toggle
+	 */
+	function TimeSlot(props) {
+		var slot = props.slot;
+		var churches = props.churches || [];
+		var onUpdate = props.onUpdate;
+		var onRemove = props.onRemove;
+
+		// Build church options
+		var churchOptions = [{ label: 'All Churches', value: '' }].concat(
+			churches.map(function (church) {
+				return {
+					label: church.title.rendered || '(Untitled)',
+					value: String(church.id),
+				};
+			})
+		);
+
+		return el('div', { className: 'time-slot' },
+			el('div', { className: 'time-slot-row' },
+				el(Flex, { gap: 2, align: 'center', wrap: true },
+					el('div', { className: 'time-input' },
+						el(TextControl, {
+							type: 'time',
+							value: slot.time || '',
+							onChange: function (val) { onUpdate({ ...slot, time: val }); },
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
+						})
 					),
-					el(
-						Flex,
-						{ gap: 2 },
-						el(
-							Button,
-							{ isSecondary: true, onClick: onClose },
-							'Cancel'
-						),
-						el(
-							Button,
-							{
-								isPrimary: true,
-								onClick: function () {
-									onSave(form);
-								},
-							},
-							'Save'
-						)
+					el('div', { className: 'type-select' },
+						el(SelectControl, {
+							value: slot.type || 'mass',
+							options: EVENT_TYPES,
+							onChange: function (val) { onUpdate({ ...slot, type: val }); },
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
+						})
+					),
+					churches.length > 0 && el('div', { className: 'church-select' },
+						el(SelectControl, {
+							value: slot.church_id || '',
+							options: churchOptions,
+							onChange: function (val) { onUpdate({ ...slot, church_id: val }); },
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
+						})
+					),
+					el(Button, {
+						isDestructive: true,
+						isSmall: true,
+						onClick: onRemove,
+						icon: 'trash',
+						label: 'Remove',
+					})
+				)
+			),
+			el('div', { className: 'time-slot-row time-slot-options' },
+				el(Flex, { gap: 4, align: 'center', wrap: true },
+					el('div', { className: 'notes-input' },
+						el(TextControl, {
+							placeholder: 'Notes (e.g., Latin Mass, First Friday)',
+							value: slot.notes || '',
+							onChange: function (val) { onUpdate({ ...slot, notes: val }); },
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
+						})
+					),
+					el('div', { className: 'livestream-toggle' },
+						el(ToggleControl, {
+							label: 'Livestream',
+							checked: slot.livestream || false,
+							onChange: function (val) { onUpdate({ ...slot, livestream: val }); },
+							__nextHasNoMarginBottom: true,
+						})
 					)
 				)
 			)
 		);
 	}
 
-	function MassTimes() {
-		const [massTimes, setMassTimes] = useState([]);
-		const [churches, setChurches] = useState([]);
-		const [loading, setLoading] = useState(true);
-		const [saving, setSaving] = useState(false);
-		const [notice, setNotice] = useState(null);
-		const [editing, setEditing] = useState(null);
+	/**
+	 * Day schedule component
+	 */
+	function DaySchedule(props) {
+		var day = props.day;
+		var slots = props.slots || [];
+		var churches = props.churches || [];
+		var onUpdate = props.onUpdate;
 
-		useEffect(function () {
-			apiFetch({ path: '/parish/v1/mass-times' })
-				.then(function (res) {
-					setMassTimes(res.mass_times || []);
-					setChurches(res.churches || []);
-					setLoading(false);
-				})
-				.catch(function () {
-					setLoading(false);
-				});
-		}, []);
-
-		const save = function () {
-			setSaving(true);
-			apiFetch({
-				path: '/parish/v1/mass-times',
-				method: 'POST',
-				data: { mass_times: massTimes },
-			})
-				.then(function () {
-					setSaving(false);
-					setNotice({ type: 'success', message: 'Saved!' });
-				})
-				.catch(function (err) {
-					setSaving(false);
-					setNotice({ type: 'error', message: err.message });
-				});
-		};
-
-		const add = function () {
-			setEditing({
-				id: generateId(),
-				day: 'Sunday',
-				time: '10:00',
-				church_id: 0,
-				is_recurring: true,
-				recurrence_type: 'weekly',
-				is_livestreamed: false,
-				livestream_url: '',
+		function addSlot() {
+			var newSlots = slots.concat([{
+				time: '09:00',
+				type: 'mass',
+				church_id: '',
 				notes: '',
-				active: true,
+				livestream: false,
+			}]);
+			onUpdate(newSlots);
+		}
+
+		function updateSlot(index, newSlot) {
+			var newSlots = slots.map(function (s, i) {
+				return i === index ? newSlot : s;
 			});
-		};
+			onUpdate(newSlots);
+		}
 
-		const saveMass = function (mass) {
-			const idx = massTimes.findIndex(function (m) {
-				return m.id === mass.id;
+		function removeSlot(index) {
+			var newSlots = slots.filter(function (_, i) {
+				return i !== index;
 			});
-			if (idx >= 0) {
-				const u = massTimes.slice();
-				u[idx] = mass;
-				setMassTimes(u);
-			} else {
-				setMassTimes(massTimes.concat([mass]));
-			}
-			setEditing(null);
-		};
+			onUpdate(newSlots);
+		}
 
-		const deleteMass = function (id) {
-			setMassTimes(
-				massTimes.filter(function (m) {
-					return m.id !== id;
-				})
-			);
-		};
-
-		if (loading) return el(LoadingSpinner, { text: 'Loading...' });
-
-		var byDay = {};
-		days.forEach(function (d) {
-			byDay[d] = [];
-		});
-		massTimes.forEach(function (mt) {
-			if (byDay[mt.day]) byDay[mt.day].push(mt);
-		});
-
-		return el(
-			'div',
-			{ className: 'parish-mass-times-page' },
-			notice &&
-				el(
-					Notice,
-					{
-						status: notice.type,
-						isDismissible: true,
-						onRemove: function () {
-							setNotice(null);
-						},
-					},
-					notice.message
-				),
-			el(
-				'div',
-				{ className: 'page-header' },
-				el(
-					'p',
-					{ className: 'description' },
-					'Click on a mass time to edit. Click "Save All" to persist changes.'
-				),
-				el(
-					Button,
-					{ isPrimary: true, onClick: add },
-					'+ Add Mass Time'
-				)
+		return el('div', { className: 'day-schedule' },
+			el('div', { className: 'day-header' },
+				el('h4', null, day),
+				el(Button, {
+					isSecondary: true,
+					isSmall: true,
+					onClick: addSlot,
+				}, '+ Add Time')
 			),
-			el(
-				'div',
-				{ className: 'mass-times-grid' },
-				days.map(function (day) {
-					return el(
-						'div',
-						{ key: day, className: 'mass-day-column' },
-						el('h3', null, day),
-						byDay[day].length === 0
-							? el(
-									'p',
-									{ className: 'no-masses' },
-									'No masses'
-							  )
-							: byDay[day].map(function (mass) {
-									var church = churches.find(function (c) {
-										return c.id === mass.church_id;
-									});
-									return el(
-										'div',
-										{
-											key: mass.id,
-											className:
-												'mass-item' +
-												(mass.active ? '' : ' inactive'),
-											onClick: function () {
-												setEditing(mass);
-											},
-										},
-										el(
-											'div',
-											{ className: 'mass-time' },
-											mass.time
-										),
-										church &&
-											el(
-												'div',
-												{ className: 'mass-church' },
-												church.title
-											),
-										mass.is_livestreamed &&
-											el(
-												'span',
-												{ className: 'livestream-badge' },
-												'📺'
-											)
-									);
-							  })
-					);
-				})
-			),
-			editing &&
-				el(MassModal, {
-					mass: editing,
-					churches: churches,
-					onSave: saveMass,
-					onDelete: function () {
-						deleteMass(editing.id);
-						setEditing(null);
-					},
-					onClose: function () {
-						setEditing(null);
-					},
-				}),
-			el(
-				'div',
-				{ className: 'parish-save-bar' },
-				el(
-					Button,
-					{ isPrimary: true, isBusy: saving, onClick: save },
-					saving ? 'Saving...' : 'Save All'
-				)
+			el('div', { className: 'day-slots' },
+				slots.length === 0
+					? el('p', { className: 'no-times' }, 'No times scheduled')
+					: slots.map(function (slot, index) {
+						return el(TimeSlot, {
+							key: day + '-' + index,
+							slot: slot,
+							churches: churches,
+							onUpdate: function (s) { updateSlot(index, s); },
+							onRemove: function () { removeSlot(index); },
+						});
+					})
 			)
 		);
 	}
 
+	/**
+	 * Main Mass Times component
+	 */
+	function MassTimes() {
+		var stateSchedule = useState({});
+		var schedule = stateSchedule[0];
+		var setSchedule = stateSchedule[1];
+
+		var stateChurches = useState([]);
+		var churches = stateChurches[0];
+		var setChurches = stateChurches[1];
+
+		var stateLoading = useState(true);
+		var loading = stateLoading[0];
+		var setLoading = stateLoading[1];
+
+		var stateSaving = useState(false);
+		var saving = stateSaving[0];
+		var setSaving = stateSaving[1];
+
+		var stateNotice = useState(null);
+		var notice = stateNotice[0];
+		var setNotice = stateNotice[1];
+
+		// Load schedule and churches on mount
+		useEffect(function () {
+			Promise.all([
+				apiFetch({ path: '/parish/v1/settings' }),
+				apiFetch({ path: '/wp/v2/parish_church?per_page=100&_fields=id,title' }).catch(function () { return []; }),
+			])
+				.then(function (results) {
+					var settings = results[0];
+					var churchList = results[1];
+					setSchedule(settings.mass_times_schedule || {});
+					setChurches(churchList || []);
+					setLoading(false);
+				})
+				.catch(function (err) {
+					console.error('Failed to load data:', err);
+					setSchedule({});
+					setChurches([]);
+					setLoading(false);
+				});
+		}, []);
+
+		function updateDay(day, slots) {
+			var newSchedule = Object.assign({}, schedule);
+			newSchedule[day] = slots;
+			setSchedule(newSchedule);
+		}
+
+		function saveSchedule() {
+			setSaving(true);
+			setNotice(null);
+
+			apiFetch({
+				path: '/parish/v1/settings',
+				method: 'POST',
+				data: { mass_times_schedule: schedule },
+			})
+				.then(function () {
+					setNotice({ type: 'success', message: 'Schedule saved successfully!' });
+					setSaving(false);
+				})
+				.catch(function (err) {
+					setNotice({ type: 'error', message: 'Failed to save: ' + (err.message || 'Unknown error') });
+					setSaving(false);
+				});
+		}
+
+		if (loading) {
+			return el(LoadingSpinner, { text: 'Loading schedule...' });
+		}
+
+		return el('div', { className: 'parish-mass-times-page' },
+			el('div', { className: 'page-header' },
+				el('h2', null, 'Mass Times'),
+				el('p', null, 'Configure the weekly mass and service schedule. Use the shortcode [parish_mass_times] to display on your site.'),
+				churches.length > 0 && el('p', { className: 'church-count' },
+					churches.length + ' church' + (churches.length !== 1 ? 'es' : '') + ' available for assignment.'
+				)
+			),
+
+			notice && el(Notice, {
+				status: notice.type,
+				isDismissible: true,
+				onRemove: function () { setNotice(null); },
+			}, notice.message),
+
+			el('div', { className: 'schedule-grid' },
+				DAYS.map(function (day) {
+					return el(DaySchedule, {
+						key: day,
+						day: day,
+						slots: schedule[day] || [],
+						churches: churches,
+						onUpdate: function (slots) { updateDay(day, slots); },
+					});
+				})
+			),
+
+			el('div', { className: 'parish-save-bar' },
+				el(Button, {
+					isPrimary: true,
+					isBusy: saving,
+					disabled: saving,
+					onClick: saveSchedule,
+				}, saving ? 'Saving...' : 'Save Schedule')
+			)
+		);
+	}
+
+	// Export
 	window.ParishCoreAdmin = window.ParishCoreAdmin || {};
-	Object.assign(window.ParishCoreAdmin, {
-		MassTimes,
-	});
+	window.ParishCoreAdmin.MassTimes = MassTimes;
 })(window);

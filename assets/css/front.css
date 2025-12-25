@@ -66,14 +66,41 @@
 }
 
 /* Mass times headings */
-.parish-mass-times .mass-day { margin-bottom: 1em; }
-.parish-mass-times h4 { margin: 0.5em 0; font-size: 1.05em; font-weight: 600; }
-.parish-mass-times .livestream-badge {
-	font-size: 0.8em;
-	color: #c00;
+.parish-mass-times .mass-day { margin-bottom: 1.5em; }
+.parish-mass-times .mass-day:last-child { margin-bottom: 0; }
+.parish-mass-times h4 {
+	margin: 0 0 0.5em 0;
+	font-size: 1.1em;
 	font-weight: 600;
-	background: none;
-	padding: 0;
+	padding-bottom: 0.25em;
+	border-bottom: 2px solid #2271b1;
+}
+.parish-mass-times .event-type {
+	display: inline-block;
+	padding: 2px 8px;
+	background: #e8f4fc;
+	color: #2271b1;
+	border-radius: 4px;
+	font-size: 0.85em;
+	font-weight: 500;
+	margin-left: 0.5em;
+}
+.parish-mass-times .event-church {
+	display: inline-block;
+	font-size: 0.85em;
+	color: #666;
+	margin-left: 0.5em;
+}
+.parish-mass-times .event-notes {
+	font-size: 0.85em;
+	color: #888;
+	margin-left: 0.25em;
+}
+.parish-mass-times .livestream-badge {
+	display: inline-block;
+	font-size: 0.85em;
+	margin-left: 0.5em;
+	cursor: help;
 }
 
 /* Events extras */
@@ -410,6 +437,319 @@
 #luminous h3 { border-bottom-color: #87CEEB; }
 
 /* ==========================================================================
+   SCHEDULE SHORTCODES
+   ========================================================================== */
+.parish-schedule,
+.parish-weekly-schedule,
+.parish-today-schedule {
+	margin: 1.5em 0;
+	font-size: 1rem;
+	line-height: 1.6;
+}
+
+/* Schedule Day */
+.parish-schedule .schedule-day,
+.parish-weekly-schedule .schedule-day {
+	margin-bottom: 1.5em;
+}
+
+.parish-schedule .schedule-day:last-child,
+.parish-weekly-schedule .schedule-day:last-child {
+	margin-bottom: 0;
+}
+
+.parish-schedule .schedule-day.is-today,
+.parish-weekly-schedule .schedule-day.is-today {
+	background: #f0f7fc;
+	border-radius: 8px;
+	padding: 1em;
+	margin-left: -1em;
+	margin-right: -1em;
+}
+
+/* Day Header */
+.parish-schedule .day-header,
+.parish-weekly-schedule .day-header {
+	display: flex;
+	align-items: center;
+	gap: 0.75em;
+	margin: 0 0 0.75em 0;
+	font-size: 1.1em;
+	font-weight: 600;
+	color: #1d2327;
+	padding-bottom: 0.5em;
+	border-bottom: 2px solid #2271b1;
+}
+
+.parish-schedule .day-date,
+.parish-weekly-schedule .day-date {
+	font-weight: 400;
+	color: #666;
+	font-size: 0.9em;
+}
+
+.parish-schedule .today-badge,
+.parish-weekly-schedule .today-badge,
+.parish-today-schedule .today-badge {
+	display: inline-block;
+	padding: 2px 10px;
+	background: #2271b1;
+	color: #fff;
+	font-size: 0.75em;
+	border-radius: 4px;
+	font-weight: 500;
+}
+
+/* Feast Day */
+.feast-day-header,
+.feast-day-info {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin-bottom: 0.75em;
+	padding: 0.5em 0.75em;
+	background: #f9f9f9;
+	border-radius: 6px;
+	font-size: 0.95em;
+}
+
+.feast-color {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	border: 2px solid rgba(0, 0, 0, 0.1);
+	flex-shrink: 0;
+}
+
+.feast-title {
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.feast-rank {
+	font-size: 0.85em;
+	color: #666;
+}
+
+/* Today's Schedule */
+.parish-today-schedule .today-header {
+	margin: 0 0 1em 0;
+	font-size: 1.2em;
+	font-weight: 600;
+}
+
+.parish-today-schedule .today-date {
+	color: #1d2327;
+}
+
+/* Schedule Events List */
+.schedule-events {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.schedule-events li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75em;
+	padding: 0.75em 0;
+	border-bottom: 1px solid #eee;
+}
+
+.schedule-events li:last-child {
+	border-bottom: none;
+}
+
+.schedule-events li.cancelled {
+	opacity: 0.5;
+	text-decoration: line-through;
+}
+
+.schedule-events .event-time {
+	font-weight: 600;
+	color: #2271b1;
+	min-width: 80px;
+}
+
+.schedule-events .event-type {
+	display: inline-block;
+	padding: 2px 10px;
+	background: #e8f4fc;
+	color: #2271b1;
+	border-radius: 4px;
+	font-size: 0.9em;
+	font-weight: 500;
+}
+
+.schedule-events .event-title {
+	color: #1d2327;
+}
+
+.schedule-events .event-location {
+	color: #666;
+	font-size: 0.9em;
+}
+
+.schedule-events .event-intention {
+	font-size: 0.9em;
+	color: #666;
+}
+
+.schedule-events .livestream-badge {
+	font-size: 0.85em;
+}
+
+.schedule-events .cancelled-badge {
+	font-size: 0.75em;
+	background: #dc3545;
+	color: #fff;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-weight: 500;
+}
+
+.parish-schedule-empty,
+.parish-schedule-error {
+	text-align: center;
+	font-style: italic;
+	color: #666;
+	padding: 2em;
+}
+
+.no-events {
+	font-style: italic;
+	color: #666;
+}
+
+/* Schedule Table Format */
+.parish-schedule-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1em 0;
+}
+
+.parish-schedule-table th,
+.parish-schedule-table td {
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid #eee;
+}
+
+.parish-schedule-table th {
+	background: #f5f5f5;
+	font-weight: 600;
+	font-size: 0.9em;
+	color: #666;
+}
+
+.parish-schedule-table tr.cancelled {
+	opacity: 0.5;
+	text-decoration: line-through;
+}
+
+.parish-schedule-table .livestream-badge {
+	font-size: 0.85em;
+}
+
+/* Schedule Cards Format */
+.parish-schedule-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 1em;
+	margin: 1em 0;
+}
+
+.schedule-card {
+	display: flex;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden;
+	transition: box-shadow 0.2s;
+}
+
+.schedule-card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-card.cancelled {
+	opacity: 0.5;
+}
+
+.schedule-card .card-time {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 80px;
+	padding: 1em;
+	background: #2271b1;
+	color: #fff;
+	font-weight: 600;
+	font-size: 1.1em;
+}
+
+.schedule-card .card-content {
+	flex: 1;
+	padding: 1em;
+}
+
+.schedule-card .card-type {
+	font-size: 0.85em;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: 0.25em;
+}
+
+.schedule-card .card-title {
+	font-weight: 600;
+	color: #1d2327;
+	margin-bottom: 0.25em;
+}
+
+.schedule-card .card-location {
+	font-size: 0.9em;
+	color: #666;
+}
+
+.schedule-card .card-intention {
+	font-size: 0.9em;
+	color: #666;
+	margin-top: 0.5em;
+}
+
+.schedule-card .livestream-link {
+	display: inline-block;
+	margin-top: 0.5em;
+	color: #dc3545;
+	font-size: 0.9em;
+	text-decoration: none;
+}
+
+.schedule-card .livestream-link:hover {
+	text-decoration: underline;
+}
+
+/* Schedule Simple Format */
+.parish-schedule-simple {
+	list-style: none;
+	margin: 1em 0;
+	padding: 0;
+}
+
+.parish-schedule-simple li {
+	padding: 0.5em 0;
+	border-bottom: 1px solid #eee;
+}
+
+.parish-schedule-simple li:last-child {
+	border-bottom: none;
+}
+
+/* ==========================================================================
    RESPONSIVE ADJUSTMENTS
    ========================================================================== */
 @media (max-width: 600px) {
@@ -420,4 +760,58 @@
 	.rosary-schedule-table td,
 	.rosary-week-table th,
 	.rosary-week-table td { padding: 10px; }
+
+	/* Schedule responsive */
+	.parish-schedule-cards {
+		grid-template-columns: 1fr;
+	}
+
+	.schedule-events li {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.25em;
+	}
+
+	.schedule-events .event-time {
+		min-width: auto;
+	}
+
+	.parish-schedule .schedule-day.is-today,
+	.parish-weekly-schedule .schedule-day.is-today {
+		margin-left: 0;
+		margin-right: 0;
+	}
+}
+
+
+/* ==========================================================================
+   LEGACY SCHEDULE SECTIONS
+   ========================================================================== */
+/* Hide legacy schedule sections by default - shown only when schedule_display is static */
+.church-legacy-schedule {
+	display: none;
+}
+
+/* Static schedule display when explicitly set */
+.parish-church-schedule-static {
+	padding: 20px 0;
+}
+
+.parish-church-schedule-static .schedule-section {
+	margin-bottom: 24px;
+}
+
+.parish-church-schedule-static .schedule-section:last-child {
+	margin-bottom: 0;
+}
+
+.parish-church-schedule-static h3 {
+	font-size: 1.1em;
+	margin-bottom: 8px;
+	color: var(--parish-text-dark, #333);
+}
+
+.parish-church-schedule-static .schedule-content {
+	line-height: 1.8;
+	color: var(--parish-text-color, #555);
 }

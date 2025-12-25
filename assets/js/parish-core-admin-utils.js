@@ -16,6 +16,7 @@
 	var render = wpElement.render;
 	var useState = wpElement.useState;
 	var useEffect = wpElement.useEffect;
+	var useCallback = wpElement.useCallback;
 	var Fragment = wpElement.Fragment;
 
 	var Panel = wpComponents.Panel;
@@ -109,6 +110,7 @@
 		render: render,
 		useState: useState,
 		useEffect: useEffect,
+		useCallback: useCallback,
 		Fragment: Fragment,
 
 		// WP components

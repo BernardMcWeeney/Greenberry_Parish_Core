@@ -1,28 +1,32 @@
 /**
  * Parish Core Admin - Slider Management
- * Properly integrates with ParishCoreAdmin pattern
+ * Full-featured slider settings with rosary images, CTA colors, and all dynamic sources
  */
 (function (window) {
 	'use strict';
 
-	const {
-		el,
-		useState,
-		useEffect,
-		Fragment,
-		Panel,
-		PanelBody,
-		TextControl,
-		TextareaControl,
-		ToggleControl,
-		SelectControl,
-		Button,
-		Notice,
-		Modal,
-		Spinner,
-		apiFetch,
-		generateId,
-	} = window.ParishCoreAdmin;
+	var ParishCoreAdmin = window.ParishCoreAdmin;
+	if (!ParishCoreAdmin) {
+		console.error('ParishCoreAdmin not loaded');
+		return;
+	}
+
+	var el = ParishCoreAdmin.el;
+	var useState = ParishCoreAdmin.useState;
+	var useEffect = ParishCoreAdmin.useEffect;
+	var Fragment = ParishCoreAdmin.Fragment;
+	var Panel = ParishCoreAdmin.Panel;
+	var PanelBody = ParishCoreAdmin.PanelBody;
+	var TextControl = ParishCoreAdmin.TextControl;
+	var TextareaControl = ParishCoreAdmin.TextareaControl;
+	var ToggleControl = ParishCoreAdmin.ToggleControl;
+	var SelectControl = ParishCoreAdmin.SelectControl;
+	var Button = ParishCoreAdmin.Button;
+	var Notice = ParishCoreAdmin.Notice;
+	var Modal = ParishCoreAdmin.Modal;
+	var Spinner = ParishCoreAdmin.Spinner;
+	var apiFetch = ParishCoreAdmin.apiFetch;
+	var generateId = ParishCoreAdmin.generateId;
 
 	// Loading spinner component
 	function LoadingSpinner(props) {
@@ -39,12 +43,12 @@
 		return el('span', { className: 'dashicons dashicons-' + props.icon });
 	}
 
-	// Range control component (simple implementation)
+	// Range control component
 	function RangeControl(props) {
 		return el(
 			'div',
 			{ className: 'parish-range-control', style: { marginBottom: '16px' } },
-			el('label', { style: { display: 'block', marginBottom: '8px' } }, props.label),
+			el('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, props.label),
 			el(
 				'div',
 				{ style: { display: 'flex', alignItems: 'center', gap: '12px' } },
@@ -59,12 +63,44 @@
 					},
 					style: { flex: 1 },
 				}),
-				el('span', { style: { minWidth: '60px', textAlign: 'right' } }, props.value)
-			)
+				el('span', { style: { minWidth: '60px', textAlign: 'right', fontSize: '13px' } }, props.value + (props.suffix || ''))
+			),
+			props.help && el('p', { style: { margin: '4px 0 0', color: '#757575', fontSize: '12px' } }, props.help)
 		);
 	}
 
-	// Drag and drop helper
+	// Color picker component
+	function ColorPicker(props) {
+		return el(
+			'div',
+			{ style: { marginBottom: '16px' } },
+			el('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, props.label),
+			el(
+				'div',
+				{ style: { display: 'flex', gap: '8px', alignItems: 'center' } },
+				el('input', {
+					type: 'color',
+					value: props.value || '#000000',
+					onChange: function (e) {
+						props.onChange(e.target.value);
+					},
+					style: { width: '50px', height: '34px', padding: '2px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' },
+				}),
+				el('input', {
+					type: 'text',
+					value: props.value || '',
+					onChange: function (e) {
+						props.onChange(e.target.value);
+					},
+					style: { width: '100px', padding: '6px 8px', border: '1px solid #ddd', borderRadius: '4px' },
+					placeholder: '#000000',
+				})
+			),
+			props.help && el('p', { style: { margin: '4px 0 0', color: '#757575', fontSize: '12px' } }, props.help)
+		);
+	}
+
+	// Array move helper for drag and drop
 	function arrayMove(arr, fromIndex, toIndex) {
 		var newArr = arr.slice();
 		var element = newArr.splice(fromIndex, 1)[0];
@@ -80,12 +116,13 @@
 		var onRemove = props.onRemove;
 		var label = props.label;
 		var help = props.help;
+		var compact = props.compact;
 
 		var hasImage = imageUrl || imageId;
 
 		var openMediaLibrary = function () {
 			var frame = wp.media({
-				title: 'Select Image',
+				title: label || 'Select Image',
 				multiple: false,
 				library: { type: 'image' },
 			});
@@ -98,10 +135,47 @@
 			frame.open();
 		};
 
+		if (compact) {
+			return el(
+				'div',
+				{ className: 'image-upload-compact', style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+				el(
+					'div',
+					{
+						style: {
+							width: '80px',
+							height: '60px',
+							backgroundColor: '#f0f0f0',
+							borderRadius: '4px',
+							overflow: 'hidden',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							flexShrink: 0,
+						},
+					},
+					hasImage
+						? el('img', { src: imageUrl, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover' } })
+						: el(Dashicon, { icon: 'format-image' })
+				),
+				el(
+					'div',
+					{ style: { flex: 1 } },
+					el('div', { style: { fontWeight: '500', marginBottom: '4px' } }, label),
+					el(
+						'div',
+						{ style: { display: 'flex', gap: '8px' } },
+						el(Button, { isSmall: true, isSecondary: true, onClick: openMediaLibrary }, hasImage ? 'Change' : 'Select'),
+						hasImage && el(Button, { isSmall: true, isDestructive: true, onClick: onRemove }, 'Remove')
+					)
+				)
+			);
+		}
+
 		return el(
 			'div',
 			{ className: 'image-upload-field', style: { marginBottom: '16px' } },
-			el('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '600' } }, label),
+			label && el('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, label),
 			hasImage
 				? el(
 						'div',
@@ -112,27 +186,25 @@
 							style: { maxWidth: '200px', height: 'auto', display: 'block', marginBottom: '8px', borderRadius: '4px' },
 						}),
 						el(
-							Button,
-							{
-								isDestructive: true,
-								isSmall: true,
-								onClick: onRemove,
-							},
-							'Remove Image'
+							'div',
+							{ style: { display: 'flex', gap: '8px' } },
+							el(Button, { isSecondary: true, isSmall: true, onClick: openMediaLibrary }, 'Change'),
+							el(Button, { isDestructive: true, isSmall: true, onClick: onRemove }, 'Remove')
 						)
 				  )
-				: el(
-						Button,
-						{
-							isSecondary: true,
-							onClick: openMediaLibrary,
-						},
-						el(Dashicon, { icon: 'upload' }),
-						' Select Image'
-				  ),
-			help && el('p', { className: 'description', style: { marginTop: '4px', color: '#757575' } }, help)
+				: el(Button, { isSecondary: true, onClick: openMediaLibrary }, el(Dashicon, { icon: 'upload' }), ' Select Image'),
+			help && el('p', { className: 'description', style: { marginTop: '4px', color: '#757575', fontSize: '12px' } }, help)
 		);
 	}
+
+	// Source category labels
+	var sourceCategories = {
+		liturgical: { label: 'Liturgical', icon: 'calendar-alt' },
+		content: { label: 'Content', icon: 'admin-post' },
+		sacraments: { label: 'Sacraments', icon: 'heart' },
+		places: { label: 'Places', icon: 'building' },
+		community: { label: 'Community', icon: 'groups' },
+	};
 
 	// Slide Editor Modal
 	function SlideEditorModal(props) {
@@ -146,7 +218,8 @@
 		var setEditedSlide = _state[1];
 
 		var updateField = function (key, value) {
-			setEditedSlide(Object.assign({}, editedSlide, { [key]: value }));
+			setEditedSlide(Object.assign({}, editedSlide, (_a = {}, _a[key] = value, _a)));
+			var _a;
 		};
 
 		var handleSave = function () {
@@ -156,14 +229,25 @@
 		var isManual = editedSlide.type === 'manual';
 		var isDynamic = editedSlide.type === 'dynamic';
 
-		var sourceOptions = [{ label: '-- Select Source --', value: '' }].concat(
-			Object.keys(dynamicSources || {}).map(function (key) {
-				return {
-					label: dynamicSources[key].name,
-					value: key,
-				};
-			})
-		);
+		// Group sources by category
+		var groupedSources = {};
+		Object.keys(dynamicSources || {}).forEach(function (key) {
+			var source = dynamicSources[key];
+			var category = source.category || 'content';
+			if (!groupedSources[category]) {
+				groupedSources[category] = [];
+			}
+			groupedSources[category].push({ key: key, source: source });
+		});
+
+		var sourceOptions = [{ label: '-- Select Source --', value: '' }];
+		Object.keys(groupedSources).forEach(function (category) {
+			var catInfo = sourceCategories[category] || { label: category };
+			sourceOptions.push({ label: '── ' + catInfo.label + ' ──', value: '', disabled: true });
+			groupedSources[category].forEach(function (item) {
+				sourceOptions.push({ label: item.source.name, value: item.key });
+			});
+		});
 
 		return el(
 			Modal,
@@ -175,19 +259,14 @@
 			},
 			el(
 				'div',
-				{ className: 'slide-editor' },
+				{ className: 'slide-editor', style: { maxHeight: '70vh', overflowY: 'auto' } },
 
 				// Slide Type Selection
 				el(
 					'div',
 					{
 						className: 'slide-type-selector',
-						style: {
-							display: 'grid',
-							gridTemplateColumns: '1fr 1fr',
-							gap: '12px',
-							marginBottom: '24px',
-						},
+						style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' },
 					},
 					el(
 						'div',
@@ -243,13 +322,28 @@
 							onChange: function (v) {
 								updateField('source', v);
 							},
-							help: editedSlide.source
-								? dynamicSources[editedSlide.source]?.description
-								: 'Choose what content this slide displays',
 						}),
+						editedSlide.source &&
+							dynamicSources[editedSlide.source] &&
+							el(
+								'p',
+								{ style: { marginTop: '8px', color: '#666', fontSize: '13px' } },
+								el(Dashicon, { icon: dynamicSources[editedSlide.source].icon || 'admin-post' }),
+								' ',
+								dynamicSources[editedSlide.source].description
+							),
 						el(
 							'p',
-							{ style: { marginTop: '12px', padding: '8px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '13px' } },
+							{
+								style: {
+									marginTop: '12px',
+									padding: '8px',
+									backgroundColor: '#fff',
+									borderRadius: '4px',
+									fontSize: '12px',
+									color: '#666',
+								},
+							},
 							el(Dashicon, { icon: 'info' }),
 							' Fields below are optional overrides. Leave blank to use auto-generated content.'
 						)
@@ -261,25 +355,63 @@
 					imageId: editedSlide.image_id,
 					imageUrl: editedSlide.image_url,
 					onSelect: function (id, url) {
-						setEditedSlide(
-							Object.assign({}, editedSlide, {
-								image_id: id,
-								image_url: url,
-							})
-						);
+						setEditedSlide(Object.assign({}, editedSlide, { image_id: id, image_url: url }));
 					},
 					onRemove: function () {
-						setEditedSlide(
-							Object.assign({}, editedSlide, {
-								image_id: 0,
-								image_url: '',
-							})
-						);
+						setEditedSlide(Object.assign({}, editedSlide, { image_id: 0, image_url: '' }));
 					},
 					help: isDynamic ? 'If no image is set, the dynamic source may provide one.' : null,
 				}),
 
-				// Title
+				// Image Display Options
+				el(
+					'div',
+					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' } },
+					el(SelectControl, {
+						label: 'Image Fit',
+						value: editedSlide.image_fit || 'cover',
+						options: [
+							{ label: 'Cover (fill area)', value: 'cover' },
+							{ label: 'Contain (show all)', value: 'contain' },
+							{ label: 'Fill (stretch)', value: 'fill' },
+						],
+						onChange: function (v) {
+							updateField('image_fit', v);
+						},
+					}),
+					el(SelectControl, {
+						label: 'Image Position',
+						value: editedSlide.image_position || 'center',
+						options: [
+							{ label: 'Center', value: 'center' },
+							{ label: 'Top', value: 'top' },
+							{ label: 'Bottom', value: 'bottom' },
+							{ label: 'Left', value: 'left' },
+							{ label: 'Right', value: 'right' },
+						],
+						onChange: function (v) {
+							updateField('image_position', v);
+						},
+					})
+				),
+
+				// Display Mode
+				el(SelectControl, {
+					label: 'Display Mode',
+					value: editedSlide.display_mode || 'full',
+					options: [
+						{ label: 'Full (title, subtitle, description, button)', value: 'full' },
+						{ label: 'Title Only (title + button)', value: 'title' },
+						{ label: 'Image Only (no text)', value: 'image' },
+					],
+					onChange: function (v) {
+						updateField('display_mode', v);
+					},
+					help: 'Choose what content to display on this slide',
+				}),
+
+				// Title (hidden if image only mode)
+				editedSlide.display_mode !== 'image' &&
 				el(TextControl, {
 					label: isManual ? 'Title' : 'Title Override',
 					value: isManual ? editedSlide.title || '' : editedSlide.title_override || '',
@@ -289,7 +421,8 @@
 					placeholder: isDynamic ? 'Leave blank for auto-generated' : 'Enter title',
 				}),
 
-				// Subtitle
+				// Subtitle (hidden if title only or image only)
+				editedSlide.display_mode === 'full' &&
 				el(TextControl, {
 					label: isManual ? 'Subtitle' : 'Subtitle Override',
 					value: isManual ? editedSlide.subtitle || '' : editedSlide.subtitle_override || '',
@@ -299,18 +432,20 @@
 					placeholder: isDynamic ? 'Leave blank for auto-generated' : 'Enter subtitle',
 				}),
 
-				// Description (manual only)
-				isManual &&
-					el(TextareaControl, {
-						label: 'Description',
-						value: editedSlide.description || '',
-						onChange: function (v) {
-							updateField('description', v);
-						},
-						rows: 3,
-					}),
+				// Description (hidden if title only or image only)
+				editedSlide.display_mode === 'full' &&
+				el(TextareaControl, {
+					label: isManual ? 'Description' : 'Description Override',
+					value: isManual ? editedSlide.description || '' : editedSlide.description_override || '',
+					onChange: function (v) {
+						updateField(isManual ? 'description' : 'description_override', v);
+					},
+					rows: 2,
+					placeholder: isDynamic ? 'Leave blank for auto-generated' : 'Enter description',
+				}),
 
-				// CTA Fields
+				// CTA Fields (hidden if image only)
+				editedSlide.display_mode !== 'image' &&
 				el(
 					'div',
 					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' } },
@@ -401,7 +536,7 @@
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'space-between',
-						padding: '12px',
+						padding: '10px 12px',
 						borderBottom: '1px solid #eee',
 						backgroundColor: '#fafafa',
 					},
@@ -410,36 +545,19 @@
 				el(
 					'div',
 					{ style: { display: 'flex', alignItems: 'center', gap: '4px' } },
-					el(
-						Button,
-						{
-							isSmall: true,
-							disabled: isFirst,
-							onClick: onMoveUp,
-							'aria-label': 'Move up',
-						},
-						'↑'
-					),
-					el('span', { style: { padding: '0 8px', fontWeight: '600' } }, index + 1),
-					el(
-						Button,
-						{
-							isSmall: true,
-							disabled: isLast,
-							onClick: onMoveDown,
-							'aria-label': 'Move down',
-						},
-						'↓'
-					)
+					el(Button, { isSmall: true, disabled: isFirst, onClick: onMoveUp, 'aria-label': 'Move up' }, '↑'),
+					el('span', { style: { padding: '0 8px', fontWeight: '600', minWidth: '24px', textAlign: 'center' } }, index + 1),
+					el(Button, { isSmall: true, disabled: isLast, onClick: onMoveDown, 'aria-label': 'Move down' }, '↓')
 				),
 				// Type badge
 				el(
 					'span',
 					{
 						style: {
-							padding: '4px 8px',
+							padding: '3px 8px',
 							borderRadius: '3px',
-							fontSize: '12px',
+							fontSize: '11px',
+							fontWeight: '500',
 							backgroundColor: isManual ? '#e5f0fa' : '#e5fae5',
 							color: isManual ? '#0073aa' : '#008a00',
 						},
@@ -450,27 +568,9 @@
 				el(
 					'div',
 					{ style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-					el(ToggleControl, {
-						checked: slide.enabled !== false,
-						onChange: onToggle,
-					}),
-					el(
-						Button,
-						{
-							isSmall: true,
-							onClick: onEdit,
-						},
-						'Edit'
-					),
-					el(
-						Button,
-						{
-							isSmall: true,
-							isDestructive: true,
-							onClick: onDelete,
-						},
-						'Delete'
-					)
+					el(ToggleControl, { checked: slide.enabled !== false, onChange: onToggle }),
+					el(Button, { isSmall: true, onClick: onEdit }, 'Edit'),
+					el(Button, { isSmall: true, isDestructive: true, onClick: onDelete }, '×')
 				)
 			),
 			// Body
@@ -482,8 +582,8 @@
 					'div',
 					{
 						style: {
-							width: '120px',
-							height: '80px',
+							width: '100px',
+							height: '70px',
 							backgroundColor: '#f0f0f0',
 							borderRadius: '4px',
 							display: 'flex',
@@ -494,44 +594,148 @@
 						},
 					},
 					slide.image_url
-						? el('img', {
-								src: slide.image_url,
-								alt: '',
-								style: { width: '100%', height: '100%', objectFit: 'cover' },
-						  })
-						: el('span', { style: { color: '#999', fontSize: '12px' } }, isManual ? 'No image' : 'Auto')
+						? el('img', { src: slide.image_url, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover' } })
+						: el('span', { style: { color: '#999', fontSize: '11px' } }, isManual ? 'No image' : 'Auto')
 				),
 				// Info
 				el(
 					'div',
-					{ style: { flex: 1 } },
+					{ style: { flex: 1, minWidth: 0 } },
 					el(
 						'h4',
-						{ style: { margin: '0 0 4px 0', fontSize: '14px' } },
+						{ style: { margin: '0 0 4px 0', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
 						isManual ? slide.title || '(No title)' : slide.title_override || '(Auto-generated)'
 					),
 					el(
 						'p',
-						{ style: { margin: 0, color: '#666', fontSize: '13px' } },
+						{ style: { margin: 0, color: '#666', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
 						isManual ? slide.subtitle || '' : slide.subtitle_override || source?.description || ''
-					),
-					slide.cta_text &&
-						el(
-							'span',
-							{
-								style: {
-									display: 'inline-block',
-									marginTop: '8px',
-									padding: '2px 8px',
-									backgroundColor: '#f0f0f0',
-									borderRadius: '3px',
-									fontSize: '12px',
-								},
-							},
-							slide.cta_text
-						)
+					)
 				)
 			)
+		);
+	}
+
+	// Rosary Images Settings Component
+	function RosaryImagesSettings(props) {
+		var rosaryImages = props.rosaryImages || {};
+		var onChange = props.onChange;
+
+		var mysteries = ['Joyful', 'Sorrowful', 'Glorious', 'Luminous'];
+		var descriptions = {
+			Joyful: 'Used when Joyful Mysteries are prayed (Mon, Sat, Advent/Christmas Sun)',
+			Sorrowful: 'Used when Sorrowful Mysteries are prayed (Tue, Fri, Lent Sun)',
+			Glorious: 'Used when Glorious Mysteries are prayed (Wed, Sun)',
+			Luminous: 'Used when Luminous Mysteries are prayed (Thursday)',
+		};
+
+		var updateImage = function (mystery, id, url) {
+			var updated = Object.assign({}, rosaryImages);
+			updated[mystery] = { id: id, url: url };
+			onChange(updated);
+		};
+
+		var removeImage = function (mystery) {
+			var updated = Object.assign({}, rosaryImages);
+			updated[mystery] = { id: 0, url: '' };
+			onChange(updated);
+		};
+
+		return el(
+			'div',
+			{ className: 'rosary-images-settings' },
+			el('p', { style: { marginBottom: '16px', color: '#666' } }, 'Set custom background images for each rosary mystery series. These will be used when the "Today\'s Rosary" dynamic slide is active.'),
+			mysteries.map(function (mystery) {
+				var image = rosaryImages[mystery] || {};
+				return el(
+					'div',
+					{
+						key: mystery,
+						style: { marginBottom: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '4px' },
+					},
+					el(ImageUploadField, {
+						label: mystery + ' Mysteries',
+						imageId: image.id,
+						imageUrl: image.url,
+						onSelect: function (id, url) {
+							updateImage(mystery, id, url);
+						},
+						onRemove: function () {
+							removeImage(mystery);
+						},
+						compact: true,
+					}),
+					el('p', { style: { margin: '8px 0 0 92px', fontSize: '11px', color: '#888' } }, descriptions[mystery])
+				);
+			})
+		);
+	}
+
+	// Season Images Settings Component
+	function SeasonImagesSettings(props) {
+		var seasonImages = props.seasonImages || {};
+		var onChange = props.onChange;
+
+		var seasons = ['Advent', 'Christmas', 'Lent', 'Easter', 'Ordinary Time'];
+		var descriptions = {
+			'Advent': 'Purple season - 4 Sundays before Christmas',
+			'Christmas': 'White season - Christmas Day to Baptism of Jesus',
+			'Lent': 'Purple season - Ash Wednesday to Holy Saturday',
+			'Easter': 'White season - Easter Sunday to Pentecost',
+			'Ordinary Time': 'Green season - time outside special seasons',
+		};
+		var colors = {
+			'Advent': '#8B008B',
+			'Christmas': '#FFD700',
+			'Lent': '#8B008B',
+			'Easter': '#FFD700',
+			'Ordinary Time': '#008000',
+		};
+
+		var updateImage = function (season, id, url) {
+			var updated = Object.assign({}, seasonImages);
+			updated[season] = { id: id, url: url };
+			onChange(updated);
+		};
+
+		var removeImage = function (season) {
+			var updated = Object.assign({}, seasonImages);
+			updated[season] = { id: 0, url: '' };
+			onChange(updated);
+		};
+
+		return el(
+			'div',
+			{ className: 'season-images-settings' },
+			el('p', { style: { marginBottom: '16px', color: '#666' } }, 'Set custom background images for each liturgical season. These will be used when the "Liturgical Season" dynamic slide is active.'),
+			seasons.map(function (season) {
+				var image = seasonImages[season] || {};
+				return el(
+					'div',
+					{
+						key: season,
+						style: { marginBottom: '16px', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '4px' },
+					},
+					el(
+						'div',
+						{ style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' } },
+						el('span', { style: { width: '12px', height: '12px', borderRadius: '50%', backgroundColor: colors[season], flexShrink: 0 } }),
+						el('strong', null, season)
+					),
+					el(ImageUploadField, {
+						imageId: image.id,
+						imageUrl: image.url,
+						onSelect: function (id, url) {
+							updateImage(season, id, url);
+						},
+						onRemove: function () {
+							removeImage(season);
+						},
+						compact: true,
+					}),
+					el('p', { style: { margin: '8px 0 0 92px', fontSize: '11px', color: '#888' } }, descriptions[season])
+				);
+			})
 		);
 	}
 
@@ -566,10 +770,7 @@
 		var setShowAddModal = _state7[1];
 
 		useEffect(function () {
-			Promise.all([
-				apiFetch({ path: '/parish/v1/slider/settings' }),
-				apiFetch({ path: '/parish/v1/slider/sources' }),
-			])
+			Promise.all([apiFetch({ path: '/parish/v1/slider/settings' }), apiFetch({ path: '/parish/v1/slider/sources' })])
 				.then(function (res) {
 					setSettings(res[0] || { enabled: true, slides: [] });
 					setDynamicSources(res[1] || {});
@@ -585,7 +786,9 @@
 		}, []);
 
 		var updateSetting = function (key, value) {
-			setSettings(Object.assign({}, settings, { [key]: value }));
+			var updated = {};
+			updated[key] = value;
+			setSettings(Object.assign({}, settings, updated));
 		};
 
 		var save = function () {
@@ -621,9 +824,7 @@
 		};
 
 		var deleteSlide = function (slideId) {
-			if (!confirm('Are you sure you want to delete this slide?')) {
-				return;
-			}
+			if (!confirm('Delete this slide?')) return;
 			var slides = (settings.slides || []).filter(function (s) {
 				return s.id !== slideId;
 			});
@@ -650,6 +851,7 @@
 		}
 
 		var slides = (settings && settings.slides) || [];
+		var sourceCount = Object.keys(dynamicSources).length;
 
 		return el(
 			'div',
@@ -670,154 +872,19 @@
 				),
 
 			// Description
-			el('p', { className: 'description' }, 'Manage your homepage hero slider with manual and dynamic slides.'),
+			el(
+				'p',
+				{ className: 'description', style: { marginBottom: '20px' } },
+				'Manage your homepage hero slider with ',
+				el('strong', null, sourceCount),
+				' dynamic content sources available.'
+			),
 
 			el(
 				Panel,
 				null,
 
-				// General Settings
-				el(
-					PanelBody,
-					{ title: 'Slider Settings', initialOpen: true },
-					el(ToggleControl, {
-						label: 'Enable Slider',
-						checked: settings.enabled !== false,
-						onChange: function (v) {
-							updateSetting('enabled', v);
-						},
-					}),
-					el(ToggleControl, {
-						label: 'Autoplay',
-						checked: settings.autoplay !== false,
-						onChange: function (v) {
-							updateSetting('autoplay', v);
-						},
-					}),
-					settings.autoplay !== false &&
-						el(RangeControl, {
-							label: 'Autoplay Speed (ms)',
-							value: settings.autoplay_speed || 5000,
-							onChange: function (v) {
-								updateSetting('autoplay_speed', v);
-							},
-							min: 2000,
-							max: 15000,
-							step: 500,
-						}),
-					el(RangeControl, {
-						label: 'Transition Speed (ms)',
-						value: settings.transition_speed || 1000,
-						onChange: function (v) {
-							updateSetting('transition_speed', v);
-						},
-						min: 300,
-						max: 2000,
-						step: 100,
-					}),
-					el(ToggleControl, {
-						label: 'Show Navigation Arrows',
-						checked: settings.show_arrows !== false,
-						onChange: function (v) {
-							updateSetting('show_arrows', v);
-						},
-					}),
-					el(ToggleControl, {
-						label: 'Show Navigation Dots',
-						checked: settings.show_dots !== false,
-						onChange: function (v) {
-							updateSetting('show_dots', v);
-						},
-					}),
-					el(ToggleControl, {
-						label: 'Pause on Hover',
-						checked: settings.pause_on_hover !== false,
-						onChange: function (v) {
-							updateSetting('pause_on_hover', v);
-						},
-					})
-				),
-
-				// Appearance Settings
-				el(
-					PanelBody,
-					{ title: 'Appearance', initialOpen: false },
-					el(RangeControl, {
-						label: 'Height - Desktop (px)',
-						value: settings.height_desktop || 700,
-						onChange: function (v) {
-							updateSetting('height_desktop', v);
-						},
-						min: 300,
-						max: 1000,
-						step: 50,
-					}),
-					el(RangeControl, {
-						label: 'Height - Tablet (px)',
-						value: settings.height_tablet || 500,
-						onChange: function (v) {
-							updateSetting('height_tablet', v);
-						},
-						min: 250,
-						max: 800,
-						step: 50,
-					}),
-					el(RangeControl, {
-						label: 'Height - Mobile (px)',
-						value: settings.height_mobile || 400,
-						onChange: function (v) {
-							updateSetting('height_mobile', v);
-						},
-						min: 200,
-						max: 600,
-						step: 50,
-					}),
-					el(
-						'div',
-						{ style: { marginBottom: '16px' } },
-						el('label', { style: { display: 'block', marginBottom: '8px' } }, 'Overlay Color'),
-						el(
-							'div',
-							{ style: { display: 'flex', gap: '8px' } },
-							el('input', {
-								type: 'color',
-								value: settings.overlay_color || '#4A8391',
-								onChange: function (e) {
-									updateSetting('overlay_color', e.target.value);
-								},
-								style: { width: '50px', height: '30px', padding: 0, border: '1px solid #ddd' },
-							}),
-							el('input', {
-								type: 'text',
-								value: settings.overlay_color || '#4A8391',
-								onChange: function (e) {
-									updateSetting('overlay_color', e.target.value);
-								},
-								style: { width: '100px' },
-							})
-						)
-					),
-					el(RangeControl, {
-						label: 'Overlay Opacity (%)',
-						value: Math.round((settings.overlay_opacity || 0.7) * 100),
-						onChange: function (v) {
-							updateSetting('overlay_opacity', v / 100);
-						},
-						min: 0,
-						max: 100,
-						step: 5,
-					}),
-					el(ToggleControl, {
-						label: 'Use Gradient Overlay',
-						checked: settings.overlay_gradient !== false,
-						onChange: function (v) {
-							updateSetting('overlay_gradient', v);
-						},
-						help: 'Creates a gradient that fades from overlay color to transparent',
-					})
-				),
-
-				// Slides Management
+				// Slides Management - First for prominence
 				el(
 					PanelBody,
 					{ title: 'Slides (' + slides.length + ')', initialOpen: true },
@@ -848,7 +915,8 @@
 									},
 								},
 								el(Dashicon, { icon: 'images-alt2' }),
-								el('p', null, 'No slides yet. Add your first slide to get started.')
+								el('p', { style: { margin: '12px 0 0' } }, 'No slides yet. Add your first slide to get started.'),
+								el('p', { style: { margin: '8px 0 0', fontSize: '12px', color: '#666' } }, sourceCount + ' dynamic sources available')
 						  )
 						: el(
 								'div',
@@ -881,6 +949,221 @@
 						  )
 				),
 
+				// General Settings
+				el(
+					PanelBody,
+					{ title: 'Slider Settings', initialOpen: false },
+					el(ToggleControl, {
+						label: 'Enable Slider',
+						checked: settings.enabled !== false,
+						onChange: function (v) {
+							updateSetting('enabled', v);
+						},
+					}),
+					el(ToggleControl, {
+						label: 'Autoplay',
+						checked: settings.autoplay !== false,
+						onChange: function (v) {
+							updateSetting('autoplay', v);
+						},
+					}),
+					settings.autoplay !== false &&
+						el(RangeControl, {
+							label: 'Autoplay Speed',
+							value: settings.autoplay_speed || 5000,
+							onChange: function (v) {
+								updateSetting('autoplay_speed', v);
+							},
+							min: 2000,
+							max: 15000,
+							step: 500,
+							suffix: 'ms',
+						}),
+					el(RangeControl, {
+						label: 'Transition Speed',
+						value: settings.transition_speed || 1000,
+						onChange: function (v) {
+							updateSetting('transition_speed', v);
+						},
+						min: 300,
+						max: 2000,
+						step: 100,
+						suffix: 'ms',
+					}),
+					el(ToggleControl, {
+						label: 'Show Navigation Arrows',
+						checked: settings.show_arrows !== false,
+						onChange: function (v) {
+							updateSetting('show_arrows', v);
+						},
+					}),
+					el(ToggleControl, {
+						label: 'Show Navigation Dots',
+						checked: settings.show_dots !== false,
+						onChange: function (v) {
+							updateSetting('show_dots', v);
+						},
+					}),
+					el(ToggleControl, {
+						label: 'Pause on Hover',
+						checked: settings.pause_on_hover !== false,
+						onChange: function (v) {
+							updateSetting('pause_on_hover', v);
+						},
+					})
+				),
+
+				// Appearance Settings
+				el(
+					PanelBody,
+					{ title: 'Appearance', initialOpen: false },
+					el(RangeControl, {
+						label: 'Height - Desktop',
+						value: settings.height_desktop || 700,
+						onChange: function (v) {
+							updateSetting('height_desktop', v);
+						},
+						min: 400,
+						max: 1000,
+						step: 50,
+						suffix: 'px',
+					}),
+					el(RangeControl, {
+						label: 'Height - Tablet',
+						value: settings.height_tablet || 500,
+						onChange: function (v) {
+							updateSetting('height_tablet', v);
+						},
+						min: 300,
+						max: 800,
+						step: 50,
+						suffix: 'px',
+					}),
+					el(RangeControl, {
+						label: 'Height - Mobile',
+						value: settings.height_mobile || 400,
+						onChange: function (v) {
+							updateSetting('height_mobile', v);
+						},
+						min: 250,
+						max: 600,
+						step: 50,
+						suffix: 'px',
+					}),
+					el(ColorPicker, {
+						label: 'Overlay Color',
+						value: settings.overlay_color || '#4A8391',
+						onChange: function (v) {
+							updateSetting('overlay_color', v);
+						},
+					}),
+					el(RangeControl, {
+						label: 'Overlay Opacity',
+						value: Math.round((settings.overlay_opacity || 0.7) * 100),
+						onChange: function (v) {
+							updateSetting('overlay_opacity', v / 100);
+						},
+						min: 0,
+						max: 100,
+						step: 5,
+						suffix: '%',
+					}),
+					el(ToggleControl, {
+						label: 'Use Gradient Overlay',
+						checked: settings.overlay_gradient !== false,
+						onChange: function (v) {
+							updateSetting('overlay_gradient', v);
+						},
+						help: 'Creates a gradient for better text readability',
+					}),
+					el(ToggleControl, {
+						label: 'Use Liturgical Colors',
+						checked: settings.use_liturgical_color === true,
+						onChange: function (v) {
+							updateSetting('use_liturgical_color', v);
+						},
+						help: 'Dynamic slides like Feast Day will use the liturgical color as overlay',
+					})
+				),
+
+				// CTA Button Settings
+				el(
+					PanelBody,
+					{ title: 'Call to Action Button', initialOpen: false },
+					el(ColorPicker, {
+						label: 'Button Color',
+						value: settings.cta_color || '#d97706',
+						onChange: function (v) {
+							updateSetting('cta_color', v);
+						},
+					}),
+					el(ColorPicker, {
+						label: 'Button Hover Color',
+						value: settings.cta_hover_color || '#b45309',
+						onChange: function (v) {
+							updateSetting('cta_hover_color', v);
+						},
+					}),
+					el(
+						'div',
+						{
+							style: {
+								marginTop: '16px',
+								padding: '12px',
+								backgroundColor: '#f6f7f7',
+								borderRadius: '4px',
+							},
+						},
+						el('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, 'Preview'),
+						el(
+							'a',
+							{
+								href: '#',
+								onClick: function (e) {
+									e.preventDefault();
+								},
+								style: {
+									display: 'inline-flex',
+									alignItems: 'center',
+									gap: '6px',
+									padding: '10px 20px',
+									backgroundColor: settings.cta_color || '#d97706',
+									color: '#fff',
+									textDecoration: 'none',
+									borderRadius: '6px',
+									fontSize: '14px',
+									fontWeight: '600',
+								},
+							},
+							'Learn More →'
+						)
+					)
+				),
+
+				// Rosary Images
+				el(
+					PanelBody,
+					{ title: 'Rosary Mystery Images', initialOpen: false },
+					el(RosaryImagesSettings, {
+						rosaryImages: settings.rosary_images || {},
+						onChange: function (v) {
+							updateSetting('rosary_images', v);
+						},
+					})
+				),
+
+				// Season Images
+				el(
+					PanelBody,
+					{ title: 'Liturgical Season Images', initialOpen: false },
+					el(SeasonImagesSettings, {
+						seasonImages: settings.season_images || {},
+						onChange: function (v) {
+							updateSetting('season_images', v);
+						},
+					})
+				),
+
 				// Shortcode Info
 				el(
 					PanelBody,
@@ -900,7 +1183,35 @@
 						},
 						'[parish_slider]'
 					),
-					el('p', null, 'Or add the "Parish Slider" block in the block editor.')
+					el('p', null, 'Or add the "Parish Slider" block in the block editor.'),
+					el('h4', { style: { marginTop: '20px' } }, 'Available Dynamic Sources (' + sourceCount + ')'),
+					el(
+						'div',
+						{ style: { maxHeight: '200px', overflowY: 'auto' } },
+						Object.keys(dynamicSources).map(function (key) {
+							var source = dynamicSources[key];
+							return el(
+								'div',
+								{
+									key: key,
+									style: {
+										padding: '8px',
+										borderBottom: '1px solid #eee',
+										display: 'flex',
+										alignItems: 'center',
+										gap: '8px',
+									},
+								},
+								el(Dashicon, { icon: source.icon || 'admin-post' }),
+								el(
+									'div',
+									null,
+									el('strong', { style: { fontSize: '13px' } }, source.name),
+									el('div', { style: { fontSize: '11px', color: '#666' } }, source.description)
+								)
+							);
+						})
+					)
 				)
 			),
 

@@ -14,16 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Parish_Core {
 
-	/**
-	 * Singleton instance.
-	 *
-	 * @var Parish_Core|null
-	 */
 	private static ?Parish_Core $instance = null;
 
-	/**
-	 * Get singleton instance.
-	 */
 	public static function instance(): Parish_Core {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -31,106 +23,88 @@ class Parish_Core {
 		return self::$instance;
 	}
 
-	/**
-	 * Constructor.
-	 */
 	private function __construct() {
 		$this->init_components();
 	}
 
-	/**
-	 * Initialize all components.
-	 */
 	private function init_components(): void {
-		// CPT registration.
-		if ( class_exists( 'Parish_CPT' ) ) {
-			Parish_CPT::instance();
+		// CPT registration (registry-based system).
+		if ( class_exists( 'Parish_CPT_Registry' ) ) {
+			Parish_CPT_Registry::instance();
+		}
+
+		// Meta registration (registry-based system) — replaces Parish_Meta.
+		if ( class_exists( 'Parish_Meta_Registry' ) ) {
+			Parish_Meta_Registry::instance();
+		}
+
+		// Blocks (register dynamic blocks, enqueue editor JS, etc.)
+		if ( class_exists( 'Parish_Blocks' ) ) {
+			Parish_Blocks::instance();
+		}
+
+		// Block Bindings (post-meta editable bindings)
+		if ( class_exists( 'Parish_Block_Bindings' ) ) {
+			Parish_Block_Bindings::instance();
+		}
+
+		// Auto-title generation from meta.
+		if ( class_exists( 'Parish_Auto_Title' ) ) {
+			Parish_Auto_Title::instance();
 		}
 
 		if ( class_exists( 'Parish_Slider' ) ) {
 			Parish_Slider::instance();
 		}
 
-		// Meta fields.
-		if ( class_exists( 'Parish_Meta' ) ) {
-			Parish_Meta::instance();
-		}
-
-		// REST API.
 		if ( class_exists( 'Parish_REST_API' ) ) {
 			Parish_REST_API::instance();
 		}
 
-		// Admin UI.
 		if ( class_exists( 'Parish_Admin_UI' ) ) {
 			Parish_Admin_UI::instance();
 		}
 
-		// Shortcodes.
 		if ( class_exists( 'Parish_Shortcodes' ) ) {
 			Parish_Shortcodes::instance();
 		}
 
-		// Assets.
 		if ( class_exists( 'Parish_Assets' ) ) {
 			Parish_Assets::instance();
 		}
 
-		// Readings integration.
 		if ( class_exists( 'Parish_Readings' ) ) {
 			Parish_Readings::instance();
 		}
 
-		// Admin Colors (separate module).
 		if ( class_exists( 'Parish_Admin_Colors' ) ) {
 			Parish_Admin_Colors::instance();
 		}
+
 	}
 
-	/**
-	 * Get all settings.
-	 */
 	public static function get_settings(): array {
 		$defaults = parish_core_get_default_settings();
 		$settings = get_option( 'parish_core_settings', array() );
 		return wp_parse_args( $settings, $defaults );
 	}
 
-	/**
-	 * Get a specific setting.
-	 *
-	 * @param string $key     Setting key.
-	 * @param mixed  $default Default value.
-	 */
 	public static function get_setting( string $key, $default = null ) {
 		$settings = self::get_settings();
 		return $settings[ $key ] ?? $default;
 	}
 
-	/**
-	 * Update settings.
-	 *
-	 * @param array $new_settings Settings to update.
-	 */
 	public static function update_settings( array $new_settings ): bool {
 		$current = self::get_settings();
 		$merged  = array_merge( $current, $new_settings );
 		return update_option( 'parish_core_settings', $merged );
 	}
 
-	/**
-	 * Check if a feature is enabled.
-	 *
-	 * @param string $feature Feature key.
-	 */
 	public static function is_feature_enabled( string $feature ): bool {
 		$key = 'enable_' . $feature;
 		return (bool) self::get_setting( $key, true );
 	}
 
-	/**
-	 * Get all CPT slugs.
-	 */
 	public static function get_post_types(): array {
 		return array(
 			'parish_death_notice',
@@ -145,14 +119,10 @@ class Parish_Core {
 			'parish_gallery',
 			'parish_reflection',
 			'parish_prayer',
+			'parish_travels',
 		);
 	}
 
-	/**
-	 * Get feature key for a post type.
-	 *
-	 * @param string $post_type Post type slug.
-	 */
 	public static function get_feature_key( string $post_type ): string {
 		$map = array(
 			'parish_death_notice' => 'death_notices',
@@ -167,13 +137,12 @@ class Parish_Core {
 			'parish_gallery'      => 'gallery',
 			'parish_reflection'   => 'reflections',
 			'parish_prayer'       => 'prayers',
+			'parish_travels'      => 'travels',
 		);
+
 		return $map[ $post_type ] ?? '';
 	}
 
-	/**
-	 * Get registered modules/features for the dashboard.
-	 */
 	public static function get_modules(): array {
 		return array(
 			'mass_times' => array(

@@ -103,8 +103,66 @@ class Parish_REST_API {
 
 		// Slider Preview (public for frontend).
 		register_rest_route( $this->namespace, '/slider/preview', array(
-			'methods' => 'GET', 
-			'callback' => array( $this, 'get_slider_preview' ), 
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_slider_preview' ),
+			'permission_callback' => '__return_true',
+		));
+
+		// =====================================================================
+		// SCHEDULE SYSTEM (Enhanced Mass Times)
+		// =====================================================================
+
+		// Schedule templates (CRUD).
+		register_rest_route( $this->namespace, '/schedule/templates', array(
+			array( 'methods' => 'GET', 'callback' => array( $this, 'get_schedule_templates' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'POST', 'callback' => array( $this, 'save_schedule_template' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		register_rest_route( $this->namespace, '/schedule/templates/(?P<id>[a-z0-9_]+)', array(
+			array( 'methods' => 'GET', 'callback' => array( $this, 'get_schedule_template' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'PUT', 'callback' => array( $this, 'update_schedule_template' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'DELETE', 'callback' => array( $this, 'delete_schedule_template' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		// Schedule overrides.
+		register_rest_route( $this->namespace, '/schedule/overrides', array(
+			array( 'methods' => 'GET', 'callback' => array( $this, 'get_schedule_overrides' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'POST', 'callback' => array( $this, 'add_schedule_override' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		register_rest_route( $this->namespace, '/schedule/overrides/(?P<id>[a-z0-9_]+)', array(
+			array( 'methods' => 'DELETE', 'callback' => array( $this, 'delete_schedule_override' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		// Generated schedule (public endpoints).
+		register_rest_route( $this->namespace, '/schedule', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_generated_schedule' ),
+			'permission_callback' => '__return_true',
+			'args' => array(
+				'start' => array( 'type' => 'string', 'format' => 'date' ),
+				'end' => array( 'type' => 'string', 'format' => 'date' ),
+				'church_id' => array( 'type' => 'integer' ),
+				'event_type' => array( 'type' => 'string' ),
+			),
+		));
+
+		register_rest_route( $this->namespace, '/schedule/today', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_today_schedule' ),
+			'permission_callback' => '__return_true',
+		));
+
+		register_rest_route( $this->namespace, '/schedule/week', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_week_schedule' ),
+			'permission_callback' => '__return_true',
+		));
+
+		// Event types reference.
+		register_rest_route( $this->namespace, '/schedule/event-types', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_event_types' ),
 			'permission_callback' => '__return_true',
 		));
 	}
@@ -189,7 +247,7 @@ class Parish_REST_API {
 		if ( Parish_Core::is_feature_enabled( 'newsletters' ) ) $defaults[] = array( 'label' => __( 'Add Newsletter', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_newsletter' ), 'icon' => 'media-document' );
 		if ( Parish_Core::is_feature_enabled( 'reflections' ) ) $defaults[] = array( 'label' => __( 'Add Reflection', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_reflection' ), 'icon' => 'format-quote' );
 		if ( Parish_Core::is_feature_enabled( 'death_notices' ) ) $defaults[] = array( 'label' => __( 'Add Death Notice', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_death_notice' ), 'icon' => 'plus-alt' );
-		if ( Parish_Core::is_feature_enabled( 'baptism_notices' ) ) $defaults[] = array( 'label' => __( 'Add Baptism Notice', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_baptism' ), 'icon' => 'baby' );
+		if ( Parish_Core::is_feature_enabled( 'baptism_notices' ) ) $defaults[] = array( 'label' => __( 'Add Baptism Notice', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_baptism' ), 'icon' => 'groups' );
 		if ( Parish_Core::is_feature_enabled( 'wedding_notices' ) ) $defaults[] = array( 'label' => __( 'Add Wedding Notice', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_wedding' ), 'icon' => 'heart' );
 		return $defaults;
 	}
@@ -354,6 +412,24 @@ class Parish_REST_API {
 			}
 		}
 
+		// Enhance rosary images with URLs.
+		if ( ! empty( $settings['rosary_images'] ) ) {
+			foreach ( $settings['rosary_images'] as $key => &$img ) {
+				if ( ! empty( $img['id'] ) && empty( $img['url'] ) ) {
+					$img['url'] = wp_get_attachment_url( $img['id'] );
+				}
+			}
+		}
+
+		// Enhance season images with URLs.
+		if ( ! empty( $settings['season_images'] ) ) {
+			foreach ( $settings['season_images'] as $key => &$img ) {
+				if ( ! empty( $img['id'] ) && empty( $img['url'] ) ) {
+					$img['url'] = wp_get_attachment_url( $img['id'] );
+				}
+			}
+		}
+
 		return rest_ensure_response( $settings );
 	}
 
@@ -367,34 +443,72 @@ class Parish_REST_API {
 
 		// Sanitize settings.
 		$sanitized = array(
-			'enabled'          => isset( $params['enabled'] ) ? (bool) $params['enabled'] : true,
-			'autoplay'         => isset( $params['autoplay'] ) ? (bool) $params['autoplay'] : true,
-			'autoplay_speed'   => isset( $params['autoplay_speed'] ) ? absint( $params['autoplay_speed'] ) : 5000,
-			'transition_speed' => isset( $params['transition_speed'] ) ? absint( $params['transition_speed'] ) : 1000,
-			'show_arrows'      => isset( $params['show_arrows'] ) ? (bool) $params['show_arrows'] : true,
-			'show_dots'        => isset( $params['show_dots'] ) ? (bool) $params['show_dots'] : true,
-			'pause_on_hover'   => isset( $params['pause_on_hover'] ) ? (bool) $params['pause_on_hover'] : true,
-			'height_desktop'   => isset( $params['height_desktop'] ) ? absint( $params['height_desktop'] ) : 700,
-			'height_tablet'    => isset( $params['height_tablet'] ) ? absint( $params['height_tablet'] ) : 500,
-			'height_mobile'    => isset( $params['height_mobile'] ) ? absint( $params['height_mobile'] ) : 400,
-			'overlay_color'    => isset( $params['overlay_color'] ) ? sanitize_hex_color( $params['overlay_color'] ) : '#4A8391',
-			'overlay_opacity'  => isset( $params['overlay_opacity'] ) ? floatval( $params['overlay_opacity'] ) : 0.7,
-			'overlay_gradient' => isset( $params['overlay_gradient'] ) ? (bool) $params['overlay_gradient'] : true,
-			'slides'           => array(),
+			'enabled'              => isset( $params['enabled'] ) ? (bool) $params['enabled'] : true,
+			'autoplay'             => isset( $params['autoplay'] ) ? (bool) $params['autoplay'] : true,
+			'autoplay_speed'       => isset( $params['autoplay_speed'] ) ? absint( $params['autoplay_speed'] ) : 5000,
+			'transition_speed'     => isset( $params['transition_speed'] ) ? absint( $params['transition_speed'] ) : 1000,
+			'show_arrows'          => isset( $params['show_arrows'] ) ? (bool) $params['show_arrows'] : true,
+			'show_dots'            => isset( $params['show_dots'] ) ? (bool) $params['show_dots'] : true,
+			'pause_on_hover'       => isset( $params['pause_on_hover'] ) ? (bool) $params['pause_on_hover'] : true,
+			'height_desktop'       => isset( $params['height_desktop'] ) ? absint( $params['height_desktop'] ) : 700,
+			'height_tablet'        => isset( $params['height_tablet'] ) ? absint( $params['height_tablet'] ) : 500,
+			'height_mobile'        => isset( $params['height_mobile'] ) ? absint( $params['height_mobile'] ) : 400,
+			'overlay_color'        => isset( $params['overlay_color'] ) ? sanitize_hex_color( $params['overlay_color'] ) : '#4A8391',
+			'overlay_opacity'      => isset( $params['overlay_opacity'] ) ? floatval( $params['overlay_opacity'] ) : 0.7,
+			'overlay_gradient'     => isset( $params['overlay_gradient'] ) ? (bool) $params['overlay_gradient'] : true,
+			'use_liturgical_color' => isset( $params['use_liturgical_color'] ) ? (bool) $params['use_liturgical_color'] : false,
+			'cta_color'            => isset( $params['cta_color'] ) ? sanitize_hex_color( $params['cta_color'] ) : '#d97706',
+			'cta_hover_color'      => isset( $params['cta_hover_color'] ) ? sanitize_hex_color( $params['cta_hover_color'] ) : '#b45309',
+			'rosary_images'        => array(),
+			'season_images'        => array(),
+			'slides'               => array(),
 		);
+
+		// Sanitize rosary images.
+		if ( ! empty( $params['rosary_images'] ) && is_array( $params['rosary_images'] ) ) {
+			$mysteries = array( 'Joyful', 'Sorrowful', 'Glorious', 'Luminous' );
+			foreach ( $mysteries as $mystery ) {
+				if ( isset( $params['rosary_images'][ $mystery ] ) ) {
+					$sanitized['rosary_images'][ $mystery ] = array(
+						'id'  => absint( $params['rosary_images'][ $mystery ]['id'] ?? 0 ),
+						'url' => esc_url_raw( $params['rosary_images'][ $mystery ]['url'] ?? '' ),
+					);
+				} else {
+					$sanitized['rosary_images'][ $mystery ] = array( 'id' => 0, 'url' => '' );
+				}
+			}
+		}
+
+		// Sanitize season images.
+		if ( ! empty( $params['season_images'] ) && is_array( $params['season_images'] ) ) {
+			$seasons = array( 'Advent', 'Christmas', 'Lent', 'Easter', 'Ordinary Time' );
+			foreach ( $seasons as $season ) {
+				if ( isset( $params['season_images'][ $season ] ) ) {
+					$sanitized['season_images'][ $season ] = array(
+						'id'  => absint( $params['season_images'][ $season ]['id'] ?? 0 ),
+						'url' => esc_url_raw( $params['season_images'][ $season ]['url'] ?? '' ),
+					);
+				} else {
+					$sanitized['season_images'][ $season ] = array( 'id' => 0, 'url' => '' );
+				}
+			}
+		}
 
 		// Sanitize slides.
 		if ( ! empty( $params['slides'] ) && is_array( $params['slides'] ) ) {
 			foreach ( $params['slides'] as $slide ) {
 				$sanitized_slide = array(
-					'id'         => sanitize_text_field( $slide['id'] ?? '' ),
-					'type'       => in_array( $slide['type'] ?? '', array( 'manual', 'dynamic' ), true ) ? $slide['type'] : 'manual',
-					'enabled'    => isset( $slide['enabled'] ) ? (bool) $slide['enabled'] : true,
-					'image_id'   => absint( $slide['image_id'] ?? 0 ),
-					'image_url'  => esc_url_raw( $slide['image_url'] ?? '' ),
-					'text_align' => in_array( $slide['text_align'] ?? '', array( 'left', 'center', 'right' ), true ) ? $slide['text_align'] : 'left',
-					'cta_text'   => sanitize_text_field( $slide['cta_text'] ?? '' ),
-					'cta_link'   => esc_url_raw( $slide['cta_link'] ?? '' ),
+					'id'             => sanitize_text_field( $slide['id'] ?? '' ),
+					'type'           => in_array( $slide['type'] ?? '', array( 'manual', 'dynamic' ), true ) ? $slide['type'] : 'manual',
+					'enabled'        => isset( $slide['enabled'] ) ? (bool) $slide['enabled'] : true,
+					'image_id'       => absint( $slide['image_id'] ?? 0 ),
+					'image_url'      => esc_url_raw( $slide['image_url'] ?? '' ),
+					'image_fit'      => in_array( $slide['image_fit'] ?? '', array( 'cover', 'contain', 'fill' ), true ) ? $slide['image_fit'] : 'cover',
+					'image_position' => in_array( $slide['image_position'] ?? '', array( 'center', 'top', 'bottom', 'left', 'right' ), true ) ? $slide['image_position'] : 'center',
+					'display_mode'   => in_array( $slide['display_mode'] ?? '', array( 'full', 'title', 'image' ), true ) ? $slide['display_mode'] : 'full',
+					'text_align'     => in_array( $slide['text_align'] ?? '', array( 'left', 'center', 'right' ), true ) ? $slide['text_align'] : 'left',
+					'cta_text'       => sanitize_text_field( $slide['cta_text'] ?? '' ),
+					'cta_link'       => esc_url_raw( $slide['cta_link'] ?? '' ),
 				);
 
 				if ( $sanitized_slide['type'] === 'manual' ) {
@@ -435,6 +549,7 @@ class Parish_REST_API {
 				'name'        => $source['name'],
 				'description' => $source['description'],
 				'icon'        => $source['icon'],
+				'category'    => $source['category'] ?? 'content',
 			);
 		}
 
@@ -478,6 +593,7 @@ class Parish_REST_API {
 			'enable_liturgical' => (bool) ( $s['enable_liturgical'] ?? true ),
 			'enable_slider' => (bool) ( $s['enable_slider'] ?? true ),
 			'readings_api_key' => $s['readings_api_key'] ?? '',
+			'mass_times_schedule' => $s['mass_times_schedule'] ?? array(),
 			'admin_colors_enabled' => (bool) ( $s['admin_colors_enabled'] ?? false ),
 			'admin_color_menu_text' => $s['admin_color_menu_text'] ?? '#ffffff',
 			'admin_color_base_menu' => $s['admin_color_base_menu'] ?? '#1d2327',
@@ -498,8 +614,48 @@ class Parish_REST_API {
 		foreach ( $toggles as $key ) { if ( isset( $params[ $key ] ) ) $sanitized[ $key ] = (bool) $params[ $key ]; }
 		foreach ( $colors as $key ) { if ( isset( $params[ $key ] ) ) $sanitized[ $key ] = sanitize_hex_color( $params[ $key ] ) ?: '#1d2327'; }
 		if ( isset( $params['readings_api_key'] ) ) $sanitized['readings_api_key'] = sanitize_text_field( $params['readings_api_key'] );
+
+		// Handle mass times schedule (simple 7-day format).
+		if ( isset( $params['mass_times_schedule'] ) && is_array( $params['mass_times_schedule'] ) ) {
+			$sanitized['mass_times_schedule'] = $this->sanitize_mass_times_schedule( $params['mass_times_schedule'] );
+		}
+
 		Parish_Core::update_settings( $sanitized );
 		return rest_ensure_response( array( 'success' => true, 'message' => __( 'Settings saved.', 'parish-core' ) ) );
+	}
+
+	/**
+	 * Sanitize mass times schedule data.
+	 */
+	private function sanitize_mass_times_schedule( array $schedule ): array {
+		$days = array( 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' );
+		$sanitized = array();
+
+		foreach ( $days as $day ) {
+			if ( ! isset( $schedule[ $day ] ) || ! is_array( $schedule[ $day ] ) ) {
+				continue;
+			}
+
+			$day_slots = array();
+			foreach ( $schedule[ $day ] as $slot ) {
+				if ( ! is_array( $slot ) ) {
+					continue;
+				}
+				$day_slots[] = array(
+					'time'       => sanitize_text_field( $slot['time'] ?? '' ),
+					'type'       => sanitize_text_field( $slot['type'] ?? 'mass' ),
+					'church_id'  => sanitize_text_field( $slot['church_id'] ?? '' ),
+					'notes'      => sanitize_text_field( $slot['notes'] ?? '' ),
+					'livestream' => (bool) ( $slot['livestream'] ?? false ),
+				);
+			}
+
+			if ( ! empty( $day_slots ) ) {
+				$sanitized[ $day ] = $day_slots;
+			}
+		}
+
+		return $sanitized;
 	}
 
 	// =========================================================================
@@ -625,6 +781,473 @@ class Parish_REST_API {
 	// =========================================================================
 	public function get_liturgical_data(): \WP_REST_Response {
 		return rest_ensure_response( $this->get_liturgical_info() );
+	}
+
+	// =========================================================================
+	// SCHEDULE SYSTEM CALLBACKS
+	// =========================================================================
+
+	/**
+	 * Get all schedule templates.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_schedule_templates(): \WP_REST_Response {
+		$templates = Parish_Core::get_setting( 'liturgical_schedules', array() );
+
+		// Ensure it's an array.
+		if ( ! is_array( $templates ) ) {
+			$templates = array();
+		}
+
+		// Add church names to each template.
+		foreach ( $templates as &$template ) {
+			if ( ! empty( $template['church_id'] ) ) {
+				$template['church_name'] = get_the_title( $template['church_id'] );
+			}
+		}
+
+		return rest_ensure_response( array(
+			'templates' => array_values( $templates ),
+			'churches'  => $this->get_churches_list(),
+		) );
+	}
+
+	/**
+	 * Save a new schedule template.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function save_schedule_template( \WP_REST_Request $request ): \WP_REST_Response {
+		$params = $request->get_json_params();
+
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => __( 'Schedule system not available.', 'parish-core' ),
+			) );
+		}
+
+		$generator = new Parish_Schedule_Generator();
+		$template  = $this->sanitize_schedule_template( $params );
+
+		// Generate ID if not provided.
+		if ( empty( $template['id'] ) ) {
+			$template['id'] = 'sched_' . wp_generate_password( 8, false, false );
+		}
+
+		$result = $generator->save_template( $template );
+
+		if ( $result ) {
+			return rest_ensure_response( array(
+				'success'  => true,
+				'message'  => __( 'Schedule template saved.', 'parish-core' ),
+				'template' => $template,
+			) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => false,
+			'message' => __( 'Failed to save template.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Get a single schedule template.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function get_schedule_template( \WP_REST_Request $request ): \WP_REST_Response {
+		$id        = $request->get_param( 'id' );
+		$templates = Parish_Core::get_setting( 'liturgical_schedules', array() );
+
+		foreach ( $templates as $template ) {
+			if ( ( $template['id'] ?? '' ) === $id ) {
+				if ( ! empty( $template['church_id'] ) ) {
+					$template['church_name'] = get_the_title( $template['church_id'] );
+				}
+				return rest_ensure_response( $template );
+			}
+		}
+
+		return new \WP_REST_Response( array( 'error' => 'Template not found.' ), 404 );
+	}
+
+	/**
+	 * Update an existing schedule template.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function update_schedule_template( \WP_REST_Request $request ): \WP_REST_Response {
+		$id        = $request->get_param( 'id' );
+		$params    = $request->get_json_params();
+		$templates = Parish_Core::get_setting( 'liturgical_schedules', array() );
+
+		$found = false;
+		foreach ( $templates as $index => $template ) {
+			if ( ( $template['id'] ?? '' ) === $id ) {
+				$updated              = $this->sanitize_schedule_template( $params );
+				$updated['id']        = $id; // Preserve ID.
+				$templates[ $index ]  = $updated;
+				$found                = true;
+				break;
+			}
+		}
+
+		if ( ! $found ) {
+			return new \WP_REST_Response( array( 'error' => 'Template not found.' ), 404 );
+		}
+
+		Parish_Core::update_settings( array(
+			'liturgical_schedules' => $templates,
+		) );
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Template updated.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Delete a schedule template.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function delete_schedule_template( \WP_REST_Request $request ): \WP_REST_Response {
+		$id        = $request->get_param( 'id' );
+		$templates = Parish_Core::get_setting( 'liturgical_schedules', array() );
+
+		$filtered = array_filter( $templates, fn( $t ) => ( $t['id'] ?? '' ) !== $id );
+
+		if ( count( $filtered ) === count( $templates ) ) {
+			return new \WP_REST_Response( array( 'error' => 'Template not found.' ), 404 );
+		}
+
+		Parish_Core::update_settings( array(
+			'liturgical_schedules' => array_values( $filtered ),
+		) );
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Template deleted.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Get all schedule overrides.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_schedule_overrides(): \WP_REST_Response {
+		$overrides = Parish_Core::get_setting( 'schedule_overrides', array() );
+
+		if ( ! is_array( $overrides ) ) {
+			$overrides = array();
+		}
+
+		// Filter out expired overrides (older than 30 days).
+		$cutoff    = gmdate( 'Y-m-d', strtotime( '-30 days' ) );
+		$overrides = array_filter( $overrides, fn( $o ) => ( $o['date'] ?? '' ) >= $cutoff );
+
+		return rest_ensure_response( array(
+			'overrides' => array_values( $overrides ),
+		) );
+	}
+
+	/**
+	 * Add a schedule override.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function add_schedule_override( \WP_REST_Request $request ): \WP_REST_Response {
+		$params = $request->get_json_params();
+
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => __( 'Schedule system not available.', 'parish-core' ),
+			) );
+		}
+
+		$generator = new Parish_Schedule_Generator();
+		$override  = $this->sanitize_schedule_override( $params );
+
+		// Generate ID if not provided.
+		if ( empty( $override['id'] ) ) {
+			$override['id'] = 'over_' . wp_generate_password( 8, false, false );
+		}
+
+		$result = $generator->add_override( $override );
+
+		if ( $result ) {
+			return rest_ensure_response( array(
+				'success'  => true,
+				'message'  => __( 'Override added.', 'parish-core' ),
+				'override' => $override,
+			) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => false,
+			'message' => __( 'Failed to add override.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Delete a schedule override.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function delete_schedule_override( \WP_REST_Request $request ): \WP_REST_Response {
+		$id        = $request->get_param( 'id' );
+		$overrides = Parish_Core::get_setting( 'schedule_overrides', array() );
+
+		$filtered = array_filter( $overrides, fn( $o ) => ( $o['id'] ?? '' ) !== $id );
+
+		if ( count( $filtered ) === count( $overrides ) ) {
+			return new \WP_REST_Response( array( 'error' => 'Override not found.' ), 404 );
+		}
+
+		Parish_Core::update_settings( array(
+			'schedule_overrides' => array_values( $filtered ),
+		) );
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Override deleted.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Get generated schedule for a date range.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function get_generated_schedule( \WP_REST_Request $request ): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return rest_ensure_response( array( 'error' => 'Schedule system not available.' ) );
+		}
+
+		$start      = $request->get_param( 'start' ) ?: gmdate( 'Y-m-d' );
+		$end        = $request->get_param( 'end' ) ?: gmdate( 'Y-m-d', strtotime( '+7 days' ) );
+		$church_id  = $request->get_param( 'church_id' );
+		$event_type = $request->get_param( 'event_type' );
+
+		$filters = array();
+		if ( $church_id ) {
+			$filters['church_id'] = absint( $church_id );
+		}
+		if ( $event_type ) {
+			$filters['event_type'] = sanitize_text_field( $event_type );
+		}
+
+		$generator = new Parish_Schedule_Generator();
+		$schedule  = $generator->generate( $start, $end, $filters );
+
+		return rest_ensure_response( array(
+			'start'    => $start,
+			'end'      => $end,
+			'schedule' => $schedule,
+		) );
+	}
+
+	/**
+	 * Get today's schedule.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_today_schedule(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return rest_ensure_response( array( 'error' => 'Schedule system not available.' ) );
+		}
+
+		$generator = new Parish_Schedule_Generator();
+		$schedule  = $generator->generate_today();
+
+		// Get feast day info.
+		$feast_info = null;
+		if ( class_exists( 'Parish_Feast_Day_Service' ) ) {
+			$feast_service = new Parish_Feast_Day_Service();
+			$feast_info    = $feast_service->get_feast_day( gmdate( 'Y-m-d' ) );
+		}
+
+		return rest_ensure_response( array(
+			'date'      => gmdate( 'Y-m-d' ),
+			'day_name'  => gmdate( 'l' ),
+			'feast'     => $feast_info,
+			'schedule'  => $schedule,
+		) );
+	}
+
+	/**
+	 * Get this week's schedule.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_week_schedule(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return rest_ensure_response( array( 'error' => 'Schedule system not available.' ) );
+		}
+
+		$generator = new Parish_Schedule_Generator();
+		$schedule  = $generator->generate_week();
+
+		// Group by day.
+		$by_day = array();
+		foreach ( $schedule as $event ) {
+			$date = $event['date'] ?? '';
+			if ( ! isset( $by_day[ $date ] ) ) {
+				$by_day[ $date ] = array(
+					'date'     => $date,
+					'day_name' => gmdate( 'l', strtotime( $date ) ),
+					'events'   => array(),
+				);
+			}
+			$by_day[ $date ]['events'][] = $event;
+		}
+
+		return rest_ensure_response( array(
+			'start'    => gmdate( 'Y-m-d' ),
+			'end'      => gmdate( 'Y-m-d', strtotime( '+6 days' ) ),
+			'days'     => array_values( $by_day ),
+		) );
+	}
+
+	/**
+	 * Get available event types.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_event_types(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return rest_ensure_response( array() );
+		}
+
+		return rest_ensure_response( Parish_Schedule_Generator::EVENT_TYPES );
+	}
+
+	/**
+	 * Sanitize a schedule template.
+	 *
+	 * @param array $params Raw parameters.
+	 * @return array Sanitized template.
+	 */
+	private function sanitize_schedule_template( array $params ): array {
+		$template = array(
+			'id'         => sanitize_text_field( $params['id'] ?? '' ),
+			'church_id'  => absint( $params['church_id'] ?? 0 ),
+			'event_type' => sanitize_text_field( $params['event_type'] ?? 'mass' ),
+			'title'      => sanitize_text_field( $params['title'] ?? '' ),
+			'active'     => (bool) ( $params['active'] ?? true ),
+			'created_at' => sanitize_text_field( $params['created_at'] ?? gmdate( 'Y-m-d' ) ),
+		);
+
+		// Recurrence settings.
+		if ( ! empty( $params['recurrence'] ) && is_array( $params['recurrence'] ) ) {
+			$rec = $params['recurrence'];
+			$template['recurrence'] = array(
+				'type'      => sanitize_text_field( $rec['type'] ?? 'weekly' ),
+				'time'      => sanitize_text_field( $rec['time'] ?? '' ),
+				'end_time'  => sanitize_text_field( $rec['end_time'] ?? '' ),
+			);
+
+			// Type-specific fields.
+			if ( ! empty( $rec['days'] ) && is_array( $rec['days'] ) ) {
+				$template['recurrence']['days'] = array_map( 'sanitize_text_field', $rec['days'] );
+			}
+			if ( ! empty( $rec['day_of_month'] ) ) {
+				$template['recurrence']['day_of_month'] = absint( $rec['day_of_month'] );
+			}
+			if ( ! empty( $rec['position'] ) ) {
+				$template['recurrence']['position'] = sanitize_text_field( $rec['position'] );
+			}
+			if ( ! empty( $rec['day_of_week'] ) ) {
+				$template['recurrence']['day_of_week'] = sanitize_text_field( $rec['day_of_week'] );
+			}
+			if ( ! empty( $rec['month'] ) ) {
+				$template['recurrence']['month'] = absint( $rec['month'] );
+			}
+			if ( ! empty( $rec['day'] ) ) {
+				$template['recurrence']['day'] = absint( $rec['day'] );
+			}
+			if ( ! empty( $rec['feast'] ) ) {
+				$template['recurrence']['feast'] = sanitize_text_field( $rec['feast'] );
+			}
+		}
+
+		// Liturgical settings.
+		if ( ! empty( $params['liturgical'] ) && is_array( $params['liturgical'] ) ) {
+			$lit = $params['liturgical'];
+			$template['liturgical'] = array(
+				'rite'     => sanitize_text_field( $lit['rite'] ?? 'roman' ),
+				'language' => sanitize_text_field( $lit['language'] ?? 'english' ),
+				'form'     => sanitize_text_field( $lit['form'] ?? 'ordinary' ),
+			);
+		}
+
+		// Livestream settings.
+		if ( ! empty( $params['livestream'] ) && is_array( $params['livestream'] ) ) {
+			$ls = $params['livestream'];
+			$template['livestream'] = array(
+				'enabled' => (bool) ( $ls['enabled'] ?? false ),
+				'url'     => esc_url_raw( $ls['url'] ?? '' ),
+			);
+		}
+
+		// Notes.
+		if ( ! empty( $params['notes'] ) ) {
+			$template['notes'] = sanitize_textarea_field( $params['notes'] );
+		}
+
+		return $template;
+	}
+
+	/**
+	 * Sanitize a schedule override.
+	 *
+	 * @param array $params Raw parameters.
+	 * @return array Sanitized override.
+	 */
+	private function sanitize_schedule_override( array $params ): array {
+		$override = array(
+			'id'          => sanitize_text_field( $params['id'] ?? '' ),
+			'schedule_id' => sanitize_text_field( $params['schedule_id'] ?? '' ),
+			'date'        => sanitize_text_field( $params['date'] ?? '' ),
+			'type'        => sanitize_text_field( $params['type'] ?? 'cancellation' ),
+		);
+
+		// Validate type.
+		if ( ! in_array( $override['type'], array( 'cancellation', 'time_change', 'addition' ), true ) ) {
+			$override['type'] = 'cancellation';
+		}
+
+		// Type-specific fields.
+		if ( $override['type'] === 'time_change' ) {
+			$override['new_time']     = sanitize_text_field( $params['new_time'] ?? '' );
+			$override['new_end_time'] = sanitize_text_field( $params['new_end_time'] ?? '' );
+		}
+
+		if ( $override['type'] === 'addition' ) {
+			$override['church_id']  = absint( $params['church_id'] ?? 0 );
+			$override['event_type'] = sanitize_text_field( $params['event_type'] ?? 'mass' );
+			$override['title']      = sanitize_text_field( $params['title'] ?? '' );
+			$override['time']       = sanitize_text_field( $params['time'] ?? '' );
+			$override['end_time']   = sanitize_text_field( $params['end_time'] ?? '' );
+		}
+
+		// Reason for any override.
+		if ( ! empty( $params['reason'] ) ) {
+			$override['reason'] = sanitize_textarea_field( $params['reason'] );
+		}
+
+		return $override;
 	}
 
 	// =========================================================================

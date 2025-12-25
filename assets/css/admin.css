@@ -1539,3 +1539,695 @@
 		height: 120px;
 	}
 }
+
+/* ==========================================================================
+   SCHEDULE SYSTEM (Enhanced Mass Times)
+   ========================================================================== */
+.parish-schedule-page {
+	max-width: 1200px;
+}
+
+/* Tab Panel */
+.schedule-tabs .components-tab-panel__tabs {
+	border-bottom: 1px solid #ddd;
+	margin-bottom: 24px;
+	background: #fff;
+	padding: 0 16px;
+	margin: 0 -20px 24px;
+}
+
+.schedule-tabs .components-tab-panel__tabs button {
+	padding: 16px 24px;
+	font-size: 14px;
+	font-weight: 500;
+	border-bottom: 3px solid transparent;
+	margin-bottom: -1px;
+}
+
+.schedule-tabs .components-tab-panel__tabs button.is-active {
+	border-bottom-color: #2271b1;
+	color: #2271b1;
+}
+
+.schedule-tabs .components-tab-panel__tab-content {
+	padding: 0;
+}
+
+/* Tab Header */
+.tab-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.tab-header p {
+	margin: 0;
+	color: #666;
+}
+
+/* No Items State */
+.no-items {
+	text-align: center;
+	padding: 48px 20px;
+	color: #666;
+	font-style: italic;
+	background: #f9f9f9;
+	border-radius: 8px;
+	border: 2px dashed #ddd;
+}
+
+/* ==========================================================================
+   SCHEDULE TEMPLATES
+   ========================================================================== */
+.template-group {
+	margin-bottom: 32px;
+}
+
+.template-group h4 {
+	margin: 0 0 12px 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1d2327;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	padding-bottom: 8px;
+	border-bottom: 2px solid #2271b1;
+}
+
+.template-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.template-item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	padding: 16px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.template-item:hover {
+	border-color: #2271b1;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.template-item.inactive {
+	opacity: 0.5;
+	background: #f9f9f9;
+}
+
+.template-main {
+	flex: 1;
+	min-width: 200px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.template-main strong {
+	font-size: 15px;
+	color: #1d2327;
+}
+
+.church-badge {
+	font-size: 12px;
+	background: #e8f4fc;
+	color: #2271b1;
+	padding: 4px 10px;
+	border-radius: 4px;
+}
+
+.template-recurrence {
+	font-size: 13px;
+	color: #666;
+	flex: 1;
+	min-width: 200px;
+}
+
+.template-item .livestream-badge {
+	font-size: 12px;
+	background: #d63638;
+	color: #fff;
+	padding: 4px 10px;
+	border-radius: 4px;
+}
+
+.inactive-badge {
+	font-size: 11px;
+	background: #f0f0f1;
+	color: #666;
+	padding: 4px 10px;
+	border-radius: 4px;
+}
+
+/* ==========================================================================
+   RECURRENCE EDITOR
+   ========================================================================== */
+.recurrence-editor {
+	background: #f9f9f9;
+	padding: 16px;
+	border-radius: 8px;
+	margin-bottom: 16px;
+}
+
+.days-selector {
+	margin-top: 12px;
+}
+
+.days-selector > label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 500;
+	font-size: 13px;
+}
+
+.days-checkboxes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.day-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.2s;
+	font-size: 13px;
+}
+
+.day-checkbox:hover {
+	border-color: #2271b1;
+}
+
+.day-checkbox:has(input:checked) {
+	background: #e8f4fc;
+	border-color: #2271b1;
+	color: #2271b1;
+}
+
+.day-checkbox input {
+	margin: 0;
+}
+
+/* ==========================================================================
+   TEMPLATE MODAL
+   ========================================================================== */
+.parish-template-modal .components-modal__content {
+	min-width: 600px;
+	max-width: 700px;
+}
+
+.parish-template-modal .modal-form h4 {
+	margin: 24px 0 12px 0;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.parish-template-modal .modal-form h4:first-child {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: none;
+}
+
+/* ==========================================================================
+   OVERRIDES
+   ========================================================================== */
+.override-group {
+	margin-bottom: 24px;
+}
+
+.override-group h4 {
+	margin: 0 0 12px 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1d2327;
+	padding: 8px 0;
+	border-bottom: 1px solid #ddd;
+}
+
+.override-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	margin-bottom: 8px;
+}
+
+.override-item.override-cancellation {
+	border-left: 4px solid #d63638;
+}
+
+.override-item.override-time_change {
+	border-left: 4px solid #f0b849;
+}
+
+.override-item.override-addition {
+	border-left: 4px solid #00a32a;
+}
+
+.override-main {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.override-badge {
+	font-size: 12px;
+	font-weight: 500;
+	padding: 4px 10px;
+	border-radius: 4px;
+}
+
+.override-badge.cancellation {
+	background: #fce4e4;
+	color: #d63638;
+}
+
+.override-badge.time_change {
+	background: #fef3cd;
+	color: #856404;
+}
+
+.override-badge.addition {
+	background: #d4edda;
+	color: #155724;
+}
+
+.schedule-ref {
+	font-size: 13px;
+	color: #666;
+}
+
+.override-reason {
+	font-size: 12px;
+	color: #888;
+	font-style: italic;
+}
+
+/* ==========================================================================
+   INTENTIONS TAB
+   ========================================================================== */
+.intentions-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.intention-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+}
+
+.intention-main {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.intention-main strong {
+	font-size: 14px;
+	color: #1d2327;
+}
+
+.intention-date {
+	font-size: 13px;
+	color: #666;
+}
+
+/* ==========================================================================
+   PREVIEW TAB
+   ========================================================================== */
+.preview-day {
+	margin-bottom: 24px;
+}
+
+.preview-day h4 {
+	margin: 0 0 12px 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1d2327;
+	padding: 8px 12px;
+	background: #f6f7f7;
+	border-radius: 6px;
+}
+
+.preview-events {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.preview-event {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 16px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	flex-wrap: wrap;
+}
+
+.preview-event.cancelled {
+	opacity: 0.5;
+	text-decoration: line-through;
+	background: #f9f9f9;
+}
+
+.event-time {
+	font-weight: 600;
+	font-size: 15px;
+	color: #2271b1;
+	min-width: 80px;
+}
+
+.event-type {
+	font-size: 13px;
+	background: #e8f4fc;
+	color: #2271b1;
+	padding: 4px 10px;
+	border-radius: 4px;
+	font-weight: 500;
+}
+
+.event-title {
+	font-size: 14px;
+	color: #1d2327;
+}
+
+.event-church {
+	font-size: 13px;
+	color: #666;
+}
+
+.preview-event .livestream-badge {
+	font-size: 12px;
+}
+
+.intention-badge {
+	font-size: 12px;
+	color: #666;
+}
+
+.cancelled-badge {
+	font-size: 11px;
+	background: #d63638;
+	color: #fff;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-weight: 500;
+}
+
+/* ==========================================================================
+   SCHEDULE RESPONSIVE
+   ========================================================================== */
+@media (max-width: 782px) {
+	.schedule-tabs .components-tab-panel__tabs {
+		overflow-x: auto;
+		white-space: nowrap;
+	}
+
+	.schedule-tabs .components-tab-panel__tabs button {
+		padding: 12px 16px;
+		font-size: 13px;
+	}
+
+	.template-item {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.template-main,
+	.template-recurrence {
+		min-width: auto;
+		width: 100%;
+	}
+
+	.parish-template-modal .components-modal__content {
+		min-width: auto;
+		width: 95vw;
+	}
+
+	.recurrence-editor .components-flex {
+		flex-direction: column;
+	}
+
+	.days-checkboxes {
+		gap: 4px;
+	}
+
+	.day-checkbox {
+		padding: 6px 10px;
+		font-size: 12px;
+	}
+}
+
+/* ==========================================================================
+   CHURCH SCHEDULE BLOCK EDITOR
+   ========================================================================== */
+.parish-church-schedule-editor {
+	border: 1px dashed #c3c4c7;
+	border-radius: 4px;
+	padding: 0;
+}
+
+.parish-church-schedule-preview {
+	padding: 20px;
+	background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f1 100%);
+}
+
+.parish-schedule-block-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #ddd;
+}
+
+.parish-schedule-block-header .dashicons {
+	color: #2271b1;
+	font-size: 24px;
+	width: 24px;
+	height: 24px;
+}
+
+.parish-schedule-block-header strong {
+	font-size: 16px;
+	color: #1d2327;
+}
+
+.parish-schedule-block-info {
+	margin: 8px 0;
+	color: #50575e;
+}
+
+.parish-schedule-block-meta {
+	margin: 8px 0;
+	font-size: 12px;
+	color: #757575;
+}
+
+.parish-schedule-block-note {
+	margin: 12px 0 0;
+	padding: 10px;
+	background: #fff;
+	border-left: 3px solid #2271b1;
+	font-size: 12px;
+	color: #50575e;
+}
+
+.parish-church-schedule-placeholder {
+	padding: 40px;
+	text-align: center;
+	color: #757575;
+	background: #f9f9f9;
+	border: 1px dashed #c3c4c7;
+	border-radius: 4px;
+}
+
+/* ==========================================================================
+   MASS TIMES - SIMPLE SCHEDULE
+   ========================================================================== */
+.parish-mass-times-page .page-header {
+	margin-bottom: 24px;
+}
+
+.parish-mass-times-page .page-header h2 {
+	margin: 0 0 8px 0;
+	font-size: 23px;
+}
+
+.parish-mass-times-page .page-header p {
+	margin: 0;
+	color: #666;
+}
+
+/* Schedule Grid */
+.schedule-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 20px;
+	margin-bottom: 24px;
+}
+
+/* Day Schedule Card */
+.day-schedule {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.day-schedule .day-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-bottom: 1px solid #ddd;
+}
+
+.day-schedule .day-header h4 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.day-schedule .day-slots {
+	padding: 16px;
+}
+
+.day-schedule .no-times {
+	margin: 0;
+	color: #888;
+	font-style: italic;
+	font-size: 13px;
+}
+
+/* Time Slot */
+.time-slot {
+	margin-bottom: 16px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid #e0e0e0;
+	background: #fafafa;
+	padding: 12px;
+	border-radius: 6px;
+	border: 1px solid #e0e0e0;
+}
+
+.time-slot:last-child {
+	margin-bottom: 0;
+}
+
+.time-slot-row {
+	margin-bottom: 8px;
+}
+
+.time-slot-row:last-child {
+	margin-bottom: 0;
+}
+
+.time-slot-options {
+	padding-top: 8px;
+	border-top: 1px dashed #ddd;
+}
+
+.time-slot .components-flex {
+	gap: 8px;
+}
+
+.time-slot .time-input {
+	min-width: 100px;
+}
+
+.time-slot .type-select {
+	min-width: 130px;
+}
+
+.time-slot .church-select {
+	min-width: 160px;
+}
+
+.time-slot .notes-input {
+	flex: 1;
+	min-width: 150px;
+}
+
+.time-slot .livestream-toggle {
+	flex-shrink: 0;
+}
+
+.time-slot .livestream-toggle .components-toggle-control {
+	margin: 0;
+}
+
+.time-slot .livestream-toggle .components-toggle-control__label {
+	font-size: 12px;
+}
+
+.parish-mass-times-page .church-count {
+	margin-top: 4px;
+	font-size: 13px;
+	color: #2271b1;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+	.schedule-grid {
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	}
+}
+
+@media (max-width: 782px) {
+	.schedule-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.time-slot-row .components-flex {
+		flex-wrap: wrap;
+	}
+
+	.time-slot .time-input,
+	.time-slot .type-select,
+	.time-slot .church-select,
+	.time-slot .notes-input {
+		min-width: 100%;
+		width: 100%;
+	}
+
+	.time-slot .livestream-toggle {
+		width: 100%;
+	}
+}

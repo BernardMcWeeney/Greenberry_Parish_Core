@@ -10,28 +10,23 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: parish-core
  * Domain Path: /languages
- * Requires at least: 6.5
- * Requires PHP: 8.0
+ * Requires at least: 6.6
+ * Requires PHP: 8.2
  */
 
-// Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Plugin constants.
 define( 'PARISH_CORE_VERSION', '4.0.0' );
 define( 'PARISH_CORE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PARISH_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'PARISH_CORE_BASENAME', plugin_basename( __FILE__ ) );
 
-/**
- * Check minimum requirements.
- */
 function parish_core_check_requirements(): bool {
 	$wp_version  = get_bloginfo( 'version' );
 	$php_version = PHP_VERSION;
-	$min_wp      = '6.5';
+	$min_wp      = '6.6';
 	$min_php     = '8.2';
 
 	if ( version_compare( $wp_version, $min_wp, '<' ) || version_compare( $php_version, $min_php, '<' ) ) {
@@ -43,9 +38,10 @@ function parish_core_check_requirements(): bool {
 				esc_html( $min_php )
 			);
 			echo '</p></div>';
-		});
+		} );
 		return false;
 	}
+
 	return true;
 }
 
@@ -53,20 +49,28 @@ if ( ! parish_core_check_requirements() ) {
 	return;
 }
 
-/**
- * Include required files.
- */
 function parish_core_includes(): void {
 	$includes = array(
 		'class-parish-core.php',
+		'class-parish-assets.php',
 		'class-parish-blocks.php',
-		'class-parish-cpt-templates.php',
-		'class-parish-cpt.php',
-		'class-parish-meta.php',
+		'class-parish-block-bindings.php',
+		'class-parish-auto-title.php',
+
+		// CPT registries + templates.
+		'cpt/class-parish-cpt-registry.php',
+		'cpt/class-parish-meta-registry.php',
+		'cpt/class-parish-cpt-templates.php',
+
+		// Schedule system.
+		'schedule/class-parish-recurrence.php',
+		'schedule/class-parish-schedule-generator.php',
+		'schedule/class-parish-feast-day-service.php',
+
+		// Other modules you already have.
 		'class-parish-rest-api.php',
 		'class-parish-admin-ui.php',
 		'class-parish-shortcodes.php',
-		'class-parish-assets.php',
 		'class-parish-readings.php',
 		'class-parish-admin-colors.php',
 		'class-parish-slider.php',
@@ -82,9 +86,6 @@ function parish_core_includes(): void {
 
 add_action( 'plugins_loaded', 'parish_core_includes', 5 );
 
-/**
- * Initialize the plugin.
- */
 function parish_core_init(): void {
 	if ( class_exists( 'Parish_Core' ) ) {
 		Parish_Core::instance();
@@ -93,48 +94,103 @@ function parish_core_init(): void {
 
 add_action( 'plugins_loaded', 'parish_core_init', 10 );
 
-/**
- * Activation hook.
- */
 function parish_core_activate(): void {
-	// Ensure CPTs are registered.
-	if ( class_exists( 'Parish_CPT' ) ) {
-		$cpt = Parish_CPT::instance();
-		$cpt->register_post_types();
-		$cpt->register_taxonomies();
+	// Register CPTs + taxonomies + meta before flushing rewrites.
+	if ( class_exists( 'Parish_CPT_Registry' ) ) {
+		$registry = Parish_CPT_Registry::instance();
+		$registry->register_post_types();
+		$registry->register_taxonomies();
 	}
 
-	// Flush rewrite rules.
+	if ( class_exists( 'Parish_Meta_Registry' ) ) {
+		Parish_Meta_Registry::instance()->register_all();
+	}
+
 	flush_rewrite_rules();
 
-	// Set default settings.
 	$defaults = parish_core_get_default_settings();
 	$existing = get_option( 'parish_core_settings', array() );
-	
+
 	if ( empty( $existing ) ) {
 		update_option( 'parish_core_settings', $defaults );
 	}
 
-	// Set activation transient.
 	set_transient( 'parish_core_activated', true, 60 );
 }
 
 register_activation_hook( __FILE__, 'parish_core_activate' );
 
-/**
- * Deactivation hook.
- */
 function parish_core_deactivate(): void {
 	flush_rewrite_rules();
-	
-	// Clear scheduled events.
 	wp_clear_scheduled_hook( 'parish_fetch_readings_cron' );
+	wp_clear_scheduled_hook( 'parish_cleanup_intentions' );
+	wp_clear_scheduled_hook( 'parish_cleanup_overrides' );
 }
 
 register_deactivation_hook( __FILE__, 'parish_core_deactivate' );
 
 /**
- * Get default plugin settings.
+ * Schedule cleanup cron jobs for intentions and overrides.
+ */
+function parish_core_schedule_cleanup_crons(): void {
+	// Schedule intention cleanup (daily at 3am).
+	if ( ! wp_next_scheduled( 'parish_cleanup_intentions' ) ) {
+		wp_schedule_event( strtotime( 'tomorrow 03:00:00' ), 'daily', 'parish_cleanup_intentions' );
+	}
+
+	// Schedule override cleanup (weekly on Sunday at 4am).
+	if ( ! wp_next_scheduled( 'parish_cleanup_overrides' ) ) {
+		wp_schedule_event( strtotime( 'next sunday 04:00:00' ), 'weekly', 'parish_cleanup_overrides' );
+	}
+}
+
+add_action( 'init', 'parish_core_schedule_cleanup_crons' );
+
+/**
+ * Cleanup expired mass intentions.
+ */
+function parish_core_cleanup_intentions(): void {
+	$expiry_days = apply_filters( 'parish_intention_expiry_days', 7 );
+	$cutoff      = date( 'Y-m-d', strtotime( "-{$expiry_days} days" ) );
+
+	$intentions = get_posts(
+		array(
+			'post_type'      => 'parish_intention',
+			'posts_per_page' => -1,
+			'post_status'    => 'publish',
+			'meta_query'     => array(
+				array(
+					'key'     => 'parish_intention_date',
+					'value'   => $cutoff,
+					'compare' => '<',
+					'type'    => 'DATE',
+				),
+			),
+			'fields'         => 'ids',
+		)
+	);
+
+	foreach ( $intentions as $intention_id ) {
+		wp_trash_post( $intention_id );
+	}
+}
+
+add_action( 'parish_cleanup_intentions', 'parish_core_cleanup_intentions' );
+
+/**
+ * Cleanup expired schedule overrides.
+ */
+function parish_core_cleanup_overrides(): void {
+	if ( class_exists( 'Parish_Schedule_Generator' ) ) {
+		Parish_Schedule_Generator::instance()->cleanup_expired_overrides( 30 );
+	}
+}
+
+add_action( 'parish_cleanup_overrides', 'parish_core_cleanup_overrides' );
+
+/**
+ * Keep your existing default settings function unchanged
+ * (you already have it below in your current file).
  */
 function parish_core_get_default_settings(): array {
 	return array(
@@ -154,61 +210,62 @@ function parish_core_get_default_settings(): array {
 		'enable_events'           => true,
 		'enable_liturgical'       => true,
 		'enable_prayers'          => true,
-		'enable_slider'           => true, // Hero Slider feature
+		'enable_slider'           => true,
+		'enable_travels'          => true,
 
 		// Readings API settings (admin only).
 		'readings_api_key'        => '',
 		'readings_schedules'      => '{}',
 
 		// Admin Color settings.
-		'admin_colors_enabled'    => false,
-		'admin_color_menu_text'   => '#ffffff',
-		'admin_color_base_menu'   => '#1d2327',
-		'admin_color_highlight'   => '#2271b1',
+		'admin_colors_enabled'     => false,
+		'admin_color_menu_text'    => '#ffffff',
+		'admin_color_base_menu'    => '#1d2327',
+		'admin_color_highlight'    => '#2271b1',
 		'admin_color_notification' => '#d63638',
-		'admin_color_background'  => '#f0f0f1',
-		'admin_color_links'       => '#2271b1',
-		'admin_color_buttons'     => '#2271b1',
-		'admin_color_form_inputs' => '#2271b1',
+		'admin_color_background'   => '#f0f0f1',
+		'admin_color_links'        => '#2271b1',
+		'admin_color_buttons'      => '#2271b1',
+		'admin_color_form_inputs'  => '#2271b1',
 
 		// Parish Identity (About Parish - editor level).
-		'parish_name'             => '',
-		'parish_description'      => '',
-		'parish_logo_id'          => 0,
-		'parish_banner_id'        => 0,
-		'parish_diocese_name'     => '',
-		'parish_diocese_url'      => '',
+		'parish_name'          => '',
+		'parish_description'   => '',
+		'parish_logo_id'       => 0,
+		'parish_banner_id'     => 0,
+		'parish_diocese_name'  => '',
+		'parish_diocese_url'   => '',
 
 		// Contact (About Parish).
-		'parish_address'          => '',
-		'parish_phone'            => '',
-		'parish_email'            => '',
-		'parish_office_hours'     => '',
-		'parish_emergency_phone'  => '',
+		'parish_address'         => '',
+		'parish_phone'           => '',
+		'parish_email'           => '',
+		'parish_office_hours'    => '',
+		'parish_emergency_phone' => '',
 
 		// Social Links (About Parish).
-		'parish_website'          => '',
-		'parish_facebook'         => '',
-		'parish_twitter'          => '',
-		'parish_instagram'        => '',
-		'parish_youtube'          => '',
-		'parish_livestream'       => '',
-		'parish_donate'           => '',
+		'parish_website'    => '',
+		'parish_facebook'   => '',
+		'parish_twitter'    => '',
+		'parish_instagram'  => '',
+		'parish_youtube'    => '',
+		'parish_livestream' => '',
+		'parish_donate'     => '',
 
 		// Clergy & Staff (About Parish) - JSON array.
-		'parish_clergy'           => '[]',
+		'parish_clergy' => '[]',
 
 		// Resources (About Parish) - JSON array.
-		'parish_resources'        => '[]',
+		'parish_resources' => '[]',
 
 		// Quick Actions (About Parish) - JSON array.
-		'parish_quick_actions'    => '[]',
+		'parish_quick_actions' => '[]',
 
-		// Mass Times (stored separately as JSON).
-		'mass_times'              => '[]',
+		// Mass Times Schedule (simple 7-day format).
+		'mass_times_schedule' => array(),
 
 		// Events (stored separately as JSON).
-		'parish_events'           => '[]',
+		'parish_events' => '[]',
 	);
 }
 

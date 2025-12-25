@@ -149,6 +149,15 @@ class Parish_Assets {
 			true
 		);
 
+		wp_enqueue_script(
+			'parish-post-meta-bindings',
+			PARISH_CORE_URL . 'assets/js/parish-post-meta-bindings.js',
+			array( 'wp-blocks', 'wp-data', 'wp-core-data', 'wp-dom-ready' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+
 		/**
 		 * 3) Router & bootstrap (loads last, depends on all modules)
 		 */
