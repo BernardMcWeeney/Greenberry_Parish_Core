@@ -17,6 +17,8 @@
 	var useState = wpElement.useState;
 	var useEffect = wpElement.useEffect;
 	var useCallback = wpElement.useCallback;
+	var useMemo = wpElement.useMemo;
+	var useRef = wpElement.useRef;
 	var Fragment = wpElement.Fragment;
 
 	var Panel = wpComponents.Panel;
@@ -38,6 +40,10 @@
 	var BaseControl = wpComponents.BaseControl;
 	var Modal = wpComponents.Modal;
 	var TabPanel = wpComponents.TabPanel;
+	var Popover = wpComponents.Popover;
+	var DropdownMenu = wpComponents.DropdownMenu;
+	var CheckboxControl = wpComponents.CheckboxControl;
+	var DateTimePicker = wpComponents.DateTimePicker;
 
 	var apiFetch = window.wp.apiFetch;
 	var config = window.parishCore || {};
@@ -111,6 +117,8 @@
 		useState: useState,
 		useEffect: useEffect,
 		useCallback: useCallback,
+		useMemo: useMemo,
+		useRef: useRef,
 		Fragment: Fragment,
 
 		// WP components
@@ -133,6 +141,10 @@
 		BaseControl: BaseControl,
 		Modal: Modal,
 		TabPanel: TabPanel,
+		Popover: Popover,
+		DropdownMenu: DropdownMenu,
+		CheckboxControl: CheckboxControl,
+		DateTimePicker: DateTimePicker,
 
 		// WP data
 		apiFetch: apiFetch,

@@ -81,6 +81,19 @@ class Parish_Core {
 			Parish_Admin_Colors::instance();
 		}
 
+		// Event Times - CPT-based Mass times, confessions, adoration, etc.
+		if ( class_exists( 'Parish_Event_Time_Generator' ) ) {
+			Parish_Event_Time_Generator::instance();
+		}
+
+		if ( class_exists( 'Parish_Event_Time_REST' ) ) {
+			Parish_Event_Time_REST::instance();
+		}
+
+		if ( class_exists( 'Parish_Event_Time_Shortcodes' ) ) {
+			Parish_Event_Time_Shortcodes::instance();
+		}
+
 	}
 
 	public static function get_settings(): array {
@@ -120,6 +133,7 @@ class Parish_Core {
 			'parish_reflection',
 			'parish_prayer',
 			'parish_travels',
+			'parish_event_time',
 		);
 	}
 
@@ -138,6 +152,7 @@ class Parish_Core {
 			'parish_reflection'   => 'reflections',
 			'parish_prayer'       => 'prayers',
 			'parish_travels'      => 'travels',
+			'parish_event_time'   => 'mass_times',
 		);
 
 		return $map[ $post_type ] ?? '';

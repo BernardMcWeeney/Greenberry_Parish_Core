@@ -176,6 +176,8 @@ registerBlockType( 'parish/church-selector', {
 								value={ String( relatedChurch ) }
 								options={ options }
 								onChange={ handleChurchChange }
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
 							/>
 						) }
 

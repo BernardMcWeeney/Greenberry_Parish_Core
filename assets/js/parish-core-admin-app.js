@@ -22,6 +22,9 @@
 		var Dashboard = ParishCoreAdmin.Dashboard;
 		var AboutParish = ParishCoreAdmin.AboutParish;
 		var MassTimes = ParishCoreAdmin.MassTimes;
+		var EventTimes = ParishCoreAdmin.EventTimes;
+		var MassTimesManager = ParishCoreAdmin.MassTimesManager;
+		var MassTimesGrid = ParishCoreAdmin.MassTimesGrid;
 		var EventsCalendar = ParishCoreAdmin.EventsCalendar;
 		var SliderSettings = ParishCoreAdmin.SliderSettings;
 		var ReadingsAPI = ParishCoreAdmin.ReadingsAPI;
@@ -33,7 +36,10 @@
 			case 'about':
 				return AboutParish ? el(AboutParish) : el('p', null, 'Loading About Parish...');
 			case 'mass-times':
-				return MassTimes ? el(MassTimes) : el('p', null, 'Loading Mass Times...');
+				// Use new MassTimesManager component with Grid + List view toggle
+				if (MassTimesManager) return el(MassTimesManager);
+				if (MassTimesGrid) return el(MassTimesGrid, { onSwitchView: function() {} });
+				return EventTimes ? el(EventTimes) : el('p', null, 'Loading Mass Times...');
 			case 'events':
 				return EventsCalendar ? el(EventsCalendar) : el('p', null, 'Loading Events...');
 			case 'slider':

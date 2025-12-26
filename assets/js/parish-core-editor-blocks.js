@@ -87,7 +87,9 @@
 							options: options,
 							onChange: function (value) {
 								setAttributes({ relatedChurch: value });
-							}
+							},
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true
 						})
 					)
 				),
@@ -201,7 +203,9 @@
 							options: FORMAT_OPTIONS,
 							onChange: function (value) {
 								setAttributes({ format: value });
-							}
+							},
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true
 						}),
 
 						el(RangeControl, {

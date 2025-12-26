@@ -2231,3 +2231,608 @@
 		width: 100%;
 	}
 }
+
+/* ==========================================================================
+   MASS TIMES WEEKLY GRID EDITOR (New)
+   ========================================================================== */
+.mass-times-grid-page {
+	max-width: 1600px;
+	margin: 0 auto;
+	padding: 20px 0;
+}
+
+.mass-times-grid-page .page-header {
+	margin-bottom: 20px;
+}
+
+.mass-times-grid-page .page-header h2 {
+	margin: 0 0 4px 0;
+	font-size: 23px;
+	font-weight: 600;
+}
+
+.mass-times-grid-page .page-header p {
+	margin: 0;
+	color: #666;
+}
+
+/* Grid Filters */
+.grid-filters {
+	margin-bottom: 16px;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-radius: 6px;
+}
+
+.grid-filters .components-select-control {
+	min-width: 160px;
+}
+
+/* Week Navigation */
+.week-navigation {
+	margin-bottom: 20px;
+	padding: 12px 16px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+}
+
+.week-navigation .week-label {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+/* Weekly Grid Container */
+.week-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+@media (max-width: 1400px) {
+	.week-grid {
+		grid-template-columns: repeat(4, 1fr);
+	}
+}
+
+@media (max-width: 900px) {
+	.week-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 600px) {
+	.week-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Day Column */
+.grid-day-column {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	min-height: 200px;
+	display: flex;
+	flex-direction: column;
+	transition: box-shadow 0.2s;
+}
+
+.grid-day-column:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.grid-day-column.is-today {
+	border-color: #2271b1;
+	border-width: 2px;
+}
+
+.grid-day-column.is-past {
+	opacity: 0.7;
+	background: #fafafa;
+}
+
+/* Day Header */
+.grid-day-column .day-header {
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-bottom: 1px solid #ddd;
+	text-align: center;
+	border-radius: 7px 7px 0 0;
+}
+
+.grid-day-column.is-today .day-header {
+	background: #e8f4fc;
+}
+
+.grid-day-column .day-name {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.grid-day-column.is-today .day-name {
+	color: #2271b1;
+}
+
+.grid-day-column .day-number {
+	display: block;
+	font-size: 24px;
+	font-weight: 700;
+	color: #1d2327;
+	line-height: 1.2;
+}
+
+.grid-day-column.is-today .day-number {
+	color: #2271b1;
+}
+
+.grid-day-column .today-badge {
+	display: inline-block;
+	font-size: 10px;
+	background: #2271b1;
+	color: #fff;
+	padding: 2px 8px;
+	border-radius: 10px;
+	margin-top: 4px;
+	font-weight: 500;
+}
+
+/* Feast Day Display */
+.grid-day-column .day-feast {
+	padding: 6px 10px;
+	background: #fafafa;
+	border-left: 3px solid #228B22;
+	font-size: 11px;
+	color: #555;
+	line-height: 1.3;
+	min-height: 24px;
+	display: flex;
+	align-items: center;
+}
+
+.grid-day-column .day-feast .feast-title {
+	font-weight: 500;
+	color: #333;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.grid-day-column .day-feast .feast-season {
+	font-style: italic;
+	color: #777;
+	text-transform: capitalize;
+}
+
+/* Feast rank styling */
+.grid-day-column .day-feast--solemnity {
+	background: #fff8e1;
+	font-weight: 600;
+}
+
+.grid-day-column .day-feast--solemnity .feast-title {
+	color: #b8860b;
+}
+
+.grid-day-column .day-feast--feast {
+	background: #fff3e0;
+}
+
+.grid-day-column .day-feast--memorial {
+	background: #f3e5f5;
+}
+
+/* Day Events */
+.grid-day-column .day-events {
+	flex: 1;
+	padding: 12px;
+	overflow-y: auto;
+	max-height: 400px;
+}
+
+.grid-day-column .no-events {
+	text-align: center;
+	color: #999;
+	font-style: italic;
+	font-size: 13px;
+	padding: 20px 0;
+}
+
+/* Day Footer */
+.grid-day-column .day-footer {
+	padding: 10px 12px;
+	border-top: 1px solid #f0f0f1;
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.grid-day-column .add-event-btn {
+	flex: 1;
+}
+
+.grid-day-column .clear-day-btn {
+	flex-shrink: 0;
+}
+
+/* Event Card */
+.grid-event-card {
+	background: #f9f9f9;
+	border: 1px solid #e0e0e0;
+	border-left: 4px solid #2271b1;
+	border-radius: 6px;
+	padding: 10px 12px;
+	margin-bottom: 8px;
+	cursor: pointer;
+	transition: all 0.2s;
+	position: relative;
+}
+
+.grid-event-card:hover {
+	background: #fff;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.grid-event-card:last-child {
+	margin-bottom: 0;
+}
+
+.grid-event-card.is-recurring {
+	border-left-style: dashed;
+}
+
+.grid-event-card.is-special {
+	background: #fffde7;
+}
+
+.grid-event-card .event-card-main {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.grid-event-card .event-card-time {
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.grid-event-card .event-card-type {
+	font-size: 12px;
+	color: #666;
+}
+
+.grid-event-card .event-card-church {
+	font-size: 11px;
+	color: #888;
+}
+
+.grid-event-card .event-card-badges {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: flex;
+	gap: 4px;
+}
+
+.grid-event-card .badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	font-size: 10px;
+	font-weight: 600;
+	border-radius: 50%;
+}
+
+.grid-event-card .badge-recurring {
+	background: #e8f4fc;
+	color: #2271b1;
+}
+
+.grid-event-card .badge-live {
+	background: #d63638;
+	color: #fff;
+}
+
+.grid-event-card .badge-special {
+	background: #ffeb3b;
+	color: #333;
+}
+
+.grid-event-card .event-card-actions {
+	display: none;
+	position: absolute;
+	bottom: 8px;
+	right: 8px;
+	gap: 4px;
+}
+
+.grid-event-card:hover .event-card-actions {
+	display: flex;
+}
+
+.grid-event-card .event-card-actions .components-button {
+	min-width: 24px;
+	height: 24px;
+	padding: 0;
+}
+
+/* Quick Add Popover */
+.quick-add-popover {
+	padding: 16px;
+	min-width: 320px;
+}
+
+.quick-add-popover .quick-add-title {
+	margin: 0 0 16px 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.quick-add-popover .quick-add-field {
+	margin-bottom: 16px;
+}
+
+.quick-add-popover .quick-add-field > label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 500;
+	font-size: 13px;
+}
+
+.quick-add-popover .quick-time-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.quick-add-popover .quick-time-buttons .components-button {
+	min-width: 70px;
+	font-size: 12px;
+	padding: 6px 8px;
+}
+
+.quick-add-popover .quick-add-actions {
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+	margin-top: 8px;
+}
+
+/* View Switcher */
+.view-switcher {
+	margin-bottom: 16px;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-radius: 6px;
+	text-align: right;
+}
+
+/* Event Times Table Enhancements */
+.parish-event-times-page {
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 20px 0;
+}
+
+.parish-event-times-page .toolbar {
+	margin-bottom: 20px;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-radius: 6px;
+}
+
+.event-times-table {
+	border-collapse: separate;
+	border-spacing: 0;
+	width: 100%;
+}
+
+.event-times-table th {
+	background: #f6f7f7;
+	padding: 12px 16px;
+	text-align: left;
+	font-weight: 600;
+	font-size: 12px;
+	text-transform: uppercase;
+	color: #666;
+	border-bottom: 2px solid #ddd;
+}
+
+.event-times-table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid #f0f0f1;
+	vertical-align: middle;
+}
+
+.event-times-table .event-time-row:hover td {
+	background: #f9f9f9;
+}
+
+.event-times-table .type-badge {
+	display: inline-block;
+	padding: 4px 10px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #fff;
+}
+
+.event-times-table .feature-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 500;
+	margin-right: 4px;
+}
+
+.event-times-table .feature-badge.livestream {
+	background: #d63638;
+	color: #fff;
+}
+
+.event-times-table .feature-badge.special {
+	background: #ffeb3b;
+	color: #333;
+}
+
+.event-times-table .feature-badge.inactive {
+	background: #f0f0f1;
+	color: #666;
+}
+
+.event-times-table .column-actions {
+	white-space: nowrap;
+}
+
+.event-times-table .column-actions .components-button {
+	margin-right: 4px;
+}
+
+/* Editor Modal Tabs */
+.event-time-editor-modal .components-modal__content {
+	min-width: 640px;
+	max-width: 720px;
+}
+
+@media (max-width: 768px) {
+	.event-time-editor-modal .components-modal__content {
+		min-width: auto;
+		width: 95vw;
+	}
+}
+
+.event-time-editor-modal .editor-tabs {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 20px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #ddd;
+	flex-wrap: wrap;
+}
+
+.event-time-editor-modal .editor-tabs .components-button {
+	padding: 8px 16px;
+	font-size: 13px;
+	border-radius: 4px;
+}
+
+.event-time-editor-modal .editor-tabs .components-button.is-active {
+	background: #2271b1;
+	color: #fff;
+}
+
+.event-time-editor-modal .editor-tab-content {
+	padding: 4px 0;
+}
+
+.event-time-editor-modal .editor-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+	padding-top: 20px;
+	margin-top: 20px;
+	border-top: 1px solid #ddd;
+}
+
+/* Recurrence Builder */
+.recurrence-builder {
+	background: #f9f9f9;
+	padding: 16px;
+	border-radius: 8px;
+	margin-top: 12px;
+}
+
+.recurrence-builder .recurrence-field {
+	margin-bottom: 16px;
+}
+
+.recurrence-builder .recurrence-field:last-child {
+	margin-bottom: 0;
+}
+
+.recurrence-builder .day-checkboxes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.recurrence-builder .day-checkboxes .components-checkbox-control {
+	margin: 0;
+	padding: 6px 12px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.recurrence-builder .day-checkboxes .components-checkbox-control:has(input:checked) {
+	background: #e8f4fc;
+	border-color: #2271b1;
+}
+
+.recurrence-builder .exception-list {
+	margin-bottom: 12px;
+}
+
+/* Livestream Config */
+.livestream-config {
+	background: #f9f9f9;
+	padding: 16px;
+	border-radius: 8px;
+}
+
+.livestream-config .embed-preview {
+	margin-top: 16px;
+}
+
+.livestream-config .embed-preview-frame {
+	background: #000;
+	border-radius: 6px;
+	overflow: hidden;
+	max-width: 100%;
+}
+
+.livestream-config .embed-preview-frame iframe {
+	max-width: 100%;
+	display: block;
+}
+
+/* Readings Preview */
+.readings-preview {
+	background: #f9f9f9;
+	padding: 16px;
+	border-radius: 8px;
+	margin-top: 12px;
+}
+
+.readings-preview h4 {
+	margin: 0 0 12px 0;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.readings-preview .reading-item {
+	margin-bottom: 8px;
+	font-size: 13px;
+}
+
+.readings-preview .reading-item:last-child {
+	margin-bottom: 0;
+}
+
+.readings-preview .readings-disabled {
+	color: #666;
+	font-style: italic;
+}

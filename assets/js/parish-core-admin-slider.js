@@ -322,6 +322,8 @@
 							onChange: function (v) {
 								updateField('source', v);
 							},
+							__nextHasNoMarginBottom: true,
+							__next40pxDefaultSize: true,
 						}),
 						editedSlide.source &&
 							dynamicSources[editedSlide.source] &&
@@ -378,6 +380,8 @@
 						onChange: function (v) {
 							updateField('image_fit', v);
 						},
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
 					}),
 					el(SelectControl, {
 						label: 'Image Position',
@@ -392,6 +396,8 @@
 						onChange: function (v) {
 							updateField('image_position', v);
 						},
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
 					})
 				),
 
@@ -407,6 +413,8 @@
 					onChange: function (v) {
 						updateField('display_mode', v);
 					},
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
 					help: 'Choose what content to display on this slide',
 				}),
 
@@ -479,6 +487,8 @@
 					onChange: function (v) {
 						updateField('text_align', v);
 					},
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
 				}),
 
 				// Actions

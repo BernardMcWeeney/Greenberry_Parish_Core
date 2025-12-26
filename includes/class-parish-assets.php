@@ -116,6 +116,24 @@ class Parish_Assets {
 			true
 		);
 
+		// New Event Times CPT-based management (enhanced Mass Times).
+		wp_enqueue_script(
+			'parish-admin-event-times',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-event-times.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		// Mass Times Weekly Grid Editor.
+		wp_enqueue_script(
+			'parish-admin-mass-times-grid',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-mass-times-grid.js',
+			array( 'parish-admin-utils', 'parish-admin-event-times' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
 		wp_enqueue_script(
 			'parish-admin-events',
 			PARISH_CORE_URL . 'assets/js/parish-core-admin-events.js',
@@ -169,6 +187,8 @@ class Parish_Assets {
 				'parish-admin-dashboard',
 				'parish-admin-about',
 				'parish-admin-mass-times',
+				'parish-admin-event-times',
+				'parish-admin-mass-times-grid',
 				'parish-admin-events',
 				'parish-admin-slider',
 				'parish-admin-readings',
@@ -185,6 +205,14 @@ class Parish_Assets {
 		wp_enqueue_style(
 			'parish-admin',
 			PARISH_CORE_URL . 'assets/css/admin.css',
+			array( 'wp-components' ),
+			PARISH_CORE_VERSION
+		);
+
+		// Event times admin styles.
+		wp_enqueue_style(
+			'parish-event-times-admin',
+			PARISH_CORE_URL . 'assets/css/event-times.css',
 			array( 'wp-components' ),
 			PARISH_CORE_VERSION
 		);
@@ -245,8 +273,36 @@ class Parish_Assets {
 			PARISH_CORE_VERSION
 		);
 
-		// Slider styles - always load on front page or if shortcode detected.
+		// Event times styles - load when shortcodes are detected.
 		global $post;
+		$should_load_event_times = false;
+
+		if ( is_a( $post, 'WP_Post' ) ) {
+			$event_time_shortcodes = array(
+				'parish_times',
+				'parish_times_today',
+				'parish_mass_times',
+				'parish_confessions',
+				'parish_adoration',
+			);
+			foreach ( $event_time_shortcodes as $shortcode ) {
+				if ( has_shortcode( $post->post_content, $shortcode ) ) {
+					$should_load_event_times = true;
+					break;
+				}
+			}
+		}
+
+		if ( $should_load_event_times ) {
+			wp_enqueue_style(
+				'parish-event-times',
+				PARISH_CORE_URL . 'assets/css/event-times.css',
+				array(),
+				PARISH_CORE_VERSION
+			);
+		}
+
+		// Slider styles - always load on front page or if shortcode detected.
 		$should_load_slider = false;
 
 		if ( is_front_page() || is_home() ) {

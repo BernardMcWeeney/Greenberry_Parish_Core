@@ -91,6 +91,8 @@ registerBlockType( 'parish/related-church', {
 							onChange={ ( value ) =>
 								setAttributes( { relatedChurch: value } )
 							}
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 					</PanelBody>
 				</InspectorControls>

@@ -66,9 +66,12 @@ function parish_core_includes(): void {
 		'schedule/class-parish-recurrence.php',
 		'schedule/class-parish-schedule-generator.php',
 		'schedule/class-parish-feast-day-service.php',
+		'schedule/class-parish-event-time-generator.php',
 
 		// Other modules you already have.
 		'class-parish-rest-api.php',
+		'class-parish-event-time-rest.php',
+		'class-parish-event-time-shortcodes.php',
 		'class-parish-admin-ui.php',
 		'class-parish-shortcodes.php',
 		'class-parish-readings.php',
@@ -275,18 +278,74 @@ function parish_core_get_default_settings(): array {
  */
 function parish_core_get_shortcode_reference(): array {
 	return array(
-		// Mass Times
+		// Event Times (Advanced Mass Times System)
+		array(
+			'shortcode'   => '[parish_times]',
+			'name'        => __( 'Parish Times', 'parish-core' ),
+			'description' => __( 'Display event times with flexible layouts (list, table, cards, compact)', 'parish-core' ),
+			'attributes'  => array(
+				'church'          => __( 'Filter by church ID', 'parish-core' ),
+				'type'            => __( 'Filter by type: mass, confession, adoration, or comma-separated', 'parish-core' ),
+				'days'            => __( 'Number of days to show (default: 7)', 'parish-core' ),
+				'limit'           => __( 'Maximum events to show (default: 20)', 'parish-core' ),
+				'layout'          => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
+				'show_readings'   => __( '"yes" or "no" to show readings (default: yes)', 'parish-core' ),
+				'show_intentions' => __( '"yes" or "no" to show intentions (default: yes)', 'parish-core' ),
+				'show_notes'      => __( '"yes" or "no" to show notes (default: yes)', 'parish-core' ),
+				'livestream'      => __( '"only" to show only livestreamed events', 'parish-core' ),
+				'group_by'        => __( '"day", "church", or "none"', 'parish-core' ),
+			),
+			'example'     => '[parish_times type="mass" days="7" layout="cards" group_by="day"]',
+			'feature'     => 'mass_times',
+		),
+		array(
+			'shortcode'   => '[parish_times_today]',
+			'name'        => __( 'Today\'s Times', 'parish-core' ),
+			'description' => __( 'Display today\'s event schedule', 'parish-core' ),
+			'attributes'  => array(
+				'church' => __( 'Filter by church ID', 'parish-core' ),
+				'type'   => __( 'Filter by type', 'parish-core' ),
+				'layout' => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
+			),
+			'example'     => '[parish_times_today layout="compact"]',
+			'feature'     => 'mass_times',
+		),
 		array(
 			'shortcode'   => '[parish_mass_times]',
 			'name'        => __( 'Mass Times', 'parish-core' ),
-			'description' => __( 'Display weekly mass times schedule', 'parish-core' ),
+			'description' => __( 'Display Mass times (filters to Mass type only)', 'parish-core' ),
 			'attributes'  => array(
-				'day'             => __( 'Filter by day (e.g., "Sunday", "Monday")', 'parish-core' ),
-				'church_id'       => __( 'Filter by church ID', 'parish-core' ),
-				'show_livestream' => __( '"yes" to show only livestreamed masses', 'parish-core' ),
-				'format'          => __( '"daily", "weekly", or "simple"', 'parish-core' ),
+				'church'        => __( 'Filter by church ID', 'parish-core' ),
+				'days'          => __( 'Number of days (default: 7)', 'parish-core' ),
+				'layout'        => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
+				'show_readings' => __( '"yes" or "no" to show readings', 'parish-core' ),
+				'livestream'    => __( '"only" to show only livestreamed Masses', 'parish-core' ),
 			),
-			'example'     => '[parish_mass_times day="Sunday" format="simple"]',
+			'example'     => '[parish_mass_times days="7" layout="list" show_readings="yes"]',
+			'feature'     => 'mass_times',
+		),
+		array(
+			'shortcode'   => '[parish_confessions]',
+			'name'        => __( 'Confession Times', 'parish-core' ),
+			'description' => __( 'Display confession schedule', 'parish-core' ),
+			'attributes'  => array(
+				'church' => __( 'Filter by church ID', 'parish-core' ),
+				'days'   => __( 'Number of days (default: 7)', 'parish-core' ),
+				'layout' => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
+			),
+			'example'     => '[parish_confessions layout="compact"]',
+			'feature'     => 'mass_times',
+		),
+		array(
+			'shortcode'   => '[parish_adoration]',
+			'name'        => __( 'Adoration Times', 'parish-core' ),
+			'description' => __( 'Display Eucharistic Adoration schedule', 'parish-core' ),
+			'attributes'  => array(
+				'church' => __( 'Filter by church ID', 'parish-core' ),
+				'days'   => __( 'Number of days (default: 7)', 'parish-core' ),
+				'layout' => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
+			),
+			'example'     => '[parish_adoration layout="cards"]',
 			'feature'     => 'mass_times',
 		),
 		// Events

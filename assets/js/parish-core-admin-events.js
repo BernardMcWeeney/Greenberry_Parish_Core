@@ -201,6 +201,8 @@
 					onChange: function (v) {
 						upd('event_type', v);
 					},
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
 				}),
 				el(SelectControl, {
 					label: 'Color',
@@ -209,6 +211,8 @@
 					onChange: function (v) {
 						upd('color', v);
 					},
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
 				}),
 				el(TextControl, {
 					label: 'Location',

@@ -1,0 +1,842 @@
+/**
+ * Parish Event Times - Frontend Styles
+ *
+ * Provides styling for all shortcode layouts:
+ * - List layout
+ * - Table layout
+ * - Cards layout
+ * - Compact layout
+ */
+
+/* ==========================================================================
+   CSS Variables
+   ========================================================================== */
+.parish-times {
+	--times-primary-color: #4A8391;
+	--times-secondary-color: #6B7280;
+	--times-border-color: #E5E7EB;
+	--times-bg-color: #FFFFFF;
+	--times-bg-alt-color: #F9FAFB;
+	--times-text-color: #1F2937;
+	--times-text-muted: #6B7280;
+	--times-live-color: #DC2626;
+	--times-special-color: #F59E0B;
+	--times-radius: 0.5rem;
+	--times-spacing: 1rem;
+}
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+.parish-times {
+	font-family: inherit;
+	font-size: 1rem;
+	line-height: 1.5;
+	color: var(--times-text-color);
+}
+
+.parish-times__heading {
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin: 0 0 var(--times-spacing) 0;
+	color: var(--times-text-color);
+}
+
+.parish-times__group-heading {
+	font-size: 1.125rem;
+	font-weight: 600;
+	margin: 1.5rem 0 0.75rem 0;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid var(--times-border-color);
+	display: flex;
+	gap: 0.5rem;
+	align-items: baseline;
+}
+
+.parish-times__group-heading:first-child {
+	margin-top: 0;
+}
+
+.parish-times__day-name {
+	color: var(--times-text-color);
+}
+
+.parish-times__date {
+	font-weight: 400;
+	color: var(--times-text-muted);
+	font-size: 0.9em;
+}
+
+.parish-times__empty-message {
+	padding: var(--times-spacing);
+	text-align: center;
+	color: var(--times-text-muted);
+	background: var(--times-bg-alt-color);
+	border-radius: var(--times-radius);
+}
+
+/* ==========================================================================
+   Badges
+   ========================================================================== */
+.parish-times__badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.125rem 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	border-radius: 9999px;
+	text-decoration: none;
+}
+
+.parish-times__badge--live {
+	background-color: var(--times-live-color);
+	color: #FFFFFF;
+}
+
+.parish-times__badge--live:hover {
+	background-color: #B91C1C;
+	color: #FFFFFF;
+}
+
+.parish-times__badge--special {
+	background-color: var(--times-special-color);
+	color: #FFFFFF;
+}
+
+/* ==========================================================================
+   List Layout
+   ========================================================================== */
+.parish-times--list .parish-times__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.parish-times--list .parish-times__item {
+	padding: 0.75rem 0;
+	border-bottom: 1px solid var(--times-border-color);
+}
+
+.parish-times--list .parish-times__item:last-child {
+	border-bottom: none;
+}
+
+.parish-times__item-main {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.parish-times__time {
+	font-weight: 600;
+	font-size: 1rem;
+	min-width: 4rem;
+}
+
+.parish-times__type {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.125rem 0.5rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	background-color: var(--type-color, var(--times-primary-color));
+	color: #FFFFFF;
+	border-radius: var(--times-radius);
+}
+
+.parish-times__church {
+	color: var(--times-text-muted);
+	font-size: 0.9375rem;
+}
+
+.parish-times__title {
+	font-size: 0.9375rem;
+	margin-top: 0.25rem;
+	color: var(--times-text-color);
+}
+
+.parish-times__feast-day {
+	font-size: 0.875rem;
+	color: var(--times-primary-color);
+	margin-top: 0.25rem;
+	font-style: italic;
+}
+
+.parish-times__readings {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-top: 0.5rem;
+	font-size: 0.8125rem;
+	color: var(--times-text-muted);
+}
+
+.parish-times__reading strong {
+	font-weight: 500;
+	color: var(--times-text-color);
+}
+
+.parish-times__intentions,
+.parish-times__notes {
+	margin-top: 0.5rem;
+	font-size: 0.875rem;
+	color: var(--times-text-muted);
+}
+
+.parish-times__embed {
+	margin-top: 0.75rem;
+	max-width: 100%;
+}
+
+.parish-times__embed iframe {
+	max-width: 100%;
+	border-radius: var(--times-radius);
+}
+
+/* ==========================================================================
+   Table Layout
+   ========================================================================== */
+.parish-times--table .parish-times__table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9375rem;
+}
+
+.parish-times--table th,
+.parish-times--table td {
+	padding: 0.75rem;
+	text-align: left;
+	border-bottom: 1px solid var(--times-border-color);
+}
+
+.parish-times--table th {
+	font-weight: 600;
+	background-color: var(--times-bg-alt-color);
+	color: var(--times-text-color);
+	font-size: 0.8125rem;
+	text-transform: uppercase;
+	letter-spacing: 0.025em;
+}
+
+.parish-times--table tbody tr:hover {
+	background-color: var(--times-bg-alt-color);
+}
+
+.parish-times__td-date {
+	white-space: nowrap;
+}
+
+.parish-times__td-date .parish-times__day-name {
+	display: block;
+	font-weight: 500;
+}
+
+.parish-times__td-date .parish-times__date {
+	display: block;
+	font-size: 0.8125rem;
+}
+
+.parish-times__type-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.125rem 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	background-color: var(--type-color, var(--times-primary-color));
+	color: #FFFFFF;
+	border-radius: var(--times-radius);
+}
+
+.parish-times__td-info {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+	.parish-times--table .parish-times__table,
+	.parish-times--table thead,
+	.parish-times--table tbody,
+	.parish-times--table th,
+	.parish-times--table td,
+	.parish-times--table tr {
+		display: block;
+	}
+
+	.parish-times--table thead {
+		display: none;
+	}
+
+	.parish-times--table .parish-times__row {
+		margin-bottom: 1rem;
+		padding: 0.75rem;
+		background: var(--times-bg-alt-color);
+		border-radius: var(--times-radius);
+		border: none;
+	}
+
+	.parish-times--table td {
+		padding: 0.25rem 0;
+		border: none;
+	}
+
+	.parish-times--table td::before {
+		content: attr(data-label);
+		font-weight: 500;
+		margin-right: 0.5rem;
+	}
+}
+
+/* ==========================================================================
+   Cards Layout
+   ========================================================================== */
+.parish-times--cards .parish-times__cards-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: var(--times-spacing);
+}
+
+.parish-times__card {
+	background: var(--times-bg-color);
+	border: 1px solid var(--times-border-color);
+	border-radius: var(--times-radius);
+	overflow: hidden;
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.parish-times__card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	transform: translateY(-2px);
+}
+
+.parish-times__card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.75rem 1rem;
+	background-color: var(--type-color, var(--times-primary-color));
+	color: #FFFFFF;
+}
+
+.parish-times__card-type {
+	font-weight: 600;
+	font-size: 0.9375rem;
+}
+
+.parish-times__card-body {
+	padding: 1rem;
+}
+
+.parish-times__card-datetime {
+	margin-bottom: 0.75rem;
+}
+
+.parish-times__card-date {
+	display: block;
+	font-size: 0.875rem;
+	color: var(--times-text-muted);
+}
+
+.parish-times__card-time {
+	display: block;
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--times-text-color);
+}
+
+.parish-times__card-church {
+	font-size: 0.9375rem;
+	color: var(--times-text-muted);
+	margin-bottom: 0.5rem;
+}
+
+.parish-times__card-feast {
+	font-size: 0.875rem;
+	color: var(--times-primary-color);
+	font-style: italic;
+	margin-bottom: 0.5rem;
+}
+
+.parish-times__card-readings {
+	font-size: 0.8125rem;
+	color: var(--times-text-muted);
+}
+
+.parish-times__readings-label {
+	font-weight: 500;
+}
+
+.parish-times__card-special {
+	background-color: var(--times-special-color);
+	color: #FFFFFF;
+	text-align: center;
+	padding: 0.375rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   Compact Layout
+   ========================================================================== */
+.parish-times--compact {
+	font-size: 0.9375rem;
+}
+
+.parish-times--compact .parish-times__heading {
+	font-size: 1.25rem;
+	margin-bottom: 0.75rem;
+}
+
+.parish-times__compact-group {
+	margin-bottom: 0.5rem;
+	line-height: 1.75;
+}
+
+.parish-times__compact-date {
+	font-weight: 600;
+	color: var(--times-text-color);
+}
+
+.parish-times__compact-item {
+	color: var(--times-text-muted);
+}
+
+.parish-times__compact-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.parish-times__compact-list .parish-times__compact-item {
+	background: var(--times-bg-alt-color);
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--times-radius);
+	font-size: 0.875rem;
+}
+
+/* ==========================================================================
+   Dark Mode Support
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+	.parish-times {
+		--times-border-color: #374151;
+		--times-bg-color: #1F2937;
+		--times-bg-alt-color: #111827;
+		--times-text-color: #F9FAFB;
+		--times-text-muted: #9CA3AF;
+	}
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+@media print {
+	.parish-times__badge--live {
+		display: none;
+	}
+
+	.parish-times__embed {
+		display: none;
+	}
+
+	.parish-times--cards .parish-times__cards-grid {
+		display: block;
+	}
+
+	.parish-times__card {
+		page-break-inside: avoid;
+		margin-bottom: 1rem;
+		box-shadow: none;
+		border: 1px solid #ccc;
+	}
+
+	.parish-times--table .parish-times__table {
+		font-size: 0.875rem;
+	}
+}
+
+/* ==========================================================================
+   Admin Styles (for Event Times editor)
+   ========================================================================== */
+.parish-event-times-page .page-header {
+	margin-bottom: 1.5rem;
+}
+
+.parish-event-times-page .page-header h2 {
+	margin: 0 0 0.5rem 0;
+}
+
+.parish-event-times-page .toolbar {
+	margin-bottom: 1rem;
+	padding: 1rem;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.parish-event-times-page .event-times-table {
+	background: #fff;
+}
+
+.parish-event-times-page .column-type {
+	width: 100px;
+}
+
+.parish-event-times-page .column-features {
+	width: 150px;
+}
+
+.parish-event-times-page .column-actions {
+	width: 180px;
+}
+
+.parish-event-times-page .type-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 4px;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.parish-event-times-page .feature-badge {
+	display: inline-block;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 500;
+	margin-right: 4px;
+}
+
+.parish-event-times-page .feature-badge.livestream {
+	background: #dc2626;
+	color: #fff;
+}
+
+.parish-event-times-page .feature-badge.special {
+	background: #f59e0b;
+	color: #fff;
+}
+
+.parish-event-times-page .feature-badge.inactive {
+	background: #6b7280;
+	color: #fff;
+}
+
+.parish-event-times-page .duration {
+	color: #666;
+	font-size: 0.9em;
+}
+
+.parish-event-times-page .no-items {
+	padding: 2rem;
+	text-align: center;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+/* Editor Modal */
+.event-time-editor-modal {
+	min-width: 600px;
+	max-width: 800px;
+}
+
+.event-time-editor-modal .editor-tabs {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 1.5rem;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid #ddd;
+}
+
+.event-time-editor-modal .editor-tabs button {
+	padding: 8px 16px;
+	border-radius: 4px;
+}
+
+.event-time-editor-modal .editor-tabs button.is-active {
+	background: #2271b1;
+	color: #fff;
+}
+
+.event-time-editor-modal .editor-tab-content {
+	min-height: 300px;
+}
+
+.event-time-editor-modal .editor-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 1.5rem;
+	padding-top: 1rem;
+	border-top: 1px solid #ddd;
+}
+
+/* Recurrence Builder */
+.recurrence-builder .recurrence-field {
+	margin-bottom: 1rem;
+}
+
+.recurrence-builder .day-checkboxes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.recurrence-builder .day-checkboxes .components-checkbox-control__label {
+	font-size: 13px;
+}
+
+.recurrence-builder .exception-list {
+	margin-bottom: 8px;
+}
+
+/* Livestream Config */
+.livestream-config .embed-preview {
+	margin-top: 1rem;
+}
+
+.livestream-config .embed-preview-frame {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 1rem;
+	background: #f9f9f9;
+}
+
+.livestream-config .embed-preview-frame iframe {
+	max-width: 100%;
+}
+
+/* Readings Preview */
+.readings-preview {
+	margin-top: 1rem;
+	padding: 1rem;
+	background: #f9f9f9;
+	border-radius: 4px;
+}
+
+.readings-preview h4 {
+	margin: 0 0 0.75rem 0;
+	font-size: 14px;
+}
+
+.readings-preview .reading-item {
+	margin-bottom: 0.25rem;
+	font-size: 13px;
+}
+
+.readings-preview .readings-disabled {
+	color: #666;
+	font-style: italic;
+}
+
+/* ==========================================================================
+   Church Schedule Layout (parish_church_schedule shortcode)
+   ========================================================================== */
+.parish-schedule {
+	font-family: inherit;
+	font-size: 1rem;
+	line-height: 1.6;
+}
+
+.parish-schedule__church {
+	background-color: var(--schedule-bg, #5a7a8a);
+	color: var(--schedule-text, #ffffff);
+	padding: 1.5rem 2rem;
+	margin-bottom: 1.5rem;
+	border-radius: 0.5rem;
+}
+
+.parish-schedule__header {
+	margin-bottom: 1.25rem;
+}
+
+.parish-schedule__church-name {
+	font-size: 1.75rem;
+	font-weight: 400;
+	margin: 0;
+	padding-left: 1rem;
+	border-left: 4px solid var(--schedule-accent, #7c3aed);
+	color: inherit;
+}
+
+.parish-schedule__content {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2rem;
+	justify-content: space-between;
+}
+
+.parish-schedule__times {
+	flex: 1;
+	min-width: 250px;
+}
+
+.parish-schedule__day-list {
+	list-style: disc;
+	margin: 0;
+	padding-left: 1.5rem;
+}
+
+.parish-schedule__day-item {
+	margin-bottom: 0.5rem;
+	color: inherit;
+}
+
+.parish-schedule__day-name {
+	color: inherit;
+	font-weight: 700;
+	text-transform: uppercase;
+	font-size: 0.9375rem;
+}
+
+.parish-schedule__day-times {
+	font-weight: 400;
+	margin-left: 0.25rem;
+}
+
+.parish-schedule__no-times {
+	color: inherit;
+	opacity: 0.8;
+	font-style: italic;
+	margin: 0;
+}
+
+.parish-schedule__info {
+	flex: 0 0 auto;
+	min-width: 180px;
+	max-width: 250px;
+	text-align: right;
+}
+
+.parish-schedule__address {
+	margin-bottom: 1rem;
+	font-size: 0.9375rem;
+	line-height: 1.5;
+	color: inherit;
+}
+
+.parish-schedule__address strong {
+	font-weight: 700;
+}
+
+.parish-schedule__map-btn,
+.parish-schedule__livestream-btn {
+	display: inline-block;
+	padding: 0.5rem 1rem;
+	background-color: #1a1a1a;
+	color: #ffffff;
+	text-decoration: none;
+	border-radius: 0.25rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	margin-bottom: 0.5rem;
+	transition: background-color 0.2s ease;
+}
+
+.parish-schedule__map-btn:hover,
+.parish-schedule__livestream-btn:hover {
+	background-color: #333;
+	color: #ffffff;
+}
+
+.parish-schedule__livestream-btn {
+	display: block;
+	margin-top: 0.5rem;
+}
+
+/* Icons */
+.parish-schedule__icon {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 0.25rem;
+	font-size: 0.875rem;
+	vertical-align: middle;
+}
+
+.parish-schedule__icon--live {
+	color: #ef4444;
+}
+
+.parish-schedule__icon--special {
+	color: #fbbf24;
+}
+
+/* Notes section */
+.parish-schedule__notes {
+	background-color: var(--schedule-bg, #5a7a8a);
+	color: var(--schedule-text, #ffffff);
+	padding: 1.25rem 1.5rem;
+	margin-bottom: 1.5rem;
+	border-radius: 0.5rem;
+	border-left: 4px solid var(--schedule-accent, #7c3aed);
+}
+
+.parish-schedule__notes p {
+	margin: 0 0 0.75rem 0;
+	color: inherit;
+}
+
+.parish-schedule__notes p:last-child {
+	margin-bottom: 0;
+}
+
+.parish-schedule__notes em {
+	font-style: italic;
+}
+
+.parish-schedule__notes strong {
+	font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.parish-schedule__church {
+		padding: 1rem 1.25rem;
+	}
+
+	.parish-schedule__church-name {
+		font-size: 1.375rem;
+	}
+
+	.parish-schedule__content {
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.parish-schedule__info {
+		text-align: left;
+		max-width: none;
+	}
+
+	.parish-schedule__map-btn,
+	.parish-schedule__livestream-btn {
+		display: inline-block;
+		margin-right: 0.5rem;
+	}
+}
+
+/* Print styles for schedule */
+@media print {
+	.parish-schedule__church {
+		background-color: #f5f5f5 !important;
+		color: #000 !important;
+		border: 1px solid #ccc;
+	}
+
+	.parish-schedule__map-btn,
+	.parish-schedule__livestream-btn {
+		display: none;
+	}
+
+	.parish-schedule__icon--live {
+		display: none;
+	}
+}
