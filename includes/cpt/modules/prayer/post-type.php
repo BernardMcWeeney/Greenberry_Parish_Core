@@ -29,7 +29,8 @@ return array(
 		),
 
 		// Override common supports: prayers need thumbnails.
-		'supports'      => array( 'title', 'editor', 'thumbnail' ),
+		// Must include 'custom-fields' for Block Bindings meta to save.
+		'supports'      => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
 
 		'menu_icon'     => 'dashicons-book-alt',
 		'rewrite'       => array( 'slug' => 'prayers', 'with_front' => false ),

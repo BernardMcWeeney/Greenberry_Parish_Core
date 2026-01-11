@@ -815,3 +815,333 @@
 	line-height: 1.8;
 	color: var(--parish-text-color, #555);
 }
+
+/* ==========================================================================
+   MINI SHORTCODES (Block Format)
+   For use on dark backgrounds - white text with clean typography
+   ========================================================================== */
+
+/* Feast Day Mini - Block Format */
+.feast-day-mini--block {
+	color: #fff;
+	line-height: 1.5;
+}
+
+.feast-day-mini--block .feast-mini-name {
+	display: block;
+	font-size: 1.25em;
+	font-weight: 600;
+	margin-bottom: 0.5em;
+}
+
+.feast-day-mini--block .feast-mini-color-row,
+.feast-day-mini--block .feast-mini-rank-row {
+	display: block;
+	font-size: 0.95em;
+	margin-bottom: 0.25em;
+}
+
+.feast-day-mini--block .feast-mini-label {
+	opacity: 0.85;
+}
+
+.feast-day-mini--block .feast-mini-color,
+.feast-day-mini--block .feast-mini-rank {
+	font-weight: 600;
+}
+
+/* Mass Readings Mini - Block Format */
+.mass-readings-mini--block {
+	color: #fff;
+	line-height: 1.5;
+}
+
+.mass-readings-mini--block .reading-mini-row {
+	display: block;
+	margin-bottom: 0.35em;
+}
+
+.mass-readings-mini--block .reading-mini-row:last-child {
+	margin-bottom: 0;
+}
+
+.mass-readings-mini--block .reading-mini-label {
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+.mass-readings-mini--block .reading-mini-text {
+	font-weight: 400;
+}
+
+/* Liturgical Season Mini - Block Format */
+.liturgical-season-mini--block {
+	color: #fff;
+	line-height: 1.5;
+}
+
+.liturgical-season-mini--block .season-mini-row {
+	display: block;
+	margin-bottom: 0.35em;
+}
+
+.liturgical-season-mini--block .season-mini-row:last-child {
+	margin-bottom: 0;
+}
+
+.liturgical-season-mini--block .season-mini-label {
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+.liturgical-season-mini--block .season-mini-name,
+.liturgical-season-mini--block .season-mini-week,
+.liturgical-season-mini--block .season-mini-color {
+	font-weight: 400;
+}
+
+/* Rosary Today Mini - Block Format */
+.rosary-today-mini--block {
+	color: #fff;
+	line-height: 1.5;
+}
+
+.rosary-today-mini--block .rosary-mini-name {
+	display: block;
+	font-size: 1.25em;
+	font-weight: 600;
+	margin-bottom: 0.5em;
+}
+
+.rosary-today-mini--block .rosary-mini-description {
+	display: block;
+	font-size: 0.95em;
+	margin-bottom: 0.5em;
+	opacity: 0.9;
+}
+
+.rosary-today-mini--block .rosary-mini-mysteries {
+	display: block;
+	font-size: 0.9em;
+	opacity: 0.85;
+}
+
+/* Mini Shortcodes - Inline Format (for dark backgrounds) */
+.feast-day-mini--inline,
+.mass-readings-mini--inline,
+.liturgical-season-mini--inline,
+.rosary-today-mini--inline {
+	color: #fff;
+}
+
+.feast-day-mini--inline .feast-mini-label,
+.mass-readings-mini--inline .reading-mini-label,
+.liturgical-season-mini--inline .season-mini-label {
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+/* Mini Shortcodes - Light Theme Modifier */
+.mini-shortcode--light .feast-day-mini--block,
+.mini-shortcode--light .mass-readings-mini--block,
+.mini-shortcode--light .liturgical-season-mini--block,
+.mini-shortcode--light .rosary-today-mini--block,
+.mini-shortcode--light .feast-day-mini--inline,
+.mini-shortcode--light .mass-readings-mini--inline,
+.mini-shortcode--light .liturgical-season-mini--inline,
+.mini-shortcode--light .rosary-today-mini--inline {
+	color: #1d2327;
+}
+
+.mini-shortcode--light .feast-day-mini--block .feast-mini-label,
+.mini-shortcode--light .mass-readings-mini--block .reading-mini-label,
+.mini-shortcode--light .liturgical-season-mini--block .season-mini-label,
+.mini-shortcode--light .rosary-today-mini--block .rosary-mini-description,
+.mini-shortcode--light .rosary-today-mini--block .rosary-mini-mysteries {
+	opacity: 0.7;
+}
+
+/* ==========================================================================
+   TODAY WIDGET SHORTCODE
+   ========================================================================== */
+.parish-today-widget {
+	line-height: 1.6;
+}
+
+.parish-today-widget .widget-date {
+	margin: 0 0 1em 0;
+	font-size: 0.9em;
+	color: inherit;
+	opacity: 0.85;
+}
+
+.parish-today-widget .widget-church {
+	margin-bottom: 1.25em;
+}
+
+.parish-today-widget .widget-church:last-child {
+	margin-bottom: 0;
+}
+
+.parish-today-widget .church-name {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin: 0 0 0.25em 0;
+	font-weight: 400;
+	color: inherit;
+}
+
+.parish-today-widget .livestream-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+	color: var(--wp--preset--color--accent, #2271b1);
+	font-size: 0.9em;
+	font-weight: 400;
+}
+
+.parish-today-widget .livestream-badge svg {
+	width: 1em;
+	height: 1em;
+}
+
+.parish-today-widget .church-times {
+	margin: 0;
+}
+
+.parish-today-widget .time {
+	font-weight: 600;
+	color: var(--wp--preset--color--accent, #2271b1);
+}
+
+.parish-today-widget .time-note {
+	font-weight: 400;
+	color: inherit;
+	opacity: 0.7;
+}
+
+.parish-today-widget .no-events {
+	margin: 0;
+	font-style: italic;
+	opacity: 0.7;
+}
+
+/* ==========================================================================
+   CHURCH SCHEDULE SHORTCODE
+   ========================================================================== */
+.parish-church-schedule {
+	line-height: 1.6;
+}
+
+.parish-church-schedule .schedule-table {
+	display: flex;
+	flex-direction: column;
+}
+
+.parish-church-schedule .schedule-table + .schedule-table {
+	margin-top: 1.5em;
+	padding-top: 1em;
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.parish-church-schedule .schedule-row {
+	display: flex;
+	align-items: baseline;
+	gap: 1em;
+	padding: 0.5em 0;
+}
+
+.parish-church-schedule .schedule-day {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	min-width: 140px;
+	flex-shrink: 0;
+}
+
+.parish-church-schedule .schedule-icon {
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
+	opacity: 0.5;
+}
+
+.parish-church-schedule .day-name {
+	font-weight: 400;
+	color: inherit;
+}
+
+.parish-church-schedule .schedule-times {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.25em;
+	flex: 1;
+}
+
+.parish-church-schedule .time {
+	font-weight: 600;
+	color: var(--wp--preset--color--accent, #2271b1);
+}
+
+.parish-church-schedule .time-sep {
+	color: inherit;
+}
+
+.parish-church-schedule .livestream-icon {
+	width: 0.9em;
+	height: 0.9em;
+	margin-left: 0.15em;
+	color: var(--wp--preset--color--accent, #2271b1);
+	vertical-align: middle;
+}
+
+.parish-church-schedule .time-note {
+	font-weight: 400;
+	color: var(--wp--preset--color--accent, #2271b1);
+	font-size: 0.9em;
+	margin-left: 0.15em;
+}
+
+.parish-church-schedule .schedule-side-note {
+	font-size: 0.9em;
+	font-style: italic;
+	color: inherit;
+	opacity: 0.7;
+	margin-left: auto;
+	text-align: right;
+}
+
+.parish-church-schedule .parish-schedule-empty,
+.parish-church-schedule .parish-schedule-error {
+	margin: 0;
+	font-style: italic;
+	opacity: 0.7;
+}
+
+/* ==========================================================================
+   RESPONSIVE - TODAY WIDGET & CHURCH SCHEDULE
+   ========================================================================== */
+@media (max-width: 600px) {
+	.parish-church-schedule .schedule-row {
+		flex-wrap: wrap;
+	}
+
+	.parish-church-schedule .schedule-day {
+		min-width: 100%;
+		margin-bottom: 0.25em;
+	}
+
+	.parish-church-schedule .schedule-times {
+		padding-left: 1.5em;
+	}
+
+	.parish-church-schedule .schedule-side-note {
+		width: 100%;
+		padding-left: 1.5em;
+		text-align: left;
+		margin-left: 0;
+		margin-top: 0.25em;
+	}
+}

@@ -5,7 +5,7 @@
 	'use strict';
 
 	var ParishCoreAdmin = window.ParishCoreAdmin;
-	
+
 	if (!ParishCoreAdmin || !ParishCoreAdmin.el || !ParishCoreAdmin.render) {
 		console.error('ParishCoreAdmin not loaded');
 		return;
@@ -21,12 +21,9 @@
 		// Get components from ParishCoreAdmin
 		var Dashboard = ParishCoreAdmin.Dashboard;
 		var AboutParish = ParishCoreAdmin.AboutParish;
-		var MassTimes = ParishCoreAdmin.MassTimes;
-		var EventTimes = ParishCoreAdmin.EventTimes;
-		var MassTimesManager = ParishCoreAdmin.MassTimesManager;
-		var MassTimesGrid = ParishCoreAdmin.MassTimesGrid;
 		var EventsCalendar = ParishCoreAdmin.EventsCalendar;
 		var SliderSettings = ParishCoreAdmin.SliderSettings;
+		var MassTimes = ParishCoreAdmin.MassTimes;
 		var ReadingsAPI = ParishCoreAdmin.ReadingsAPI;
 		var Settings = ParishCoreAdmin.Settings;
 
@@ -35,15 +32,12 @@
 				return Dashboard ? el(Dashboard) : el('p', null, 'Loading Dashboard...');
 			case 'about':
 				return AboutParish ? el(AboutParish) : el('p', null, 'Loading About Parish...');
-			case 'mass-times':
-				// Use new MassTimesManager component with Grid + List view toggle
-				if (MassTimesManager) return el(MassTimesManager);
-				if (MassTimesGrid) return el(MassTimesGrid, { onSwitchView: function() {} });
-				return EventTimes ? el(EventTimes) : el('p', null, 'Loading Mass Times...');
 			case 'events':
 				return EventsCalendar ? el(EventsCalendar) : el('p', null, 'Loading Events...');
 			case 'slider':
 				return SliderSettings ? el(SliderSettings) : el('p', null, 'Loading Slider Settings...');
+			case 'mass-times':
+				return MassTimes ? el(MassTimes) : el('p', null, 'Loading Mass Times...');
 			case 'readings':
 				return ReadingsAPI ? el(ReadingsAPI) : el('p', null, 'Loading Readings API...');
 			case 'settings':
@@ -57,9 +51,9 @@
 		var roots = [
 			'parish-dashboard-app',
 			'parish-about-app',
-			'parish-mass-times-app',
 			'parish-events-app',
 			'parish-slider-app',
+			'parish-mass-times-app',
 			'parish-readings-app',
 			'parish-settings-app',
 		];

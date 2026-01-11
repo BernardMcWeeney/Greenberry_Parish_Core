@@ -128,7 +128,7 @@ class Parish_Church_Schedule_Block {
 			if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
 				return sprintf(
 					'<div class="parish-church-schedule-placeholder">%s</div>',
-					esc_html__( 'No schedule found for this church. Add schedule templates in Parish Core > Mass Times.', 'parish-core' )
+					esc_html__( 'No schedule found for this church.', 'parish-core' )
 				);
 			}
 			return '';

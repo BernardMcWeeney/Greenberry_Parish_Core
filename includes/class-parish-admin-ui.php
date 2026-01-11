@@ -90,18 +90,6 @@ class Parish_Admin_UI {
 			array( $this, 'render_about_page' )
 		);
 
-		// Mass Times (Editor level).
-		if ( Parish_Core::is_feature_enabled( 'mass_times' ) ) {
-			add_submenu_page(
-				'parish-core',
-				__( 'Mass Times', 'parish-core' ),
-				__( 'Mass Times', 'parish-core' ),
-				'edit_posts',
-				'parish-mass-times',
-				array( $this, 'render_mass_times_page' )
-			);
-		}
-
 		// Events Calendar (Editor level).
 		if ( Parish_Core::is_feature_enabled( 'events' ) ) {
 			add_submenu_page(
@@ -123,6 +111,18 @@ class Parish_Admin_UI {
 				'edit_posts',
 				'parish-slider',
 				array( $this, 'render_slider_page' )
+			);
+		}
+
+		// Mass Times (Editor level).
+		if ( Parish_Core::is_feature_enabled( 'mass_times' ) ) {
+			add_submenu_page(
+				'parish-core',
+				__( 'Mass Times', 'parish-core' ),
+				__( 'Mass Times', 'parish-core' ),
+				'edit_posts',
+				'parish-mass-times',
+				array( $this, 'render_mass_times_page' )
 			);
 		}
 
@@ -162,9 +162,9 @@ class Parish_Admin_UI {
 		$order = array(
 			'parish-core',
 			'parish-about',
-			'parish-mass-times',
 			'parish-events',
 			'parish-slider',
+			'parish-mass-times',
 			'parish-readings',
 		);
 
@@ -239,23 +239,6 @@ class Parish_Admin_UI {
 	}
 
 	/**
-	 * Render Mass Times page.
-	 */
-	public function render_mass_times_page(): void {
-		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'Mass Times Schedule', 'parish-core' ); ?></h1>
-			<div id="parish-mass-times-app">
-				<div class="parish-loading">
-					<span class="spinner is-active"></span>
-					<p><?php esc_html_e( 'Loading...', 'parish-core' ); ?></p>
-				</div>
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
 	 * Render Events page.
 	 */
 	public function render_events_page(): void {
@@ -280,6 +263,23 @@ class Parish_Admin_UI {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Hero Slider', 'parish-core' ); ?></h1>
 			<div id="parish-slider-app">
+				<div class="parish-loading">
+					<span class="spinner is-active"></span>
+					<p><?php esc_html_e( 'Loading...', 'parish-core' ); ?></p>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render Mass Times page.
+	 */
+	public function render_mass_times_page(): void {
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Mass Times', 'parish-core' ); ?></h1>
+			<div id="parish-mass-times-app">
 				<div class="parish-loading">
 					<span class="spinner is-active"></span>
 					<p><?php esc_html_e( 'Loading...', 'parish-core' ); ?></p>

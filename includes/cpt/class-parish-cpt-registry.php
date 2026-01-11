@@ -61,6 +61,9 @@ class Parish_CPT_Registry {
 
 		// Enable Block Bindings editing for users who can edit the post.
 		add_filter( 'block_editor_settings_all', array( $this, 'filter_block_editor_settings_all' ), 10, 2 );
+
+		// Add taxonomy filters to admin list tables.
+		add_action( 'restrict_manage_posts', array( $this, 'add_taxonomy_filters' ) );
 	}
 
 	/**
@@ -177,6 +180,54 @@ class Parish_CPT_Registry {
 			if ( file_exists( $path ) ) {
 				require $path;
 			}
+		}
+	}
+
+	/**
+	 * Add taxonomy dropdown filters to admin list tables.
+	 *
+	 * Displays dropdown filters for all taxonomies associated with
+	 * parish CPTs in the admin posts list.
+	 *
+	 * @param string $post_type The current post type.
+	 * @return void
+	 */
+	public function add_taxonomy_filters( string $post_type ): void {
+		// Only add filters for parish CPTs.
+		if ( ! str_starts_with( $post_type, 'parish_' ) ) {
+			return;
+		}
+
+		// Get all taxonomies for this post type.
+		$taxonomies = get_object_taxonomies( $post_type, 'objects' );
+
+		if ( empty( $taxonomies ) ) {
+			return;
+		}
+
+		foreach ( $taxonomies as $taxonomy ) {
+			// Skip if taxonomy shouldn't show UI.
+			if ( ! $taxonomy->show_ui ) {
+				continue;
+			}
+
+			// Get the currently selected term.
+			$selected = isset( $_GET[ $taxonomy->name ] ) ? sanitize_text_field( wp_unslash( $_GET[ $taxonomy->name ] ) ) : '';
+
+			// Render the dropdown.
+			wp_dropdown_categories(
+				array(
+					'show_option_all' => $taxonomy->labels->all_items,
+					'taxonomy'        => $taxonomy->name,
+					'name'            => $taxonomy->name,
+					'orderby'         => 'name',
+					'selected'        => $selected,
+					'hierarchical'    => $taxonomy->hierarchical,
+					'show_count'      => true,
+					'hide_empty'      => true,
+					'value_field'     => 'slug',
+				)
+			);
 		}
 	}
 }

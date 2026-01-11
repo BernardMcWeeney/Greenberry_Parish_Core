@@ -109,32 +109,6 @@ class Parish_Assets {
 		);
 
 		wp_enqueue_script(
-			'parish-admin-mass-times',
-			PARISH_CORE_URL . 'assets/js/parish-core-admin-mass-times.js',
-			array( 'parish-admin-utils' ),
-			PARISH_CORE_VERSION,
-			true
-		);
-
-		// New Event Times CPT-based management (enhanced Mass Times).
-		wp_enqueue_script(
-			'parish-admin-event-times',
-			PARISH_CORE_URL . 'assets/js/parish-core-admin-event-times.js',
-			array( 'parish-admin-utils' ),
-			PARISH_CORE_VERSION,
-			true
-		);
-
-		// Mass Times Weekly Grid Editor.
-		wp_enqueue_script(
-			'parish-admin-mass-times-grid',
-			PARISH_CORE_URL . 'assets/js/parish-core-admin-mass-times-grid.js',
-			array( 'parish-admin-utils', 'parish-admin-event-times' ),
-			PARISH_CORE_VERSION,
-			true
-		);
-
-		wp_enqueue_script(
 			'parish-admin-events',
 			PARISH_CORE_URL . 'assets/js/parish-core-admin-events.js',
 			array( 'parish-admin-utils' ),
@@ -142,7 +116,7 @@ class Parish_Assets {
 			true
 		);
 
-		// Slider module - depends on utils for shared components
+		// Slider module - depends on utils for shared components.
 		wp_enqueue_script(
 			'parish-admin-slider',
 			PARISH_CORE_URL . 'assets/js/parish-core-admin-slider.js',
@@ -151,6 +125,16 @@ class Parish_Assets {
 			true
 		);
 
+		// Mass Times module.
+		wp_enqueue_script(
+			'parish-admin-mass-times',
+			PARISH_CORE_URL . 'assets/js/parish-core-admin-mass-times.js',
+			array( 'parish-admin-utils' ),
+			PARISH_CORE_VERSION,
+			true
+		);
+
+		// Readings API module.
 		wp_enqueue_script(
 			'parish-admin-readings',
 			PARISH_CORE_URL . 'assets/js/parish-core-admin-readings.js',
@@ -175,7 +159,6 @@ class Parish_Assets {
 			true
 		);
 
-
 		/**
 		 * 3) Router & bootstrap (loads last, depends on all modules)
 		 */
@@ -186,16 +169,49 @@ class Parish_Assets {
 				'parish-admin-utils',
 				'parish-admin-dashboard',
 				'parish-admin-about',
-				'parish-admin-mass-times',
-				'parish-admin-event-times',
-				'parish-admin-mass-times-grid',
 				'parish-admin-events',
 				'parish-admin-slider',
+				'parish-admin-mass-times',
 				'parish-admin-readings',
 				'parish-admin-settings',
 			),
 			PARISH_CORE_VERSION,
 			true
+		);
+
+		// Render components after DOM is ready to ensure all modules are loaded.
+		wp_add_inline_script(
+			'parish-admin-app',
+			'(function() {
+				var retries = 0;
+				function renderApp() {
+					var P = window.ParishCoreAdmin;
+					if (!P || !P.el || !P.render) {
+						if (retries++ < 10) setTimeout(renderApp, 100);
+						return;
+					}
+					var page = (window.parishCore && window.parishCore.page) || "";
+					var root, Component;
+					if (page === "mass-times") {
+						root = document.getElementById("parish-mass-times-app");
+						Component = P.MassTimes;
+					} else if (page === "readings") {
+						root = document.getElementById("parish-readings-app");
+						Component = P.ReadingsAPI;
+					}
+					if (root && Component) {
+						P.render(P.el(Component), root);
+					} else if (root && !Component && retries++ < 10) {
+						setTimeout(renderApp, 100);
+					}
+				}
+				if (document.readyState === "loading") {
+					document.addEventListener("DOMContentLoaded", renderApp);
+				} else {
+					renderApp();
+				}
+			})();',
+			'after'
 		);
 
 		// WordPress components styles.
@@ -205,14 +221,6 @@ class Parish_Assets {
 		wp_enqueue_style(
 			'parish-admin',
 			PARISH_CORE_URL . 'assets/css/admin.css',
-			array( 'wp-components' ),
-			PARISH_CORE_VERSION
-		);
-
-		// Event times admin styles.
-		wp_enqueue_style(
-			'parish-event-times-admin',
-			PARISH_CORE_URL . 'assets/css/event-times.css',
 			array( 'wp-components' ),
 			PARISH_CORE_VERSION
 		);
@@ -232,9 +240,9 @@ class Parish_Assets {
 		$parish_pages = array(
 			'toplevel_page_parish-core',
 			'parish_page_parish-about',
-			'parish_page_parish-mass-times',
 			'parish_page_parish-events',
 			'parish_page_parish-slider',
+			'parish_page_parish-mass-times',
 			'parish_page_parish-readings',
 			'parish_page_parish-settings',
 		);
@@ -249,13 +257,13 @@ class Parish_Assets {
 	 */
 	private function get_current_page( string $hook ): string {
 		$map = array(
-			'toplevel_page_parish-core'     => 'dashboard',
-			'parish_page_parish-about'      => 'about',
-			'parish_page_parish-mass-times' => 'mass-times',
-			'parish_page_parish-events'     => 'events',
-			'parish_page_parish-slider'     => 'slider',
-			'parish_page_parish-readings'   => 'readings',
-			'parish_page_parish-settings'   => 'settings',
+			'toplevel_page_parish-core'      => 'dashboard',
+			'parish_page_parish-about'       => 'about',
+			'parish_page_parish-events'      => 'events',
+			'parish_page_parish-slider'      => 'slider',
+			'parish_page_parish-mass-times'  => 'mass-times',
+			'parish_page_parish-readings'    => 'readings',
+			'parish_page_parish-settings'    => 'settings',
 		);
 
 		return $map[ $hook ] ?? 'unknown';
@@ -273,36 +281,8 @@ class Parish_Assets {
 			PARISH_CORE_VERSION
 		);
 
-		// Event times styles - load when shortcodes are detected.
-		global $post;
-		$should_load_event_times = false;
-
-		if ( is_a( $post, 'WP_Post' ) ) {
-			$event_time_shortcodes = array(
-				'parish_times',
-				'parish_times_today',
-				'parish_mass_times',
-				'parish_confessions',
-				'parish_adoration',
-			);
-			foreach ( $event_time_shortcodes as $shortcode ) {
-				if ( has_shortcode( $post->post_content, $shortcode ) ) {
-					$should_load_event_times = true;
-					break;
-				}
-			}
-		}
-
-		if ( $should_load_event_times ) {
-			wp_enqueue_style(
-				'parish-event-times',
-				PARISH_CORE_URL . 'assets/css/event-times.css',
-				array(),
-				PARISH_CORE_VERSION
-			);
-		}
-
 		// Slider styles - always load on front page or if shortcode detected.
+		global $post;
 		$should_load_slider = false;
 
 		if ( is_front_page() || is_home() ) {

@@ -73,25 +73,13 @@ class Parish_Core {
 			Parish_Assets::instance();
 		}
 
-		if ( class_exists( 'Parish_Readings' ) ) {
-			Parish_Readings::instance();
-		}
-
 		if ( class_exists( 'Parish_Admin_Colors' ) ) {
 			Parish_Admin_Colors::instance();
 		}
 
-		// Event Times - CPT-based Mass times, confessions, adoration, etc.
-		if ( class_exists( 'Parish_Event_Time_Generator' ) ) {
-			Parish_Event_Time_Generator::instance();
-		}
-
-		if ( class_exists( 'Parish_Event_Time_REST' ) ) {
-			Parish_Event_Time_REST::instance();
-		}
-
-		if ( class_exists( 'Parish_Event_Time_Shortcodes' ) ) {
-			Parish_Event_Time_Shortcodes::instance();
+		// Readings API module (liturgical features).
+		if ( class_exists( 'Parish_Readings' ) && self::is_feature_enabled( 'liturgical' ) ) {
+			Parish_Readings::instance();
 		}
 
 	}
@@ -133,7 +121,6 @@ class Parish_Core {
 			'parish_reflection',
 			'parish_prayer',
 			'parish_travels',
-			'parish_event_time',
 		);
 	}
 
@@ -152,7 +139,6 @@ class Parish_Core {
 			'parish_reflection'   => 'reflections',
 			'parish_prayer'       => 'prayers',
 			'parish_travels'      => 'travels',
-			'parish_event_time'   => 'mass_times',
 		);
 
 		return $map[ $post_type ] ?? '';
@@ -160,12 +146,6 @@ class Parish_Core {
 
 	public static function get_modules(): array {
 		return array(
-			'mass_times' => array(
-				'name'        => __( 'Mass Times', 'parish-core' ),
-				'description' => __( 'Manage weekly mass schedules', 'parish-core' ),
-				'icon'        => 'clock',
-				'has_page'    => true,
-			),
 			'events' => array(
 				'name'        => __( 'Events Calendar', 'parish-core' ),
 				'description' => __( 'Parish events and sacraments', 'parish-core' ),

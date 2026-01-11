@@ -85,28 +85,6 @@
 			),
 			el('div', { className: 'dashboard-grid' },
 				el('div', { className: 'dashboard-main' },
-					features.mass_times && data.weeks_masses && el(Card, { className: 'dashboard-card' },
-						el(CardHeader, null, el('strong', null, "This Week's Mass Schedule")),
-						el(CardBody, null,
-							el('div', { className: 'week-schedule' },
-								days.map(function (day) {
-									var masses = data.weeks_masses[day] || [];
-									var isToday = day === today;
-									return el('div', { key: day, className: 'week-day' + (isToday ? ' is-today' : '') },
-										el('h4', null, day.substring(0, 3) + (isToday ? ' ★' : '')),
-										masses.length === 0
-											? el('span', { className: 'no-mass' }, '—')
-											: masses.map(function (m, i) {
-												return el('div', { key: i, className: 'mass-entry' },
-													el('strong', null, m.time),
-													m.is_livestreamed && el('span', { className: 'live-dot' }, '●')
-												);
-											})
-									);
-								})
-							)
-						)
-					),
 					el(Card, { className: 'dashboard-card' },
 						el(CardHeader, null, el('strong', null, 'Content Overview')),
 						el(CardBody, null,

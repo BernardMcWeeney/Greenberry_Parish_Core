@@ -1,6 +1,6 @@
 <?php
 /**
- * Meta schema: Group (parish_group)
+ * Meta schema: Service (parish_service)
  *
  * Uses WordPress 6.5+ Block Bindings API
  * All fields exposed to REST with show_in_rest
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 return array(
-	'post_type' => 'parish_group',
+	'post_type' => 'parish_service',
 	'fields'    => array(
 		// Opening Description (tagline)
 		'description'        => array(
@@ -24,29 +24,29 @@ return array(
 			'label'             => __( 'Description', 'parish-core' ),
 		),
 
-		// About This Group (detailed info)
+		// About This Service (detailed info)
 		'about'              => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'About this group', 'parish-core' ),
+			'label'             => __( 'About this service', 'parish-core' ),
 		),
 
-		// Meeting Information
-		'meeting_schedule'   => array(
+		// Availability
+		'availability'       => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Meeting schedule', 'parish-core' ),
+			'label'             => __( 'Availability', 'parish-core' ),
 		),
-		'meeting_location'   => array(
+		'location'           => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Meeting location', 'parish-core' ),
+			'label'             => __( 'Location', 'parish-core' ),
 		),
 
 		// Contact Information
@@ -79,22 +79,22 @@ return array(
 			'label'             => __( 'Website', 'parish-core' ),
 		),
 
-		// Age Range / Who
-		'age_range'          => array(
+		// Target Audience / For
+		'target_audience'    => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Age range', 'parish-core' ),
+			'label'             => __( 'Target audience', 'parish-core' ),
 		),
 
-		// Join This Group Callout
-		'join_info'          => array(
+		// Request This Service Callout
+		'request_info'       => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Join information', 'parish-core' ),
+			'label'             => __( 'Request information', 'parish-core' ),
 		),
 		'contact_url'        => array(
 			'type'              => 'string',

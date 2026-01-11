@@ -3,7 +3,6 @@
  * Block template: Reflection
  *
  * Uses WordPress 6.5+ Block Bindings API to bind core blocks to post meta.
- * Admins edit a designed document; blocks automatically sync to/from meta.
  *
  * @package ParishCore
  */
@@ -13,92 +12,59 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 return array(
-	// Header Section
+	// Breadcrumbs
+	array(
+		'gb/breadcrumbs',
+		array(),
+	),
+
+	// Reflection Type (above title)
+	array(
+		'core/paragraph',
+		array(
+			'placeholder' => __( 'Reflection type (e.g., Homily, Meditation)', 'parish-core' ),
+			'metadata'    => array(
+				'bindings' => array(
+					'content' => array(
+						'source' => 'parish/post-meta',
+						'args'   => array( 'key' => 'parish_reflection_type' ),
+					),
+				),
+			),
+			'style'       => array(
+				'spacing' => array(
+					'margin' => array(
+						'top'    => '0',
+						'bottom' => '0',
+					),
+				),
+			),
+			'textColor'   => 'contrast-2',
+			'fontSize'    => 'small',
+		),
+	),
+
+	// Post Title
+	array(
+		'core/post-title',
+		array(
+			'level'    => 1,
+			'fontSize' => 'x-large',
+		),
+	),
+
+	// Opening Section - Author
 	array(
 		'core/group',
 		array(
-			'className' => 'reflection-header',
-			'style'     => array(
-				'spacing' => array(
-					'padding' => array(
-						'top'    => '2rem',
-						'bottom' => '2rem',
-					),
-				),
-			),
+			'metadata' => array( 'name' => 'Opening Section' ),
+			'layout'   => array( 'type' => 'constrained' ),
 		),
 		array(
-			// Reflection Title (uses post title)
-			array(
-				'core/post-title',
-				array(
-					'level'     => 1,
-					'textAlign' => 'center',
-				),
-			),
-
-			// Reflection Type & Season
-			array(
-				'core/columns',
-				array(),
-				array(
-					array(
-						'core/column',
-						array(),
-						array(
-							// Reflection Type
-							array(
-								'core/paragraph',
-								array(
-									'placeholder' => __( 'Reflection type (e.g., Homily, Meditation)', 'parish-core' ),
-									'style'       => array(
-										'typography' => array(
-											'fontWeight' => '600',
-										),
-									),
-									'metadata'    => array(
-										'bindings' => array(
-											'content' => array(
-												'source' => 'parish/post-meta',
-												'args'   => array( 'key' => 'parish_reflection_type' ),
-											),
-										),
-									),
-								),
-							),
-						),
-					),
-					array(
-						'core/column',
-						array(),
-						array(
-							// Liturgical Season
-							array(
-								'core/paragraph',
-								array(
-									'align'       => 'right',
-									'placeholder' => __( 'Liturgical season', 'parish-core' ),
-									'metadata'    => array(
-										'bindings' => array(
-											'content' => array(
-												'source' => 'parish/post-meta',
-												'args'   => array( 'key' => 'parish_liturgical_season' ),
-											),
-										),
-									),
-								),
-							),
-						),
-					),
-				),
-			),
-
-			// Author Info
 			array(
 				'core/paragraph',
 				array(
-					'align'       => 'center',
-					'placeholder' => __( 'Author name', 'parish-core' ),
+					'placeholder' => __( 'Author name (e.g., Fr. John Smith)', 'parish-core' ),
 					'metadata'    => array(
 						'bindings' => array(
 							'content' => array(
@@ -107,43 +73,86 @@ return array(
 							),
 						),
 					),
-				),
-			),
-
-			array(
-				'core/paragraph',
-				array(
-					'align'       => 'center',
-					'placeholder' => __( 'Author title (e.g., Parish Priest)', 'parish-core' ),
-					'metadata'    => array(
-						'bindings' => array(
-							'content' => array(
-								'source' => 'parish/post-meta',
-								'args'   => array( 'key' => 'parish_author_title' ),
+					'style'       => array(
+						'elements' => array(
+							'link' => array(
+								'color' => array( 'text' => 'var:preset|color|contrast-2' ),
+							),
+						),
+						'spacing'  => array(
+							'margin' => array(
+								'top'    => '0',
+								'bottom' => '0',
 							),
 						),
 					),
+					'textColor'   => 'contrast-2',
+					'fontFamily'  => 'system-serif',
+				),
+			),
+			array(
+				'core/separator',
+				array(
+					'className'       => 'is-style-wide',
+					'style'           => array(
+						'spacing' => array(
+							'margin' => array(
+								'top'    => 'var:preset|spacing|30',
+								'bottom' => 'var:preset|spacing|10',
+							),
+						),
+					),
+					'backgroundColor' => 'contrast-3',
 				),
 			),
 		),
 	),
 
-	// Key Verse (Quote)
+	// Spacer
+	array(
+		'core/spacer',
+		array(
+			'height' => 'var:preset|spacing|20',
+		),
+	),
+
+	// Featured Image
+	array(
+		'core/post-featured-image',
+		array(
+			'aspectRatio' => '16/9',
+			'width'       => '100%',
+			'height'      => '25vh',
+			'style'       => array(
+				'spacing' => array(
+					'margin' => array( 'bottom' => 'var:preset|spacing|30' ),
+				),
+				'border'  => array( 'radius' => '0px' ),
+			),
+		),
+	),
+
+	// Key Verse / Quote
 	array(
 		'core/group',
 		array(
-			'className' => 'reflection-verse',
-			'style'     => array(
+			'metadata' => array( 'name' => 'Key Verse' ),
+			'style'    => array(
 				'spacing' => array(
+					'margin'  => array(
+						'top'    => 'var:preset|spacing|30',
+						'bottom' => 'var:preset|spacing|30',
+					),
 					'padding' => array(
-						'top'    => '1.5rem',
-						'bottom' => '1.5rem',
+						'top'    => 'var:preset|spacing|20',
+						'right'  => 'var:preset|spacing|20',
+						'bottom' => 'var:preset|spacing|20',
+						'left'   => 'var:preset|spacing|20',
 					),
 				),
-				'color'   => array(
-					'background' => '#f9f9f9',
-				),
+				'color'   => array( 'background' => '#f9f9f9' ),
 			),
+			'layout'   => array( 'type' => 'constrained' ),
 		),
 		array(
 			array(
@@ -151,12 +160,6 @@ return array(
 				array(
 					'align'       => 'center',
 					'placeholder' => __( 'Key verse or quote...', 'parish-core' ),
-					'style'       => array(
-						'typography' => array(
-							'fontSize'  => '1.25rem',
-							'fontStyle' => 'italic',
-						),
-					),
 					'metadata'    => array(
 						'bindings' => array(
 							'content' => array(
@@ -165,119 +168,10 @@ return array(
 							),
 						),
 					),
-				),
-			),
-		),
-	),
-
-	// Scripture Readings (Collapsible)
-	array(
-		'core/details',
-		array(
-			'summary'     => __( 'Scripture Readings', 'parish-core' ),
-			'showContent' => false,
-		),
-		array(
-			array(
-				'core/columns',
-				array(),
-				array(
-					array(
-						'core/column',
-						array(),
-						array(
-							array(
-								'core/heading',
-								array(
-									'level'   => 4,
-									'content' => __( 'First Reading', 'parish-core' ),
-								),
-							),
-							array(
-								'core/paragraph',
-								array(
-									'placeholder' => __( 'First reading reference', 'parish-core' ),
-									'metadata'    => array(
-										'bindings' => array(
-											'content' => array(
-												'source' => 'parish/post-meta',
-												'args'   => array( 'key' => 'parish_first_reading' ),
-											),
-										),
-									),
-								),
-							),
-
-							array(
-								'core/heading',
-								array(
-									'level'   => 4,
-									'content' => __( 'Psalm', 'parish-core' ),
-								),
-							),
-							array(
-								'core/paragraph',
-								array(
-									'placeholder' => __( 'Responsorial psalm', 'parish-core' ),
-									'metadata'    => array(
-										'bindings' => array(
-											'content' => array(
-												'source' => 'parish/post-meta',
-												'args'   => array( 'key' => 'parish_psalm' ),
-											),
-										),
-									),
-								),
-							),
-						),
-					),
-					array(
-						'core/column',
-						array(),
-						array(
-							array(
-								'core/heading',
-								array(
-									'level'   => 4,
-									'content' => __( 'Second Reading', 'parish-core' ),
-								),
-							),
-							array(
-								'core/paragraph',
-								array(
-									'placeholder' => __( 'Second reading reference', 'parish-core' ),
-									'metadata'    => array(
-										'bindings' => array(
-											'content' => array(
-												'source' => 'parish/post-meta',
-												'args'   => array( 'key' => 'parish_second_reading' ),
-											),
-										),
-									),
-								),
-							),
-
-							array(
-								'core/heading',
-								array(
-									'level'   => 4,
-									'content' => __( 'Gospel', 'parish-core' ),
-								),
-							),
-							array(
-								'core/paragraph',
-								array(
-									'placeholder' => __( 'Gospel reading reference', 'parish-core' ),
-									'metadata'    => array(
-										'bindings' => array(
-											'content' => array(
-												'source' => 'parish/post-meta',
-												'args'   => array( 'key' => 'parish_gospel_reading' ),
-											),
-										),
-									),
-								),
-							),
+					'style'       => array(
+						'typography' => array(
+							'fontSize'  => '1.25rem',
+							'fontStyle' => 'italic',
 						),
 					),
 				),
@@ -285,29 +179,56 @@ return array(
 		),
 	),
 
-	// Reflection Text
+	// Reflection Text Section
 	array(
 		'core/group',
 		array(
-			'className' => 'reflection-text',
-			'style'     => array(
+			'metadata' => array( 'name' => 'Reflection' ),
+			'style'    => array(
 				'spacing' => array(
-					'padding' => array(
-						'top'    => '1.5rem',
-						'bottom' => '1.5rem',
+					'margin' => array(
+						'top'    => 'var:preset|spacing|30',
+						'bottom' => 'var:preset|spacing|30',
 					),
 				),
 			),
+			'layout'   => array( 'type' => 'constrained' ),
 		),
 		array(
 			array(
 				'core/heading',
 				array(
-					'level'   => 2,
-					'content' => __( 'Reflection', 'parish-core' ),
+					'level'     => 3,
+					'textAlign' => 'left',
+					'content'   => '<strong>' . __( 'Reflection', 'parish-core' ) . '</strong>',
+					'style'     => array(
+						'spacing'    => array(
+							'margin' => array( 'top' => '0', 'bottom' => '0' ),
+						),
+						'typography' => array(
+							'fontStyle'  => 'normal',
+							'fontWeight' => '500',
+						),
+						'elements'   => array(
+							'link' => array(
+								'color'  => array( 'text' => '#323232' ),
+								':hover' => array(
+									'color' => array( 'text' => 'var:preset|color|accent' ),
+								),
+							),
+						),
+						'color'      => array( 'text' => '#323232' ),
+					),
+					'fontSize'  => 'large',
 				),
 			),
-
+			array(
+				'core/separator',
+				array(
+					'className'       => 'is-style-wide',
+					'backgroundColor' => 'contrast-3',
+				),
+			),
 			array(
 				'core/paragraph',
 				array(
@@ -322,60 +243,6 @@ return array(
 					),
 				),
 			),
-		),
-	),
-
-	// Media Links
-	array(
-		'core/buttons',
-		array(
-			'layout' => array(
-				'type'           => 'flex',
-				'justifyContent' => 'center',
-			),
-		),
-		array(
-			array(
-				'core/button',
-				array(
-					'text'     => __( 'Listen to Audio', 'parish-core' ),
-					'metadata' => array(
-						'bindings' => array(
-							'url' => array(
-								'source' => 'parish/post-meta',
-								'args'   => array( 'key' => 'parish_audio_url' ),
-							),
-						),
-					),
-				),
-			),
-			array(
-				'core/button',
-				array(
-					'text'     => __( 'Watch Video', 'parish-core' ),
-					'metadata' => array(
-						'bindings' => array(
-							'url' => array(
-								'source' => 'parish/post-meta',
-								'args'   => array( 'key' => 'parish_video_url' ),
-							),
-						),
-					),
-				),
-			),
-		),
-	),
-
-	// Additional Content Section (Unlocked)
-	array(
-		'core/separator',
-		array(),
-	),
-
-	array(
-		'core/paragraph',
-		array(
-			'placeholder' => __( 'Add any additional commentary or notes here...', 'parish-core' ),
 		),
 	),
 );

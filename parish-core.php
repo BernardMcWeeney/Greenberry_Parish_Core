@@ -3,7 +3,7 @@
  * Plugin Name: Parish Core
  * Plugin URI: https://github.com/greenberry/parish-core
  * Description: A comprehensive parish management system for Catholic parishes.
- * Version: 4.0.0
+ * Version: 4.5.0
  * Author: Greenberry
  * Author URI: https://greenberry.ie
  * License: GPL v2 or later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PARISH_CORE_VERSION', '4.0.0' );
+define( 'PARISH_CORE_VERSION', '4.5.0' );
 define( 'PARISH_CORE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PARISH_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'PARISH_CORE_BASENAME', plugin_basename( __FILE__ ) );
@@ -63,20 +63,15 @@ function parish_core_includes(): void {
 		'cpt/class-parish-cpt-templates.php',
 
 		// Schedule system.
-		'schedule/class-parish-recurrence.php',
 		'schedule/class-parish-schedule-generator.php',
-		'schedule/class-parish-feast-day-service.php',
-		'schedule/class-parish-event-time-generator.php',
 
 		// Other modules you already have.
 		'class-parish-rest-api.php',
-		'class-parish-event-time-rest.php',
-		'class-parish-event-time-shortcodes.php',
 		'class-parish-admin-ui.php',
 		'class-parish-shortcodes.php',
-		'class-parish-readings.php',
 		'class-parish-admin-colors.php',
 		'class-parish-slider.php',
+		'class-parish-readings.php',
 	);
 
 	foreach ( $includes as $file ) {
@@ -131,6 +126,73 @@ function parish_core_deactivate(): void {
 }
 
 register_deactivation_hook( __FILE__, 'parish_core_deactivate' );
+
+/**
+ * Sanitize embed HTML for livestream embeds.
+ * Allows iframes from trusted video platforms only.
+ *
+ * @param string $html The embed HTML to sanitize.
+ * @return string Sanitized HTML.
+ */
+function parish_sanitize_embed_html( string $html ): string {
+	if ( empty( $html ) ) {
+		return '';
+	}
+
+	$allowed_html = array(
+		'iframe' => array(
+			'src'             => true,
+			'width'           => true,
+			'height'          => true,
+			'frameborder'     => true,
+			'allow'           => true,
+			'allowfullscreen' => true,
+			'title'           => true,
+			'loading'         => true,
+			'style'           => true,
+		),
+	);
+
+	$sanitized = wp_kses( $html, $allowed_html );
+
+	// Validate that iframe src is from trusted domains.
+	if ( preg_match( '/src=["\']([^"\']+)["\']/', $sanitized, $matches ) ) {
+		$src  = $matches[1];
+		$host = wp_parse_url( $src, PHP_URL_HOST );
+
+		$trusted_hosts = apply_filters(
+			'parish_trusted_embed_hosts',
+			array(
+				'youtube.com',
+				'www.youtube.com',
+				'youtube-nocookie.com',
+				'www.youtube-nocookie.com',
+				'vimeo.com',
+				'player.vimeo.com',
+				'facebook.com',
+				'www.facebook.com',
+				'churchservices.tv',
+				'www.churchservices.tv',
+				'mcnmedia.tv',
+				'www.mcnmedia.tv',
+			)
+		);
+
+		$is_trusted = false;
+		foreach ( $trusted_hosts as $trusted ) {
+			if ( $host === $trusted || str_ends_with( $host, '.' . $trusted ) ) {
+				$is_trusted = true;
+				break;
+			}
+		}
+
+		if ( ! $is_trusted ) {
+			return '';
+		}
+	}
+
+	return $sanitized;
+}
 
 /**
  * Schedule cleanup cron jobs for intentions and overrides.
@@ -209,12 +271,12 @@ function parish_core_get_default_settings(): array {
 		'enable_news'             => true,
 		'enable_gallery'          => true,
 		'enable_reflections'      => true,
-		'enable_mass_times'       => true,
 		'enable_events'           => true,
 		'enable_liturgical'       => true,
 		'enable_prayers'          => true,
 		'enable_slider'           => true,
 		'enable_travels'          => true,
+		'enable_mass_times'       => true,
 
 		// Readings API settings (admin only).
 		'readings_api_key'        => '',
@@ -264,9 +326,6 @@ function parish_core_get_default_settings(): array {
 		// Quick Actions (About Parish) - JSON array.
 		'parish_quick_actions' => '[]',
 
-		// Mass Times Schedule (simple 7-day format).
-		'mass_times_schedule' => array(),
-
 		// Events (stored separately as JSON).
 		'parish_events' => '[]',
 	);
@@ -278,76 +337,6 @@ function parish_core_get_default_settings(): array {
  */
 function parish_core_get_shortcode_reference(): array {
 	return array(
-		// Event Times (Advanced Mass Times System)
-		array(
-			'shortcode'   => '[parish_times]',
-			'name'        => __( 'Parish Times', 'parish-core' ),
-			'description' => __( 'Display event times with flexible layouts (list, table, cards, compact)', 'parish-core' ),
-			'attributes'  => array(
-				'church'          => __( 'Filter by church ID', 'parish-core' ),
-				'type'            => __( 'Filter by type: mass, confession, adoration, or comma-separated', 'parish-core' ),
-				'days'            => __( 'Number of days to show (default: 7)', 'parish-core' ),
-				'limit'           => __( 'Maximum events to show (default: 20)', 'parish-core' ),
-				'layout'          => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
-				'show_readings'   => __( '"yes" or "no" to show readings (default: yes)', 'parish-core' ),
-				'show_intentions' => __( '"yes" or "no" to show intentions (default: yes)', 'parish-core' ),
-				'show_notes'      => __( '"yes" or "no" to show notes (default: yes)', 'parish-core' ),
-				'livestream'      => __( '"only" to show only livestreamed events', 'parish-core' ),
-				'group_by'        => __( '"day", "church", or "none"', 'parish-core' ),
-			),
-			'example'     => '[parish_times type="mass" days="7" layout="cards" group_by="day"]',
-			'feature'     => 'mass_times',
-		),
-		array(
-			'shortcode'   => '[parish_times_today]',
-			'name'        => __( 'Today\'s Times', 'parish-core' ),
-			'description' => __( 'Display today\'s event schedule', 'parish-core' ),
-			'attributes'  => array(
-				'church' => __( 'Filter by church ID', 'parish-core' ),
-				'type'   => __( 'Filter by type', 'parish-core' ),
-				'layout' => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
-			),
-			'example'     => '[parish_times_today layout="compact"]',
-			'feature'     => 'mass_times',
-		),
-		array(
-			'shortcode'   => '[parish_mass_times]',
-			'name'        => __( 'Mass Times', 'parish-core' ),
-			'description' => __( 'Display Mass times (filters to Mass type only)', 'parish-core' ),
-			'attributes'  => array(
-				'church'        => __( 'Filter by church ID', 'parish-core' ),
-				'days'          => __( 'Number of days (default: 7)', 'parish-core' ),
-				'layout'        => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
-				'show_readings' => __( '"yes" or "no" to show readings', 'parish-core' ),
-				'livestream'    => __( '"only" to show only livestreamed Masses', 'parish-core' ),
-			),
-			'example'     => '[parish_mass_times days="7" layout="list" show_readings="yes"]',
-			'feature'     => 'mass_times',
-		),
-		array(
-			'shortcode'   => '[parish_confessions]',
-			'name'        => __( 'Confession Times', 'parish-core' ),
-			'description' => __( 'Display confession schedule', 'parish-core' ),
-			'attributes'  => array(
-				'church' => __( 'Filter by church ID', 'parish-core' ),
-				'days'   => __( 'Number of days (default: 7)', 'parish-core' ),
-				'layout' => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
-			),
-			'example'     => '[parish_confessions layout="compact"]',
-			'feature'     => 'mass_times',
-		),
-		array(
-			'shortcode'   => '[parish_adoration]',
-			'name'        => __( 'Adoration Times', 'parish-core' ),
-			'description' => __( 'Display Eucharistic Adoration schedule', 'parish-core' ),
-			'attributes'  => array(
-				'church' => __( 'Filter by church ID', 'parish-core' ),
-				'days'   => __( 'Number of days (default: 7)', 'parish-core' ),
-				'layout' => __( '"list", "table", "cards", or "compact"', 'parish-core' ),
-			),
-			'example'     => '[parish_adoration layout="cards"]',
-			'feature'     => 'mass_times',
-		),
 		// Events
 		array(
 			'shortcode'   => '[parish_events]',
@@ -576,6 +565,77 @@ function parish_core_get_shortcode_reference(): array {
 			),
 			'example'     => '[parish_slider]',
 			'feature'     => 'slider',
+		),
+		// Mass Times - Today Widget
+		array(
+			'shortcode'   => '[parish_today_widget]',
+			'name'        => __( 'Today\'s Schedule Widget', 'parish-core' ),
+			'description' => __( 'Compact widget showing Mass Times grouped by church for a single day', 'parish-core' ),
+			'attributes'  => array(
+				'date'       => __( 'Date in YYYY-MM-DD format (default: today)', 'parish-core' ),
+				'church_id'  => __( 'Filter by specific church ID', 'parish-core' ),
+				'type'       => __( 'Filter by type: "mass", "confession", "adoration", "rosary"', 'parish-core' ),
+				'show_notes' => __( '"yes" to show notes (default: no)', 'parish-core' ),
+			),
+			'example'     => '[parish_today_widget church_id="123" show_notes="yes"]',
+			'feature'     => 'mass_times',
+		),
+		// Mass Times - Church Schedule
+		array(
+			'shortcode'   => '[parish_church_schedule]',
+			'name'        => __( 'Church Weekly Schedule', 'parish-core' ),
+			'description' => __( 'Weekly schedule view for a specific church with special events section', 'parish-core' ),
+			'attributes'  => array(
+				'church_id'       => __( 'Church ID (auto-detects on church pages)', 'parish-core' ),
+				'show_special'    => __( '"yes" or "no" to show special events (default: yes)', 'parish-core' ),
+				'show_livestream' => __( '"yes" or "no" to show livestream icons (default: yes)', 'parish-core' ),
+			),
+			'example'     => '[parish_church_schedule church_id="123"]',
+			'feature'     => 'mass_times',
+		),
+		// Mass Times - General Schedule
+		array(
+			'shortcode'   => '[parish_schedule]',
+			'name'        => __( 'Schedule View', 'parish-core' ),
+			'description' => __( 'Display Mass Times schedule for multiple days', 'parish-core' ),
+			'attributes'  => array(
+				'days'            => __( 'Number of days to show (default: 7)', 'parish-core' ),
+				'church_id'       => __( 'Filter by specific church', 'parish-core' ),
+				'event_type'      => __( 'Filter by type', 'parish-core' ),
+				'format'          => __( '"list", "table", "cards", "simple"', 'parish-core' ),
+				'show_feast_day'  => __( '"yes" or "no" (default: yes)', 'parish-core' ),
+				'show_livestream' => __( '"yes" or "no" (default: yes)', 'parish-core' ),
+			),
+			'example'     => '[parish_schedule days="7" format="cards"]',
+			'feature'     => 'mass_times',
+		),
+		// Mass Times - Weekly Schedule
+		array(
+			'shortcode'   => '[parish_weekly_schedule]',
+			'name'        => __( 'Weekly Schedule', 'parish-core' ),
+			'description' => __( 'Full week schedule grouped by day', 'parish-core' ),
+			'attributes'  => array(
+				'church_id'       => __( 'Filter by specific church', 'parish-core' ),
+				'event_type'      => __( 'Filter by type', 'parish-core' ),
+				'show_feast_day'  => __( '"yes" or "no" (default: yes)', 'parish-core' ),
+				'show_livestream' => __( '"yes" or "no" (default: yes)', 'parish-core' ),
+			),
+			'example'     => '[parish_weekly_schedule church_id="123"]',
+			'feature'     => 'mass_times',
+		),
+		// Mass Times - Today Schedule
+		array(
+			'shortcode'   => '[parish_today_schedule]',
+			'name'        => __( 'Today\'s Schedule', 'parish-core' ),
+			'description' => __( 'Today\'s schedule with feast day header', 'parish-core' ),
+			'attributes'  => array(
+				'church_id'       => __( 'Filter by specific church', 'parish-core' ),
+				'event_type'      => __( 'Filter by type', 'parish-core' ),
+				'show_feast_day'  => __( '"yes" or "no" (default: yes)', 'parish-core' ),
+				'show_livestream' => __( '"yes" or "no" (default: yes)', 'parish-core' ),
+			),
+			'example'     => '[parish_today_schedule]',
+			'feature'     => 'mass_times',
 		),
 	);
 }

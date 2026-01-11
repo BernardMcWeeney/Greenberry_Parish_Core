@@ -188,4 +188,31 @@ class Parish_CPT_Templates {
 	public static function get_intention_template(): array {
 		return self::load_module_template( 'intention' );
 	}
+
+	/**
+	 * Get service template.
+	 *
+	 * @return array
+	 */
+	public static function get_service_template(): array {
+		return self::load_module_template( 'service' );
+	}
+
+	/**
+	 * Get clergy template.
+	 *
+	 * @return array
+	 */
+	public static function get_clergy_template(): array {
+		return self::load_module_template( 'clergy' );
+	}
+
+	/**
+	 * Get history template.
+	 *
+	 * @return array
+	 */
+	public static function get_history_template(): array {
+		return self::load_module_template( 'history' );
+	}
 }

@@ -96,8 +96,7 @@
 				el(
 					'pre',
 					null,
-					'[parish_mass_times day="Sunday" format="simple"]\n' +
-						'[parish_events limit="5" type="sacrament"]\n' +
+					'[parish_events limit="5" type="sacrament"]\n' +
 						'[daily_readings]\n' +
 						'[parish_slider]\n' +
 						'[parish_contact]'
@@ -167,7 +166,6 @@
 			{ key: 'enable_gallery', label: 'Gallery' },
 			{ key: 'enable_reflections', label: 'Reflections' },
 			{ key: 'enable_prayers', label: 'Prayers' },
-			{ key: 'enable_mass_times', label: 'Mass Times' },
 			{ key: 'enable_events', label: 'Events Calendar' },
 			{ key: 'enable_liturgical', label: 'Liturgical Calendar' },
 			{ key: 'enable_slider', label: 'Hero Slider' },

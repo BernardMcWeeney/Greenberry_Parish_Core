@@ -15,15 +15,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 return array(
 	'post_type' => 'parish_cemetery',
 	'fields'    => array(
+		// Description (opening tagline)
+		'description'        => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( 'Description', 'parish-core' ),
+		),
+
 		// Location Information
-		'address'           => array(
+		'address'            => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
 			'default'           => '',
 			'label'             => __( 'Address', 'parish-core' ),
 		),
-		'map_embed'         => array(
+		'map_embed'          => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'esc_url_raw',
 			'show_in_rest'      => true,
@@ -32,14 +41,14 @@ return array(
 		),
 
 		// Contact Information
-		'phone'             => array(
+		'phone'              => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
 			'label'             => __( 'Phone', 'parish-core' ),
 		),
-		'email'             => array(
+		'email'              => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_email',
 			'show_in_rest'      => true,
@@ -48,55 +57,34 @@ return array(
 		),
 
 		// Visiting Hours
-		'visiting_hours'    => array(
+		'visiting_hours'     => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Visiting hours', 'parish-core' ),
+			'label'             => __( 'Opening hours', 'parish-core' ),
 		),
 
-		// Policies
-		'burial_policy'     => array(
+		// Established Year
+		'established_year'   => array(
 			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_textarea_field',
+			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Burial policy', 'parish-core' ),
-		),
-		'monument_policy'   => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_textarea_field',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Monument policy', 'parish-core' ),
-		),
-		'maintenance_policy' => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_textarea_field',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Maintenance policy', 'parish-core' ),
+			'label'             => __( 'Established year', 'parish-core' ),
 		),
 
-		// Capacity Information
-		'total_capacity'    => array(
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
+		// History
+		'history'            => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
-			'default'           => 0,
-			'label'             => __( 'Total capacity', 'parish-core' ),
-		),
-		'available_plots'   => array(
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
-			'show_in_rest'      => true,
-			'default'           => 0,
-			'label'             => __( 'Available plots', 'parish-core' ),
+			'default'           => '',
+			'label'             => __( 'History', 'parish-core' ),
 		),
 
 		// Facilities
-		'facilities'        => array(
+		'facilities'         => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
@@ -104,38 +92,29 @@ return array(
 			'label'             => __( 'Facilities', 'parish-core' ),
 		),
 
-		// Related Church
-		'related_church'    => array(
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
-			'show_in_rest'      => true,
-			'default'           => 0,
-			'label'             => __( 'Related church', 'parish-core' ),
-		),
-
-		// Manager/Caretaker
-		'manager_name'      => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Manager name', 'parish-core' ),
-		),
-		'manager_phone'     => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Manager phone', 'parish-core' ),
-		),
-
-		// Special Notes
-		'special_notices'   => array(
+		// Regulations
+		'regulations'        => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Special notices', 'parish-core' ),
+			'label'             => __( 'Cemetery regulations', 'parish-core' ),
+		),
+
+		// Cemetery Enquiries
+		'enquiries_text'     => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( 'Enquiries text', 'parish-core' ),
+		),
+		'contact_url'        => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'esc_url_raw',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( 'Contact page URL', 'parish-core' ),
 		),
 	),
 );

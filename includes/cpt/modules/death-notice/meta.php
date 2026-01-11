@@ -123,6 +123,26 @@ return array(
 			'sanitize_callback' => 'esc_url_raw',
 			'show_in_rest'      => true,
 		),
+		'rip_ie_url'             => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'esc_url_raw',
+			'show_in_rest'      => true,
+			'label'             => __( 'RIP.ie URL', 'parish-core' ),
+		),
+
+		// Tribute & Prayer
+		'tribute'                => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'show_in_rest'      => true,
+			'label'             => __( 'Tribute', 'parish-core' ),
+		),
+		'prayer'                 => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'show_in_rest'      => true,
+			'label'             => __( 'Prayer', 'parish-core' ),
+		),
 
 		// Publishing logic
 		'featured'               => array(

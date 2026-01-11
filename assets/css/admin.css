@@ -2836,3 +2836,319 @@
 	color: #666;
 	font-style: italic;
 }
+
+/* ==========================================================================
+   MASS TIMES - ENHANCED 7-DAY GRID
+   ========================================================================== */
+.mass-times-7day-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+@media (max-width: 1400px) {
+	.mass-times-7day-grid {
+		grid-template-columns: repeat(4, 1fr);
+	}
+}
+
+@media (max-width: 900px) {
+	.mass-times-7day-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 600px) {
+	.mass-times-7day-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.mass-times-7day-grid .grid-day-column {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	min-height: 250px;
+	display: flex;
+	flex-direction: column;
+	transition: box-shadow 0.2s;
+}
+
+.mass-times-7day-grid .grid-day-column:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.mass-times-7day-grid .grid-day-column.is-today {
+	border-color: #2271b1;
+	border-width: 2px;
+}
+
+.mass-times-7day-grid .grid-day-column.is-past {
+	opacity: 0.7;
+	background: #fafafa;
+}
+
+.mass-times-7day-grid .day-header {
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-bottom: 1px solid #ddd;
+	text-align: center;
+	border-radius: 7px 7px 0 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.mass-times-7day-grid .grid-day-column.is-today .day-header {
+	background: #e8f4fc;
+}
+
+.mass-times-7day-grid .day-name {
+	font-size: 12px;
+	font-weight: 600;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.mass-times-7day-grid .grid-day-column.is-today .day-name {
+	color: #2271b1;
+}
+
+.mass-times-7day-grid .day-number {
+	font-size: 24px;
+	font-weight: 700;
+	color: #1d2327;
+	line-height: 1;
+}
+
+.mass-times-7day-grid .grid-day-column.is-today .day-number {
+	color: #2271b1;
+}
+
+.mass-times-7day-grid .today-badge {
+	display: inline-block;
+	font-size: 10px;
+	background: #2271b1;
+	color: #fff;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-weight: 500;
+}
+
+.mass-times-7day-grid .day-events {
+	flex: 1;
+	padding: 12px;
+	overflow-y: auto;
+	max-height: 350px;
+}
+
+.mass-times-7day-grid .no-events {
+	text-align: center;
+	color: #999;
+	font-style: italic;
+	font-size: 13px;
+	padding: 20px 0;
+}
+
+.mass-times-7day-grid .day-footer {
+	padding: 10px 12px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.mass-times-7day-grid .add-time-btn {
+	width: 100%;
+	justify-content: center;
+}
+
+/* ==========================================================================
+   MASS TIMES - MONTHLY CALENDAR VIEW
+   ========================================================================== */
+.month-calendar {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden;
+	margin-bottom: 24px;
+}
+
+.month-calendar .calendar-header {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	background: #f6f7f7;
+	border-bottom: 1px solid #ddd;
+}
+
+.month-calendar .calendar-day-header {
+	padding: 12px;
+	text-align: center;
+	font-weight: 600;
+	font-size: 12px;
+	color: #666;
+	text-transform: uppercase;
+}
+
+.month-calendar .calendar-body {
+	display: flex;
+	flex-direction: column;
+}
+
+.month-calendar .calendar-week {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.month-calendar .calendar-week:last-child {
+	border-bottom: none;
+}
+
+.month-calendar .calendar-day {
+	min-height: 100px;
+	padding: 8px;
+	border-right: 1px solid #f0f0f1;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.month-calendar .calendar-day:last-child {
+	border-right: none;
+}
+
+.month-calendar .calendar-day:hover {
+	background: #f6f7f7;
+}
+
+.month-calendar .calendar-day.other-month {
+	background: #fafafa;
+	opacity: 0.6;
+}
+
+.month-calendar .calendar-day.is-today {
+	background: #e8f4fc;
+}
+
+.month-calendar .calendar-day .day-number {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	font-size: 14px;
+	font-weight: 500;
+	margin-bottom: 4px;
+	border-radius: 50%;
+}
+
+.month-calendar .calendar-day.is-today .day-number {
+	background: #2271b1;
+	color: #fff;
+}
+
+.month-calendar .calendar-day .day-occurrences {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.month-calendar .calendar-occurrence {
+	font-size: 11px;
+	padding: 2px 6px;
+	border-radius: 3px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+
+.month-calendar .calendar-occurrence:hover {
+	opacity: 0.9;
+}
+
+.month-calendar .more-count {
+	font-size: 11px;
+	color: #666;
+	padding: 2px 6px;
+}
+
+/* ==========================================================================
+   MASS TIMES - TOOLBAR & CONTROLS
+   ========================================================================== */
+.mass-times-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: center;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-radius: 6px;
+	margin-bottom: 20px;
+}
+
+.mass-times-toolbar .view-switcher {
+	display: flex;
+	gap: 4px;
+}
+
+.mass-times-toolbar .nav-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+@media (max-width: 782px) {
+	.mass-times-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.mass-times-toolbar .view-switcher,
+	.mass-times-toolbar .nav-controls {
+		justify-content: center;
+	}
+
+	.mass-times-toolbar .components-select-control,
+	.mass-times-toolbar .components-toggle-control {
+		width: 100%;
+	}
+}
+
+/* ==========================================================================
+   MASS TIMES - MODAL ENHANCEMENTS
+   ========================================================================== */
+.mass-time-modal .modal-tabs {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 20px;
+	border-bottom: 1px solid #ddd;
+	padding-bottom: 12px;
+}
+
+.mass-time-modal .recurrence-builder {
+	background: #f9f9f9;
+	padding: 16px;
+	border-radius: 8px;
+	margin-top: 12px;
+}
+
+.mass-time-modal .days-picker {
+	margin-top: 16px;
+}
+
+.mass-time-modal .days-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.mass-time-modal .exception-dates {
+	background: #f9f9f9;
+	padding: 16px;
+	border-radius: 8px;
+}
+
+.mass-time-modal .exception-list {
+	margin-bottom: 12px;
+}

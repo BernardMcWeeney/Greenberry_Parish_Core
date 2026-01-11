@@ -31,6 +31,6 @@ return array(
 		'rewrite'       => array( 'slug' => 'parish-news', 'with_front' => false ),
 		'show_in_menu'  => 'parish-core',
 		'template'      => Parish_CPT_Templates::get_news_template(),
-		'template_lock' => 'insert',
+		'template_lock' => false,
 	),
 );

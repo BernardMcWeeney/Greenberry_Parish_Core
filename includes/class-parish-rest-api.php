@@ -48,12 +48,6 @@ class Parish_REST_API {
 			array( 'methods' => 'POST', 'callback' => array( $this, 'update_settings' ), 'permission_callback' => array( $this, 'can_manage' ) ),
 		));
 
-		// Mass Times.
-		register_rest_route( $this->namespace, '/mass-times', array(
-			array( 'methods' => 'GET', 'callback' => array( $this, 'get_mass_times' ), 'permission_callback' => array( $this, 'can_edit' ) ),
-			array( 'methods' => 'POST', 'callback' => array( $this, 'update_mass_times' ), 'permission_callback' => array( $this, 'can_edit' ) ),
-		));
-
 		// Events.
 		register_rest_route( $this->namespace, '/events', array(
 			array( 'methods' => 'GET', 'callback' => array( $this, 'get_events' ), 'permission_callback' => array( $this, 'can_edit' ) ),
@@ -165,6 +159,36 @@ class Parish_REST_API {
 			'callback' => array( $this, 'get_event_types' ),
 			'permission_callback' => '__return_true',
 		));
+
+		// =====================================================================
+		// MASS TIMES CPT ENDPOINTS (New CPT-based system)
+		// =====================================================================
+
+		// Mass Times CRUD.
+		register_rest_route( $this->namespace, '/mass-times', array(
+			array( 'methods' => 'GET', 'callback' => array( $this, 'get_mass_times' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'POST', 'callback' => array( $this, 'create_mass_time' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		register_rest_route( $this->namespace, '/mass-times/(?P<id>\d+)', array(
+			array( 'methods' => 'GET', 'callback' => array( $this, 'get_mass_time' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'PUT', 'callback' => array( $this, 'update_mass_time' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+			array( 'methods' => 'DELETE', 'callback' => array( $this, 'delete_mass_time' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		// Mass Times occurrences query.
+		register_rest_route( $this->namespace, '/mass-times/occurrences', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'get_mass_time_occurrences' ),
+			'permission_callback' => '__return_true',
+			'args' => array(
+				'from' => array( 'type' => 'string', 'format' => 'date', 'required' => true ),
+				'to' => array( 'type' => 'string', 'format' => 'date', 'required' => true ),
+				'church_id' => array( 'type' => 'integer' ),
+				'type' => array( 'type' => 'string' ),
+				'active_only' => array( 'type' => 'boolean', 'default' => true ),
+			),
+		));
 	}
 
 	public function can_edit(): bool { return current_user_can( 'edit_posts' ); }
@@ -201,11 +225,6 @@ class Parish_REST_API {
 			$data['reflection'] = $this->get_latest_reflection_data();
 		}
 
-		if ( Parish_Core::is_feature_enabled( 'mass_times' ) ) {
-			$data['todays_masses'] = $this->get_todays_masses();
-			$data['weeks_masses']  = $this->get_weeks_masses();
-		}
-
 		$data['recent_death_notices'] = $this->get_recent_posts( 'parish_death_notice', 5, 'death_notices' );
 		$data['recent_newsletters']   = $this->get_recent_posts( 'parish_newsletter', 5, 'newsletters' );
 		$data['upcoming_events']      = $this->get_upcoming_events();
@@ -213,28 +232,8 @@ class Parish_REST_API {
 		return rest_ensure_response( $data );
 	}
 
-	private function get_todays_masses(): array {
-		$mass_times = json_decode( Parish_Core::get_setting( 'mass_times', '[]' ), true ) ?: array();
-		$today = current_time( 'l' );
-		$todays = array_filter( $mass_times, fn( $mt ) => ( $mt['day'] ?? '' ) === $today && ( $mt['active'] ?? true ) );
-		usort( $todays, fn( $a, $b ) => strcmp( $a['time'] ?? '', $b['time'] ?? '' ) );
-		return array_map( fn( $mt ) => array_merge( $mt, array( 'church_name' => $mt['church_id'] ? get_the_title( $mt['church_id'] ) : '' ) ), array_values( $todays ) );
-	}
-
-	private function get_weeks_masses(): array {
-		$mass_times = json_decode( Parish_Core::get_setting( 'mass_times', '[]' ), true ) ?: array();
-		$days = array( 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday' );
-		$by_day = array();
-		foreach ( $days as $day ) {
-			$dm = array_filter( $mass_times, fn( $mt ) => ( $mt['day'] ?? '' ) === $day && ( $mt['active'] ?? true ) );
-			usort( $dm, fn( $a, $b ) => strcmp( $a['time'] ?? '', $b['time'] ?? '' ) );
-			$by_day[ $day ] = array_map( fn( $mt ) => array_merge( $mt, array( 'church_name' => $mt['church_id'] ? get_the_title( $mt['church_id'] ) : '' ) ), array_values( $dm ) );
-		}
-		return $by_day;
-	}
-
 	private function get_enabled_features(): array {
-		$features = array( 'death_notices', 'baptism_notices', 'wedding_notices', 'churches', 'schools', 'cemeteries', 'groups', 'newsletters', 'news', 'gallery', 'reflections', 'mass_times', 'events', 'liturgical', 'prayers', 'slider' );
+		$features = array( 'death_notices', 'baptism_notices', 'wedding_notices', 'churches', 'schools', 'cemeteries', 'groups', 'newsletters', 'news', 'gallery', 'reflections', 'events', 'liturgical', 'prayers', 'slider' );
 		$enabled = array();
 		foreach ( $features as $f ) { $enabled[ $f ] = Parish_Core::is_feature_enabled( $f ); }
 		return $enabled;
@@ -588,12 +587,10 @@ class Parish_REST_API {
 			'enable_gallery' => (bool) ( $s['enable_gallery'] ?? true ),
 			'enable_reflections' => (bool) ( $s['enable_reflections'] ?? true ),
 			'enable_prayers' => (bool) ( $s['enable_prayers'] ?? true ),
-			'enable_mass_times' => (bool) ( $s['enable_mass_times'] ?? true ),
 			'enable_events' => (bool) ( $s['enable_events'] ?? true ),
 			'enable_liturgical' => (bool) ( $s['enable_liturgical'] ?? true ),
 			'enable_slider' => (bool) ( $s['enable_slider'] ?? true ),
 			'readings_api_key' => $s['readings_api_key'] ?? '',
-			'mass_times_schedule' => $s['mass_times_schedule'] ?? array(),
 			'admin_colors_enabled' => (bool) ( $s['admin_colors_enabled'] ?? false ),
 			'admin_color_menu_text' => $s['admin_color_menu_text'] ?? '#ffffff',
 			'admin_color_base_menu' => $s['admin_color_base_menu'] ?? '#1d2327',
@@ -608,85 +605,15 @@ class Parish_REST_API {
 
 	public function update_settings( \WP_REST_Request $request ): \WP_REST_Response {
 		$params = $request->get_json_params();
-		$toggles = array( 'enable_death_notices', 'enable_baptism_notices', 'enable_wedding_notices', 'enable_churches', 'enable_schools', 'enable_cemeteries', 'enable_groups', 'enable_newsletters', 'enable_news', 'enable_gallery', 'enable_reflections', 'enable_prayers', 'enable_mass_times', 'enable_events', 'enable_liturgical', 'enable_slider', 'admin_colors_enabled' );
+		$toggles = array( 'enable_death_notices', 'enable_baptism_notices', 'enable_wedding_notices', 'enable_churches', 'enable_schools', 'enable_cemeteries', 'enable_groups', 'enable_newsletters', 'enable_news', 'enable_gallery', 'enable_reflections', 'enable_prayers', 'enable_events', 'enable_liturgical', 'enable_slider', 'admin_colors_enabled' );
 		$colors = array( 'admin_color_menu_text', 'admin_color_base_menu', 'admin_color_highlight', 'admin_color_notification', 'admin_color_background', 'admin_color_links', 'admin_color_buttons', 'admin_color_form_inputs' );
 		$sanitized = array();
 		foreach ( $toggles as $key ) { if ( isset( $params[ $key ] ) ) $sanitized[ $key ] = (bool) $params[ $key ]; }
 		foreach ( $colors as $key ) { if ( isset( $params[ $key ] ) ) $sanitized[ $key ] = sanitize_hex_color( $params[ $key ] ) ?: '#1d2327'; }
 		if ( isset( $params['readings_api_key'] ) ) $sanitized['readings_api_key'] = sanitize_text_field( $params['readings_api_key'] );
 
-		// Handle mass times schedule (simple 7-day format).
-		if ( isset( $params['mass_times_schedule'] ) && is_array( $params['mass_times_schedule'] ) ) {
-			$sanitized['mass_times_schedule'] = $this->sanitize_mass_times_schedule( $params['mass_times_schedule'] );
-		}
-
 		Parish_Core::update_settings( $sanitized );
 		return rest_ensure_response( array( 'success' => true, 'message' => __( 'Settings saved.', 'parish-core' ) ) );
-	}
-
-	/**
-	 * Sanitize mass times schedule data.
-	 */
-	private function sanitize_mass_times_schedule( array $schedule ): array {
-		$days = array( 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' );
-		$sanitized = array();
-
-		foreach ( $days as $day ) {
-			if ( ! isset( $schedule[ $day ] ) || ! is_array( $schedule[ $day ] ) ) {
-				continue;
-			}
-
-			$day_slots = array();
-			foreach ( $schedule[ $day ] as $slot ) {
-				if ( ! is_array( $slot ) ) {
-					continue;
-				}
-				$day_slots[] = array(
-					'time'       => sanitize_text_field( $slot['time'] ?? '' ),
-					'type'       => sanitize_text_field( $slot['type'] ?? 'mass' ),
-					'church_id'  => sanitize_text_field( $slot['church_id'] ?? '' ),
-					'notes'      => sanitize_text_field( $slot['notes'] ?? '' ),
-					'livestream' => (bool) ( $slot['livestream'] ?? false ),
-				);
-			}
-
-			if ( ! empty( $day_slots ) ) {
-				$sanitized[ $day ] = $day_slots;
-			}
-		}
-
-		return $sanitized;
-	}
-
-	// =========================================================================
-	// MASS TIMES
-	// =========================================================================
-	public function get_mass_times(): \WP_REST_Response {
-		return rest_ensure_response( array(
-			'mass_times' => json_decode( Parish_Core::get_setting( 'mass_times', '[]' ), true ) ?: array(),
-			'churches' => $this->get_churches_list(),
-		));
-	}
-
-	public function update_mass_times( \WP_REST_Request $request ): \WP_REST_Response {
-		$mass_times = $request->get_json_params()['mass_times'] ?? array();
-		$sanitized = array();
-		foreach ( $mass_times as $mt ) {
-			$sanitized[] = array(
-				'id' => sanitize_text_field( $mt['id'] ?? wp_generate_uuid4() ),
-				'church_id' => absint( $mt['church_id'] ?? 0 ),
-				'day' => sanitize_text_field( $mt['day'] ?? '' ),
-				'time' => sanitize_text_field( $mt['time'] ?? '' ),
-				'is_recurring' => (bool) ( $mt['is_recurring'] ?? true ),
-				'recurrence_type' => sanitize_text_field( $mt['recurrence_type'] ?? 'weekly' ),
-				'is_livestreamed' => (bool) ( $mt['is_livestreamed'] ?? false ),
-				'livestream_url' => esc_url_raw( $mt['livestream_url'] ?? '' ),
-				'notes' => sanitize_textarea_field( $mt['notes'] ?? '' ),
-				'active' => (bool) ( $mt['active'] ?? true ),
-			);
-		}
-		Parish_Core::update_settings( array( 'mass_times' => wp_json_encode( $sanitized ) ) );
-		return rest_ensure_response( array( 'success' => true, 'message' => __( 'Saved.', 'parish-core' ) ) );
 	}
 
 	// =========================================================================
@@ -728,7 +655,7 @@ class Parish_REST_API {
 	private function get_churches_list(): array {
 		if ( ! post_type_exists( 'parish_church' ) ) return array();
 		$churches = get_posts( array( 'post_type' => 'parish_church', 'posts_per_page' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC' ) );
-		return array_map( fn( $c ) => array( 'id' => $c->ID, 'title' => $c->post_title ), $churches );
+		return array_map( fn( $c ) => array( 'id' => $c->ID, 'title' => html_entity_decode( $c->post_title, ENT_QUOTES, 'UTF-8' ) ), $churches );
 	}
 
 	// =========================================================================
@@ -829,7 +756,7 @@ class Parish_REST_API {
 			) );
 		}
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$template  = $this->sanitize_schedule_template( $params );
 
 		// Generate ID if not provided.
@@ -974,7 +901,7 @@ class Parish_REST_API {
 			) );
 		}
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$override  = $this->sanitize_schedule_override( $params );
 
 		// Generate ID if not provided.
@@ -1048,7 +975,7 @@ class Parish_REST_API {
 			$filters['event_type'] = sanitize_text_field( $event_type );
 		}
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$schedule  = $generator->generate( $start, $end, $filters );
 
 		return rest_ensure_response( array(
@@ -1068,7 +995,7 @@ class Parish_REST_API {
 			return rest_ensure_response( array( 'error' => 'Schedule system not available.' ) );
 		}
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$schedule  = $generator->generate_today();
 
 		// Get feast day info.
@@ -1096,7 +1023,7 @@ class Parish_REST_API {
 			return rest_ensure_response( array( 'error' => 'Schedule system not available.' ) );
 		}
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$schedule  = $generator->generate_week();
 
 		// Group by day.
@@ -1248,6 +1175,357 @@ class Parish_REST_API {
 		}
 
 		return $override;
+	}
+
+	// =========================================================================
+	// MASS TIMES CPT CALLBACKS
+	// =========================================================================
+
+	/**
+	 * Get all Mass Time posts.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_mass_times(): \WP_REST_Response {
+		if ( ! Parish_Core::is_feature_enabled( 'mass_times' ) ) {
+			return rest_ensure_response( array( 'error' => 'Mass Times feature is disabled.' ) );
+		}
+
+		$posts = get_posts( array(
+			'post_type'      => 'parish_mass_time',
+			'posts_per_page' => -1,
+			'post_status'    => 'publish',
+			'orderby'        => 'meta_value',
+			'meta_key'       => 'parish_mass_time_start_datetime',
+			'order'          => 'ASC',
+		) );
+
+		$mass_times = array();
+		foreach ( $posts as $post ) {
+			$mass_times[] = $this->format_mass_time_post( $post );
+		}
+
+		return rest_ensure_response( array(
+			'mass_times'  => $mass_times,
+			'churches'    => $this->get_churches_list(),
+			'event_types' => class_exists( 'Parish_Schedule_Generator' )
+				? Parish_Schedule_Generator::instance()->get_event_types()
+				: array(),
+		) );
+	}
+
+	/**
+	 * Get a single Mass Time post.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function get_mass_time( \WP_REST_Request $request ): \WP_REST_Response {
+		$id   = absint( $request->get_param( 'id' ) );
+		$post = get_post( $id );
+
+		if ( ! $post || 'parish_mass_time' !== $post->post_type ) {
+			return new \WP_REST_Response( array( 'error' => 'Mass Time not found.' ), 404 );
+		}
+
+		return rest_ensure_response( $this->format_mass_time_post( $post ) );
+	}
+
+	/**
+	 * Create a new Mass Time post.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function create_mass_time( \WP_REST_Request $request ): \WP_REST_Response {
+		if ( ! Parish_Core::is_feature_enabled( 'mass_times' ) ) {
+			return rest_ensure_response( array( 'success' => false, 'message' => 'Mass Times feature is disabled.' ) );
+		}
+
+		$params = $request->get_json_params();
+		$meta   = $this->sanitize_mass_time_meta( $params );
+
+		$post_data = array(
+			'post_type'   => 'parish_mass_time',
+			'post_status' => 'publish',
+			'post_title'  => sanitize_text_field( $params['title'] ?? '' ),
+			'meta_input'  => $meta,
+		);
+
+		$post_id = wp_insert_post( $post_data, true );
+
+		if ( is_wp_error( $post_id ) ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => $post_id->get_error_message(),
+			) );
+		}
+
+		// Clear schedule cache.
+		if ( class_exists( 'Parish_Schedule_Generator' ) ) {
+			Parish_Schedule_Generator::instance()->clear_cache( $post_id );
+		}
+
+		return rest_ensure_response( array(
+			'success'   => true,
+			'message'   => __( 'Mass Time created.', 'parish-core' ),
+			'mass_time' => $this->format_mass_time_post( get_post( $post_id ) ),
+		) );
+	}
+
+	/**
+	 * Update an existing Mass Time post.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function update_mass_time( \WP_REST_Request $request ): \WP_REST_Response {
+		$id   = absint( $request->get_param( 'id' ) );
+		$post = get_post( $id );
+
+		if ( ! $post || 'parish_mass_time' !== $post->post_type ) {
+			return new \WP_REST_Response( array( 'error' => 'Mass Time not found.' ), 404 );
+		}
+
+		$params = $request->get_json_params();
+		$meta   = $this->sanitize_mass_time_meta( $params );
+
+		// Update title if provided.
+		if ( isset( $params['title'] ) ) {
+			wp_update_post( array(
+				'ID'         => $id,
+				'post_title' => sanitize_text_field( $params['title'] ),
+			) );
+		}
+
+		// Update meta fields.
+		foreach ( $meta as $key => $value ) {
+			update_post_meta( $id, $key, $value );
+		}
+
+		// Clear schedule cache.
+		if ( class_exists( 'Parish_Schedule_Generator' ) ) {
+			Parish_Schedule_Generator::instance()->clear_cache( $id );
+		}
+
+		return rest_ensure_response( array(
+			'success'   => true,
+			'message'   => __( 'Mass Time updated.', 'parish-core' ),
+			'mass_time' => $this->format_mass_time_post( get_post( $id ) ),
+		) );
+	}
+
+	/**
+	 * Delete a Mass Time post.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function delete_mass_time( \WP_REST_Request $request ): \WP_REST_Response {
+		$id   = absint( $request->get_param( 'id' ) );
+		$post = get_post( $id );
+
+		if ( ! $post || 'parish_mass_time' !== $post->post_type ) {
+			return new \WP_REST_Response( array( 'error' => 'Mass Time not found.' ), 404 );
+		}
+
+		$result = wp_delete_post( $id, true );
+
+		if ( ! $result ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => __( 'Failed to delete Mass Time.', 'parish-core' ),
+			) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Mass Time deleted.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Get Mass Time occurrences for a date range.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function get_mass_time_occurrences( \WP_REST_Request $request ): \WP_REST_Response {
+		if ( ! Parish_Core::is_feature_enabled( 'mass_times' ) ) {
+			return rest_ensure_response( array( 'error' => 'Mass Times feature is disabled.' ) );
+		}
+
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return rest_ensure_response( array( 'error' => 'Schedule generator not available.' ) );
+		}
+
+		$from        = $request->get_param( 'from' ) ?: wp_date( 'Y-m-d' );
+		$to          = $request->get_param( 'to' ) ?: wp_date( 'Y-m-d', strtotime( '+6 days' ) );
+		$church_id   = $request->get_param( 'church_id' );
+		$type        = $request->get_param( 'type' );
+		$active_only = $request->get_param( 'active_only' ) !== false;
+
+		$filters = array( 'active_only' => $active_only );
+		if ( null !== $church_id ) {
+			$filters['church_id'] = absint( $church_id );
+		}
+		if ( $type ) {
+			$filters['type'] = sanitize_text_field( $type );
+		}
+
+		$generator   = Parish_Schedule_Generator::instance();
+		$occurrences = $generator->generate( $from, $to, $filters );
+
+		// Group by date for easier frontend rendering.
+		$by_date = array();
+		foreach ( $occurrences as $occ ) {
+			$date = $occ['date'];
+			if ( ! isset( $by_date[ $date ] ) ) {
+				$by_date[ $date ] = array(
+					'date'        => $date,
+					'day_name'    => wp_date( 'l', strtotime( $date ) ),
+					'formatted'   => wp_date( 'l, j F Y', strtotime( $date ) ),
+					'is_today'    => $date === wp_date( 'Y-m-d' ),
+					'occurrences' => array(),
+				);
+			}
+			$by_date[ $date ]['occurrences'][] = $occ;
+		}
+
+		return rest_ensure_response( array(
+			'from'  => $from,
+			'to'    => $to,
+			'days'  => array_values( $by_date ),
+			'total' => count( $occurrences ),
+		) );
+	}
+
+	/**
+	 * Format a Mass Time post for API response.
+	 *
+	 * @param \WP_Post $post The post object.
+	 * @return array Formatted mass time data.
+	 */
+	private function format_mass_time_post( \WP_Post $post ): array {
+		$church_id = absint( get_post_meta( $post->ID, 'parish_mass_time_church_id', true ) );
+		$church_name = __( 'All Churches', 'parish-core' );
+		if ( $church_id > 0 ) {
+			$church = get_post( $church_id );
+			if ( $church ) {
+				$church_name = html_entity_decode( $church->post_title, ENT_QUOTES, 'UTF-8' );
+			}
+		}
+
+		$recurrence = get_post_meta( $post->ID, 'parish_mass_time_recurrence', true );
+		$exception_dates = get_post_meta( $post->ID, 'parish_mass_time_exception_dates', true );
+
+		return array(
+			'id'               => $post->ID,
+			'title'            => $post->post_title,
+			'church_id'        => $church_id,
+			'church_name'      => $church_name,
+			'liturgical_type'  => get_post_meta( $post->ID, 'parish_mass_time_liturgical_type', true ) ?: 'mass',
+			'start_datetime'   => get_post_meta( $post->ID, 'parish_mass_time_start_datetime', true ),
+			'duration_minutes' => absint( get_post_meta( $post->ID, 'parish_mass_time_duration_minutes', true ) ) ?: 60,
+			'is_active'        => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_active', true ),
+			'is_special_event' => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_special_event', true ),
+			'is_recurring'     => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_recurring', true ),
+			'recurrence'       => is_array( $recurrence ) ? $recurrence : array(),
+			'exception_dates'  => is_array( $exception_dates ) ? $exception_dates : array(),
+			'is_livestreamed'  => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_livestreamed', true ),
+			'livestream_url'   => get_post_meta( $post->ID, 'parish_mass_time_livestream_url', true ),
+			'livestream_embed' => get_post_meta( $post->ID, 'parish_mass_time_livestream_embed', true ),
+			'notes'            => get_post_meta( $post->ID, 'parish_mass_time_notes', true ),
+		);
+	}
+
+	/**
+	 * Sanitize Mass Time meta data from request.
+	 *
+	 * @param array $params Request parameters.
+	 * @return array Sanitized meta array with prefixed keys.
+	 */
+	private function sanitize_mass_time_meta( array $params ): array {
+		$meta = array();
+		$prefix = 'parish_mass_time_';
+
+		if ( isset( $params['church_id'] ) ) {
+			$meta[ $prefix . 'church_id' ] = absint( $params['church_id'] );
+		}
+
+		if ( isset( $params['liturgical_type'] ) ) {
+			$meta[ $prefix . 'liturgical_type' ] = sanitize_text_field( $params['liturgical_type'] );
+		}
+
+		if ( isset( $params['start_datetime'] ) ) {
+			$meta[ $prefix . 'start_datetime' ] = sanitize_text_field( $params['start_datetime'] );
+		}
+
+		if ( isset( $params['duration_minutes'] ) ) {
+			$meta[ $prefix . 'duration_minutes' ] = absint( $params['duration_minutes'] );
+		}
+
+		if ( isset( $params['is_active'] ) ) {
+			$meta[ $prefix . 'is_active' ] = (bool) $params['is_active'];
+		}
+
+		if ( isset( $params['is_special_event'] ) ) {
+			$meta[ $prefix . 'is_special_event' ] = (bool) $params['is_special_event'];
+		}
+
+		if ( isset( $params['is_recurring'] ) ) {
+			$meta[ $prefix . 'is_recurring' ] = (bool) $params['is_recurring'];
+		}
+
+		if ( isset( $params['recurrence'] ) && is_array( $params['recurrence'] ) ) {
+			$rec = $params['recurrence'];
+			$sanitized_rec = array(
+				'type' => sanitize_text_field( $rec['type'] ?? 'weekly' ),
+			);
+
+			if ( ! empty( $rec['days'] ) && is_array( $rec['days'] ) ) {
+				$sanitized_rec['days'] = array_map( 'sanitize_text_field', $rec['days'] );
+			}
+			if ( isset( $rec['day_of_month'] ) ) {
+				$sanitized_rec['day_of_month'] = absint( $rec['day_of_month'] );
+			}
+			if ( isset( $rec['ordinal'] ) ) {
+				$sanitized_rec['ordinal'] = sanitize_text_field( $rec['ordinal'] );
+			}
+			if ( isset( $rec['ordinal_day'] ) ) {
+				$sanitized_rec['ordinal_day'] = sanitize_text_field( $rec['ordinal_day'] );
+			}
+			if ( isset( $rec['month'] ) ) {
+				$sanitized_rec['month'] = absint( $rec['month'] );
+			}
+			if ( isset( $rec['end_date'] ) ) {
+				$sanitized_rec['end_date'] = sanitize_text_field( $rec['end_date'] );
+			}
+
+			$meta[ $prefix . 'recurrence' ] = $sanitized_rec;
+		}
+
+		if ( isset( $params['exception_dates'] ) && is_array( $params['exception_dates'] ) ) {
+			$meta[ $prefix . 'exception_dates' ] = array_map( 'sanitize_text_field', $params['exception_dates'] );
+		}
+
+		if ( isset( $params['is_livestreamed'] ) ) {
+			$meta[ $prefix . 'is_livestreamed' ] = (bool) $params['is_livestreamed'];
+		}
+
+		if ( isset( $params['livestream_url'] ) ) {
+			$meta[ $prefix . 'livestream_url' ] = esc_url_raw( $params['livestream_url'] );
+		}
+
+		if ( isset( $params['livestream_embed'] ) ) {
+			$meta[ $prefix . 'livestream_embed' ] = parish_sanitize_embed_html( $params['livestream_embed'] );
+		}
+
+		if ( isset( $params['notes'] ) ) {
+			$meta[ $prefix . 'notes' ] = wp_kses_post( $params['notes'] );
+		}
+
+		return $meta;
 	}
 
 	// =========================================================================

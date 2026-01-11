@@ -32,16 +32,16 @@ class Parish_Shortcodes {
 	 */
 	public function register_shortcodes(): void {
 		add_shortcode( 'parish_reflection', array( $this, 'reflection_shortcode' ) );
-		add_shortcode( 'parish_mass_times', array( $this, 'mass_times_shortcode' ) );
 		add_shortcode( 'parish_events', array( $this, 'events_shortcode' ) );
 		add_shortcode( 'parish_churches', array( $this, 'churches_shortcode' ) );
 		add_shortcode( 'parish_clergy', array( $this, 'clergy_shortcode' ) );
 		add_shortcode( 'parish_contact', array( $this, 'contact_shortcode' ) );
 		add_shortcode( 'parish_prayers', array( $this, 'prayers_shortcode' ) );
 
-		// Enhanced schedule shortcodes.
-		add_shortcode( 'parish_schedule', array( $this, 'schedule_shortcode' ) );
+		// Mass Times shortcodes.
+		add_shortcode( 'parish_today_widget', array( $this, 'today_widget_shortcode' ) );
 		add_shortcode( 'parish_church_schedule', array( $this, 'church_schedule_shortcode' ) );
+		add_shortcode( 'parish_schedule', array( $this, 'schedule_shortcode' ) );
 		add_shortcode( 'parish_weekly_schedule', array( $this, 'weekly_schedule_shortcode' ) );
 		add_shortcode( 'parish_today_schedule', array( $this, 'today_schedule_shortcode' ) );
 	}
@@ -74,181 +74,6 @@ class Parish_Shortcodes {
 			wp_kses_post( $reflection->post_content ),
 			esc_html( $reflection->post_title )
 		);
-	}
-
-	/**
-	 * Mass times shortcode.
-	 *
-	 * Attributes:
-	 * - day: Filter by specific day (e.g., "Sunday", "Monday")
-	 * - church_id: Filter by specific church ID
-	 * - show_livestream: "yes" to only show livestreamed, "no" to hide badge
-	 * - format: "daily" (today only), "weekly" (full week), "simple" (compact list)
-	 */
-	public function mass_times_shortcode( $atts ): string {
-		if ( ! Parish_Core::is_feature_enabled( 'mass_times' ) ) {
-			return '';
-		}
-
-		$atts = shortcode_atts( array(
-			'day'            => '',
-			'church_id'      => '',
-			'show_livestream' => 'yes',
-			'format'         => 'weekly',
-		), $atts );
-
-		// Get schedule from settings (new simple format: keyed by day name).
-		$schedule = Parish_Core::get_setting( 'mass_times_schedule', array() );
-
-		if ( empty( $schedule ) || ! is_array( $schedule ) ) {
-			return '<p>' . esc_html__( 'No mass times scheduled.', 'parish-core' ) . '</p>';
-		}
-
-		// Event type labels.
-		$type_labels = array(
-			'mass'       => __( 'Mass', 'parish-core' ),
-			'confession' => __( 'Confession', 'parish-core' ),
-			'adoration'  => __( 'Adoration', 'parish-core' ),
-			'rosary'     => __( 'Rosary', 'parish-core' ),
-			'stations'   => __( 'Stations of the Cross', 'parish-core' ),
-			'benediction' => __( 'Benediction', 'parish-core' ),
-			'vespers'    => __( 'Vespers', 'parish-core' ),
-			'novena'     => __( 'Novena', 'parish-core' ),
-			'other'      => __( 'Other', 'parish-core' ),
-		);
-
-		// Build church name cache.
-		$church_names = array();
-		if ( post_type_exists( 'parish_church' ) ) {
-			$churches = get_posts( array(
-				'post_type'      => 'parish_church',
-				'posts_per_page' => -1,
-				'post_status'    => 'publish',
-			) );
-			foreach ( $churches as $church ) {
-				$church_names[ $church->ID ] = $church->post_title;
-			}
-		}
-
-		// Filter by day if specified.
-		if ( $atts['format'] === 'daily' ) {
-			$atts['day'] = current_time( 'l' ); // Today's day name.
-		}
-
-		$days_order = array( 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' );
-		$filter_church_id = $atts['church_id'] ? (string) $atts['church_id'] : '';
-
-		// Single day format.
-		if ( ! empty( $atts['day'] ) ) {
-			$day_slots = $schedule[ $atts['day'] ] ?? array();
-
-			// Filter by church if specified.
-			if ( $filter_church_id ) {
-				$day_slots = array_filter( $day_slots, function( $slot ) use ( $filter_church_id ) {
-					return empty( $slot['church_id'] ) || $slot['church_id'] === $filter_church_id;
-				});
-			}
-
-			if ( empty( $day_slots ) ) {
-				return '<p>' . esc_html__( 'No times scheduled for this day.', 'parish-core' ) . '</p>';
-			}
-
-			// Sort by time.
-			usort( $day_slots, function( $a, $b ) {
-				return strcmp( $a['time'] ?? '', $b['time'] ?? '' );
-			});
-
-			$html = '<div class="parish-mass-times parish-mass-times-daily">';
-			$html .= '<h4>' . esc_html( $atts['day'] ) . '</h4>';
-			$html .= '<ul>';
-
-			foreach ( $day_slots as $slot ) {
-				$html .= $this->render_mass_time_slot( $slot, $type_labels, $church_names, $atts );
-			}
-
-			$html .= '</ul></div>';
-			return $html;
-		}
-
-		// Weekly format - show all days.
-		$html = '<div class="parish-mass-times parish-mass-times-weekly">';
-
-		foreach ( $days_order as $day ) {
-			$day_slots = $schedule[ $day ] ?? array();
-
-			// Filter by church if specified.
-			if ( $filter_church_id ) {
-				$day_slots = array_filter( $day_slots, function( $slot ) use ( $filter_church_id ) {
-					return empty( $slot['church_id'] ) || $slot['church_id'] === $filter_church_id;
-				});
-			}
-
-			if ( empty( $day_slots ) ) {
-				continue;
-			}
-
-			// Sort by time.
-			usort( $day_slots, function( $a, $b ) {
-				return strcmp( $a['time'] ?? '', $b['time'] ?? '' );
-			});
-
-			$html .= '<div class="mass-day">';
-			$html .= '<h4>' . esc_html( $day ) . '</h4>';
-			$html .= '<ul>';
-
-			foreach ( $day_slots as $slot ) {
-				$html .= $this->render_mass_time_slot( $slot, $type_labels, $church_names, $atts );
-			}
-
-			$html .= '</ul></div>';
-		}
-
-		$html .= '</div>';
-
-		return $html;
-	}
-
-	/**
-	 * Render a single mass time slot.
-	 *
-	 * @param array $slot        Slot data.
-	 * @param array $type_labels Event type labels.
-	 * @param array $church_names Church ID to name mapping.
-	 * @param array $atts        Shortcode attributes.
-	 * @return string HTML output.
-	 */
-	private function render_mass_time_slot( array $slot, array $type_labels, array $church_names, array $atts ): string {
-		$time = $slot['time'] ?? '';
-		$type = $slot['type'] ?? 'mass';
-		$notes = $slot['notes'] ?? '';
-		$church_id = $slot['church_id'] ?? '';
-		$livestream = ! empty( $slot['livestream'] );
-		$type_label = $type_labels[ $type ] ?? ucfirst( $type );
-
-		// Format time for display.
-		$display_time = $this->format_time( $time );
-
-		$html = '<li>';
-		$html .= '<strong>' . esc_html( $display_time ) . '</strong>';
-		$html .= ' <span class="event-type">' . esc_html( $type_label ) . '</span>';
-
-		// Show church name if assigned.
-		if ( ! empty( $church_id ) && isset( $church_names[ (int) $church_id ] ) ) {
-			$html .= ' <span class="event-church">@ ' . esc_html( $church_names[ (int) $church_id ] ) . '</span>';
-		}
-
-		// Show livestream badge.
-		if ( $livestream && $atts['show_livestream'] === 'yes' ) {
-			$html .= ' <span class="livestream-badge" title="' . esc_attr__( 'Livestreamed', 'parish-core' ) . '">📺</span>';
-		}
-
-		if ( ! empty( $notes ) ) {
-			$html .= ' <em class="event-notes">(' . esc_html( $notes ) . ')</em>';
-		}
-
-		$html .= '</li>';
-
-		return $html;
 	}
 
 	/**
@@ -515,7 +340,7 @@ class Parish_Shortcodes {
 		}
 
 		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
-			return $this->mass_times_shortcode( $atts ); // Fallback to legacy.
+			return '<p class="parish-schedule-error">' . esc_html__( 'Schedule system not available.', 'parish-core' ) . '</p>';
 		}
 
 		$atts = shortcode_atts( array(
@@ -527,7 +352,7 @@ class Parish_Shortcodes {
 			'show_livestream' => 'yes',
 		), $atts );
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$start     = gmdate( 'Y-m-d' );
 		$end       = gmdate( 'Y-m-d', strtotime( '+' . ( (int) $atts['days'] - 1 ) . ' days' ) );
 
@@ -550,7 +375,14 @@ class Parish_Shortcodes {
 
 	/**
 	 * Church-specific schedule shortcode.
-	 * Auto-detects church ID on church single pages.
+	 * Auto-detects church ID on church single pages or within query loops.
+	 * Displays weekly schedule grouped by day with special events section.
+	 *
+	 * Attributes:
+	 * - church_id: Church ID (auto-detects on church pages and in query loops)
+	 * - type: Filter by event type (mass, confession, adoration) - default shows all
+	 * - show_special: yes/no to show special events section (default yes)
+	 * - show_livestream: yes/no to show livestream indicators (default yes)
 	 *
 	 * @param array $atts Shortcode attributes.
 	 * @return string HTML output.
@@ -560,23 +392,271 @@ class Parish_Shortcodes {
 			return '';
 		}
 
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return '';
+		}
+
 		$atts = shortcode_atts( array(
-			'church_id'      => '',
-			'days'           => 7,
-			'format'         => 'list',
-			'show_feast_day' => 'no',
+			'church_id'       => '',
+			'type'            => '',
+			'show_special'    => 'yes',
+			'show_livestream' => 'yes',
 		), $atts );
 
-		// Auto-detect church ID on single church pages.
-		if ( empty( $atts['church_id'] ) && is_singular( 'parish_church' ) ) {
-			$atts['church_id'] = get_the_ID();
+		// Auto-detect church ID - works in query loops and on single pages.
+		if ( empty( $atts['church_id'] ) ) {
+			// Method 1: Try get_the_ID() - works in block query loops and classic loops.
+			$current_id = get_the_ID();
+			if ( $current_id && get_post_type( $current_id ) === 'parish_church' ) {
+				$atts['church_id'] = $current_id;
+			}
+
+			// Method 2: Fallback to global $post.
+			if ( empty( $atts['church_id'] ) ) {
+				global $post;
+				if ( $post && $post->post_type === 'parish_church' ) {
+					$atts['church_id'] = $post->ID;
+				}
+			}
+
+			// Method 3: Fallback for single church pages using queried object.
+			if ( empty( $atts['church_id'] ) && is_singular( 'parish_church' ) ) {
+				$atts['church_id'] = get_queried_object_id();
+			}
 		}
 
 		if ( empty( $atts['church_id'] ) ) {
-			return '<p class="parish-schedule-error">' . esc_html__( 'No church specified.', 'parish-core' ) . '</p>';
+			return '';
 		}
 
-		return $this->schedule_shortcode( $atts );
+		$church_id      = (int) $atts['church_id'];
+		$filter_type    = sanitize_text_field( $atts['type'] );
+		$show_livestream = $atts['show_livestream'] === 'yes';
+
+		// Clock icon SVG.
+		$clock_icon = '<svg class="schedule-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+		// Livestream icon SVG.
+		$live_icon = '<svg class="livestream-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7 3 5"/><path d="M9 6V3"/><path d="m13 7 2-2"/><path d="M17 6v3"/><path d="M19 10h3"/><path d="M21 14 3 14"/><rect width="18" height="8" x="3" y="14" rx="2"/><path d="M7 18h10"/></svg>';
+
+		// Get all active Mass Time posts for this church.
+		$meta_query = array(
+			'relation' => 'AND',
+			array(
+				'key'     => 'parish_mass_time_is_active',
+				'value'   => '1',
+				'compare' => '=',
+			),
+			array(
+				'relation' => 'OR',
+				array(
+					'key'     => 'parish_mass_time_church_id',
+					'value'   => $church_id,
+					'compare' => '=',
+				),
+				array(
+					'key'     => 'parish_mass_time_church_id',
+					'value'   => '0',
+					'compare' => '=',
+				),
+			),
+		);
+
+		// Filter by type if specified.
+		if ( ! empty( $filter_type ) ) {
+			$meta_query[] = array(
+				'key'     => 'parish_mass_time_liturgical_type',
+				'value'   => $filter_type,
+				'compare' => '=',
+			);
+		}
+
+		$mass_time_posts = get_posts( array(
+			'post_type'      => 'parish_mass_time',
+			'posts_per_page' => -1,
+			'post_status'    => 'publish',
+			'meta_query'     => $meta_query,
+		) );
+
+		if ( empty( $mass_time_posts ) ) {
+			return '<p class="parish-schedule-empty">' . esc_html__( 'No scheduled times.', 'parish-core' ) . '</p>';
+		}
+
+		// Day order for weekly schedule.
+		$day_order = array( 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday' );
+
+		// Categorize posts into regular weekly and special events.
+		$weekly_data    = array();
+		$special_events = array();
+
+		foreach ( $mass_time_posts as $mt_post ) {
+			$is_recurring     = get_post_meta( $mt_post->ID, 'parish_mass_time_is_recurring', true );
+			$is_special       = get_post_meta( $mt_post->ID, 'parish_mass_time_is_special_event', true );
+			$recurrence       = get_post_meta( $mt_post->ID, 'parish_mass_time_recurrence', true );
+			$start_datetime   = get_post_meta( $mt_post->ID, 'parish_mass_time_start_datetime', true );
+			$notes            = get_post_meta( $mt_post->ID, 'parish_mass_time_notes', true );
+			$side_note        = get_post_meta( $mt_post->ID, 'parish_mass_time_side_note', true );
+			$is_livestreamed  = get_post_meta( $mt_post->ID, 'parish_mass_time_is_livestreamed', true );
+
+			// Parse time from datetime.
+			$time = '';
+			if ( $start_datetime ) {
+				$time = $this->format_time( $start_datetime );
+			}
+
+			$event_data = array(
+				'id'              => $mt_post->ID,
+				'title'           => $mt_post->post_title,
+				'time'            => $time,
+				'notes'           => $notes,
+				'side_note'       => $side_note,
+				'is_livestreamed' => $is_livestreamed,
+			);
+
+			// Determine if this is a special event or regular weekly schedule.
+			if ( $is_special ) {
+				$special_events[] = $event_data;
+			} elseif ( $is_recurring && is_array( $recurrence ) ) {
+				// Weekly recurring - get the days.
+				$rec_type = $recurrence['type'] ?? 'weekly';
+				$rec_days = $recurrence['days'] ?? array();
+
+				if ( ( $rec_type === 'weekly' || $rec_type === 'biweekly' ) && ! empty( $rec_days ) ) {
+					foreach ( $rec_days as $day ) {
+						if ( ! isset( $weekly_data[ $day ] ) ) {
+							$weekly_data[ $day ] = array();
+						}
+						$weekly_data[ $day ][] = $event_data;
+					}
+				} elseif ( $rec_type === 'daily' ) {
+					// Daily recurring - add to all days.
+					foreach ( $day_order as $day ) {
+						if ( ! isset( $weekly_data[ $day ] ) ) {
+							$weekly_data[ $day ] = array();
+						}
+						$weekly_data[ $day ][] = $event_data;
+					}
+				} elseif ( $rec_type === 'monthly_ordinal' ) {
+					// Monthly ordinal (e.g., First Friday) - treat as special.
+					$ordinal     = $recurrence['ordinal'] ?? 'first';
+					$ordinal_day = $recurrence['ordinal_day'] ?? '';
+					$event_data['title'] = ucfirst( $ordinal ) . ' ' . $ordinal_day;
+					$special_events[] = $event_data;
+				} else {
+					// Other recurrence types - treat as special.
+					$special_events[] = $event_data;
+				}
+			} else {
+				// One-off event without special flag - add to special.
+				$special_events[] = $event_data;
+			}
+		}
+
+		// Sort events within each day by time.
+		foreach ( $weekly_data as $day => $events ) {
+			usort( $weekly_data[ $day ], function ( $a, $b ) {
+				return strcmp( $a['time'], $b['time'] );
+			});
+		}
+
+		// Build HTML output.
+		$html = '<div class="parish-church-schedule">';
+
+		// Weekly schedule section.
+		if ( ! empty( $weekly_data ) ) {
+			$html .= '<div class="schedule-table">';
+
+			foreach ( $day_order as $day ) {
+				if ( ! isset( $weekly_data[ $day ] ) ) {
+					continue;
+				}
+
+				$events = $weekly_data[ $day ];
+				$html .= '<div class="schedule-row">';
+
+				// Day label with clock icon.
+				$html .= '<div class="schedule-day">';
+				$html .= $clock_icon;
+				$html .= '<span class="day-name">' . esc_html( $day ) . '</span>';
+				$html .= '</div>';
+
+				// Times column.
+				$html .= '<div class="schedule-times">';
+				$time_parts = array();
+				foreach ( $events as $event ) {
+					$time_html = '<span class="time">' . esc_html( $event['time'] ) . '</span>';
+
+					if ( $show_livestream && $event['is_livestreamed'] ) {
+						$time_html .= $live_icon;
+					}
+
+					if ( ! empty( $event['notes'] ) ) {
+						$time_html .= '<span class="time-note">(' . esc_html( wp_strip_all_tags( $event['notes'] ) ) . ')</span>';
+					}
+
+					$time_parts[] = $time_html;
+				}
+				$html .= implode( '<span class="time-sep">,</span> ', $time_parts );
+				$html .= '</div>';
+
+				// Side note column (use from first event that has one).
+				$side_note = '';
+				foreach ( $events as $event ) {
+					if ( ! empty( $event['side_note'] ) ) {
+						$side_note = $event['side_note'];
+						break;
+					}
+				}
+				if ( $side_note ) {
+					$html .= '<div class="schedule-side-note">' . esc_html( $side_note ) . '</div>';
+				}
+
+				$html .= '</div>'; // .schedule-row
+			}
+
+			$html .= '</div>'; // .schedule-table
+		}
+
+		// Special events section.
+		if ( $atts['show_special'] === 'yes' && ! empty( $special_events ) ) {
+			$html .= '<div class="schedule-table schedule-special">';
+
+			foreach ( $special_events as $event ) {
+				$html .= '<div class="schedule-row">';
+
+				// Event title with clock icon.
+				$html .= '<div class="schedule-day">';
+				$html .= $clock_icon;
+				$html .= '<span class="day-name">' . esc_html( $event['title'] ) . '</span>';
+				$html .= '</div>';
+
+				// Time.
+				$html .= '<div class="schedule-times">';
+				$html .= '<span class="time">' . esc_html( $event['time'] ) . '</span>';
+
+				if ( $show_livestream && $event['is_livestreamed'] ) {
+					$html .= $live_icon;
+				}
+
+				if ( ! empty( $event['notes'] ) ) {
+					$html .= '<span class="time-note">(' . esc_html( wp_strip_all_tags( $event['notes'] ) ) . ')</span>';
+				}
+				$html .= '</div>';
+
+				// Side note.
+				if ( ! empty( $event['side_note'] ) ) {
+					$html .= '<div class="schedule-side-note">' . esc_html( $event['side_note'] ) . '</div>';
+				}
+
+				$html .= '</div>'; // .schedule-row
+			}
+
+			$html .= '</div>'; // .schedule-special
+		}
+
+		$html .= '</div>'; // .parish-church-schedule
+
+		return $html;
 	}
 
 	/**
@@ -591,7 +671,7 @@ class Parish_Shortcodes {
 		}
 
 		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
-			return $this->mass_times_shortcode( array( 'format' => 'weekly' ) );
+			return '<p class="parish-schedule-error">' . esc_html__( 'Schedule system not available.', 'parish-core' ) . '</p>';
 		}
 
 		$atts = shortcode_atts( array(
@@ -601,7 +681,7 @@ class Parish_Shortcodes {
 			'show_livestream' => 'yes',
 		), $atts );
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$schedule  = $generator->generate_week( array(
 			'church_id'  => $atts['church_id'] ? (int) $atts['church_id'] : null,
 			'event_type' => $atts['event_type'] ?: null,
@@ -667,7 +747,7 @@ class Parish_Shortcodes {
 		}
 
 		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
-			return $this->mass_times_shortcode( array( 'format' => 'daily' ) );
+			return '<p class="parish-schedule-error">' . esc_html__( 'Schedule system not available.', 'parish-core' ) . '</p>';
 		}
 
 		$atts = shortcode_atts( array(
@@ -677,7 +757,7 @@ class Parish_Shortcodes {
 			'show_livestream' => 'yes',
 		), $atts );
 
-		$generator = new Parish_Schedule_Generator();
+		$generator = Parish_Schedule_Generator::instance();
 		$schedule  = $generator->generate_today( array(
 			'church_id'  => $atts['church_id'] ? (int) $atts['church_id'] : null,
 			'event_type' => $atts['event_type'] ?: null,
@@ -816,7 +896,7 @@ class Parish_Shortcodes {
 			if ( ! empty( $event['title'] ) ) {
 				$html .= ' - ' . esc_html( $event['title'] );
 			}
-			if ( $atts['show_livestream'] === 'yes' && ! empty( $event['livestream']['enabled'] ) ) {
+			if ( $atts['show_livestream'] === 'yes' && ! empty( $event['is_livestreamed'] ) ) {
 				$html .= ' <span class="livestream-badge">📺</span>';
 			}
 			$html .= '</td>';
@@ -856,8 +936,8 @@ class Parish_Shortcodes {
 			if ( ! empty( $event['intention'] ) ) {
 				$html .= '<div class="card-intention">🕯️ ' . esc_html( $event['intention'] ) . '</div>';
 			}
-			if ( $atts['show_livestream'] === 'yes' && ! empty( $event['livestream']['enabled'] ) ) {
-				$url = $event['livestream']['url'] ?? '#';
+			if ( $atts['show_livestream'] === 'yes' && ! empty( $event['is_livestreamed'] ) ) {
+				$url = $event['livestream_url'] ?: '#';
 				$html .= '<a href="' . esc_url( $url ) . '" class="livestream-link">📺 ' . esc_html__( 'Watch Live', 'parish-core' ) . '</a>';
 			}
 			$html .= '</div>';
@@ -921,7 +1001,7 @@ class Parish_Shortcodes {
 			$html .= '<span class="event-intention">🕯️ ' . esc_html( $event['intention'] ) . '</span>';
 		}
 
-		if ( $atts['show_livestream'] === 'yes' && ! empty( $event['livestream']['enabled'] ) ) {
+		if ( $atts['show_livestream'] === 'yes' && ! empty( $event['is_livestreamed'] ) ) {
 			$html .= '<span class="livestream-badge">📺</span>';
 		}
 
@@ -1007,5 +1087,112 @@ class Parish_Shortcodes {
 		);
 
 		return $colors[ strtolower( $color ) ] ?? '#666666';
+	}
+
+	// =========================================================================
+	// TODAY WIDGET SHORTCODE
+	// =========================================================================
+
+	/**
+	 * Today widget shortcode - compact widget showing Mass Times for a single day.
+	 *
+	 * Attributes:
+	 * - date: Date in YYYY-MM-DD format (default today)
+	 * - church_id: Filter by specific church (optional, 0 or empty for all)
+	 * - type: Filter by liturgical type (optional)
+	 * - show_notes: yes/no to show notes field (default no)
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string HTML output.
+	 */
+	public function today_widget_shortcode( $atts ): string {
+		if ( ! Parish_Core::is_feature_enabled( 'mass_times' ) ) {
+			return '';
+		}
+
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return '';
+		}
+
+		$atts = shortcode_atts( array(
+			'date'       => '',
+			'church_id'  => '',
+			'type'       => '',
+			'show_notes' => 'no',
+		), $atts );
+
+		// Determine the target date.
+		$target_date = ! empty( $atts['date'] ) ? sanitize_text_field( $atts['date'] ) : wp_date( 'Y-m-d' );
+
+		// Build filters.
+		$filters = array();
+		if ( ! empty( $atts['church_id'] ) ) {
+			$filters['church_id'] = (int) $atts['church_id'];
+		}
+		if ( ! empty( $atts['type'] ) ) {
+			$filters['event_type'] = sanitize_text_field( $atts['type'] );
+		}
+
+		// Generate schedule for the target date.
+		$generator = Parish_Schedule_Generator::instance();
+		$schedule  = $generator->generate( $target_date, $target_date, $filters );
+
+		// Format the date for display.
+		$display_date = wp_date( 'l, j F Y', strtotime( $target_date ) );
+
+		$html = '<div class="parish-today-widget">';
+		$html .= '<p class="widget-date">' . esc_html( $display_date ) . '</p>';
+
+		if ( empty( $schedule ) ) {
+			$html .= '<p class="no-events">' . esc_html__( 'No events scheduled.', 'parish-core' ) . '</p>';
+		} else {
+			// Group by church.
+			$by_church = array();
+			foreach ( $schedule as $event ) {
+				$church_id   = $event['church_id'] ?? 0;
+				$church_name = $event['church_name'] ?? __( 'All Churches', 'parish-core' );
+
+				if ( ! isset( $by_church[ $church_id ] ) ) {
+					$by_church[ $church_id ] = array(
+						'name'         => $church_name,
+						'has_live'     => false,
+						'events'       => array(),
+					);
+				}
+				$by_church[ $church_id ]['events'][] = $event;
+				if ( ! empty( $event['is_livestreamed'] ) ) {
+					$by_church[ $church_id ]['has_live'] = true;
+				}
+			}
+
+			foreach ( $by_church as $church_data ) {
+				$html .= '<div class="widget-church">';
+
+				// Church name row with live indicator.
+				$html .= '<p class="church-name">';
+				$html .= esc_html( $church_data['name'] );
+				if ( $church_data['has_live'] ) {
+					$html .= '<span class="livestream-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7 3 5"/><path d="M9 6V3"/><path d="m13 7 2-2"/><path d="M17 6v3"/><path d="M19 10h3"/><path d="M21 14 3 14"/><rect width="18" height="8" x="3" y="14" rx="2"/><path d="M7 18h10"/></svg>' . esc_html__( 'Live', 'parish-core' ) . '</span>';
+				}
+				$html .= '</p>';
+
+				// Times.
+				$times = array();
+				foreach ( $church_data['events'] as $event ) {
+					$time_str = $this->format_time( $event['time'] ?? '' );
+					if ( $atts['show_notes'] === 'yes' && ! empty( $event['notes'] ) ) {
+						$time_str .= ' <span class="time-note">(' . esc_html( wp_strip_all_tags( $event['notes'] ) ) . ')</span>';
+					}
+					$times[] = '<span class="time">' . $time_str . '</span>';
+				}
+				$html .= '<p class="church-times">' . implode( ', ', $times ) . '</p>';
+
+				$html .= '</div>';
+			}
+		}
+
+		$html .= '</div>'; // .parish-today-widget
+
+		return $html;
 	}
 }

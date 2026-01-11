@@ -29,7 +29,8 @@ return array(
 		),
 
 		// Override common supports: reflections are intentionally simple.
-		'supports'      => array( 'title', 'editor' ),
+		// Must include 'custom-fields' for Block Bindings meta to save.
+		'supports'      => array( 'title', 'editor', 'custom-fields' ),
 
 		'menu_icon'     => 'dashicons-format-quote',
 		'rewrite'       => array( 'slug' => 'reflections', 'with_front' => false ),

@@ -15,16 +15,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 return array(
 	'post_type' => 'parish_school',
 	'fields'    => array(
-		// Basic Information
+		// Opening Description (tagline)
+		'description'       => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( 'Description', 'parish-core' ),
+		),
+
+		// School Type (Primary, Secondary, etc.)
 		'school_type'       => array(
 			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field', // Primary, Secondary, etc.
+			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
 			'label'             => __( 'School type', 'parish-core' ),
 		),
 
-		// Contact Information
+		// About This School (history/background)
+		'about'             => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_textarea_field',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( 'About this school', 'parish-core' ),
+		),
+
+		// Contact & Location
 		'address'           => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
@@ -62,94 +80,46 @@ return array(
 			'default'           => '',
 			'label'             => __( 'Principal', 'parish-core' ),
 		),
-		'vice_principal'    => array(
+
+		// Established
+		'founded_year'      => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Vice Principal', 'parish-core' ),
+			'label'             => __( 'Founded year', 'parish-core' ),
 		),
-		'chaplain'          => array(
+
+		// School Times
+		'infants_hours'     => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Chaplain', 'parish-core' ),
+			'label'             => __( 'Infants hours', 'parish-core' ),
+		),
+		'primary_hours'     => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( '1st-6th Class hours', 'parish-core' ),
+		),
+		'office_hours'      => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( 'Office hours', 'parish-core' ),
 		),
 
-		// Enrollment
-		'enrollment_info'   => array(
+		// Sacramental Preparation Callout
+		'sacramental_prep'  => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 			'show_in_rest'      => true,
 			'default'           => '',
-			'label'             => __( 'Enrollment information', 'parish-core' ),
-		),
-		'enrollment_link'   => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'esc_url_raw',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Enrollment link', 'parish-core' ),
-		),
-
-		// Academic Information
-		'grade_levels'      => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field', // e.g., "K-8" or "9-12"
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Grade levels', 'parish-core' ),
-		),
-		'curriculum_info'   => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_textarea_field',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Curriculum', 'parish-core' ),
-		),
-
-		// Facilities
-		'facilities'        => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_textarea_field',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Facilities', 'parish-core' ),
-		),
-
-		// Hours
-		'school_hours'      => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_textarea_field',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'School hours', 'parish-core' ),
-		),
-
-		// Related Church
-		'related_church'    => array(
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
-			'show_in_rest'      => true,
-			'default'           => 0,
-			'label'             => __( 'Related church', 'parish-core' ),
-		),
-
-		// Social Media
-		'facebook_url'      => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'esc_url_raw',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Facebook', 'parish-core' ),
-		),
-		'twitter_url'       => array(
-			'type'              => 'string',
-			'sanitize_callback' => 'esc_url_raw',
-			'show_in_rest'      => true,
-			'default'           => '',
-			'label'             => __( 'Twitter', 'parish-core' ),
+			'label'             => __( 'Sacramental preparation', 'parish-core' ),
 		),
 	),
 );

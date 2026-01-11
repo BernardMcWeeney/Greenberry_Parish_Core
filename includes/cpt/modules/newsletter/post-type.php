@@ -32,7 +32,8 @@ return array(
 		'show_in_menu'  => 'parish-core',
 
 		// Override common supports: you said you want this custom set.
-		'supports'      => array( 'title', 'editor', 'thumbnail', 'revisions' ),
+		// Must include 'custom-fields' for Block Bindings meta to save.
+		'supports'      => array( 'title', 'editor', 'thumbnail', 'revisions', 'custom-fields' ),
 
 		'template'      => Parish_CPT_Templates::get_newsletter_template(),
 		'template_lock' => 'all',
