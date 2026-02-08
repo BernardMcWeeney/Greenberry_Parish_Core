@@ -1,9 +1,11 @@
 <?php
 /**
- * Church Schedule Block
+ * Mass Schedule Block
  *
- * Dynamic block that renders the liturgical schedule for a church.
- * Uses Font Awesome icons and consistent styling with mass-schedule block.
+ * Dynamic Gutenberg block that renders liturgical schedules for a church.
+ * Outputs native Gutenberg blocks (columns, paragraphs) with Font Awesome icons.
+ * Works inside Query Loops by automatically resolving the current post ID
+ * from block context.
  *
  * @package ParishCore
  */
@@ -13,9 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Church Schedule Block class.
+ * Mass Schedule Block class.
  */
-class Parish_Church_Schedule_Block {
+class Parish_Mass_Schedule_Block {
 
 	/**
 	 * Register the block with WordPress.
@@ -24,30 +26,13 @@ class Parish_Church_Schedule_Block {
 	 */
 	public static function register(): void {
 		register_block_type(
-			'parish/church-schedule',
+			'parish/mass-schedule',
 			array(
 				'api_version'     => 3,
 				'editor_script'   => 'parish-core-editor-blocks',
 				'render_callback' => array( __CLASS__, 'render' ),
 				'uses_context'    => array( 'postType', 'postId' ),
 				'attributes'      => array(
-					'format'         => array(
-						'type'    => 'string',
-						'default' => 'list',
-					),
-					'eventTypes'     => array(
-						'type'    => 'array',
-						'default' => array( 'mass', 'confession' ),
-						'items'   => array( 'type' => 'string' ),
-					),
-					'showFeastDay'   => array(
-						'type'    => 'boolean',
-						'default' => true,
-					),
-					'days'           => array(
-						'type'    => 'integer',
-						'default' => 7,
-					),
 					'showIcon'       => array(
 						'type'    => 'boolean',
 						'default' => true,
@@ -56,13 +41,13 @@ class Parish_Church_Schedule_Block {
 						'type'    => 'boolean',
 						'default' => true,
 					),
-					'groupByDay'     => array(
+					'showSpecial'    => array(
 						'type'    => 'boolean',
 						'default' => true,
 					),
-					'showAllDays'    => array(
-						'type'    => 'boolean',
-						'default' => true,
+					'eventType'      => array(
+						'type'    => 'string',
+						'default' => '',
 					),
 					'iconColor'      => array(
 						'type'    => 'string',
@@ -71,6 +56,10 @@ class Parish_Church_Schedule_Block {
 					'timeColor'      => array(
 						'type'    => 'string',
 						'default' => '',
+					),
+					'showAllDays'    => array(
+						'type'    => 'boolean',
+						'default' => true,
 					),
 				),
 				'supports'        => array(
@@ -90,33 +79,34 @@ class Parish_Church_Schedule_Block {
 	 *
 	 * @param array    $attributes Block attributes.
 	 * @param string   $content    Block content.
-	 * @param WP_Block $block      Block instance.
+	 * @param WP_Block $block      Block instance with context.
 	 * @return string Rendered HTML.
 	 */
 	public static function render( array $attributes, string $content, WP_Block $block ): string {
+		// Feature check.
+		if ( ! Parish_Core::is_feature_enabled( 'mass_times' ) ) {
+			return '';
+		}
+
+		// Get post ID from block context (Query Loop) or current post.
 		$post_id = $block->context['postId'] ?? get_the_ID();
 
 		if ( ! $post_id ) {
-			return '';
+			return self::render_placeholder( __( 'No post context available.', 'parish-core' ) );
 		}
 
-		// Only render on church posts.
+		// Validate post type - only render on church posts.
 		$post_type = get_post_type( $post_id );
 		if ( 'parish_church' !== $post_type ) {
-			return '';
-		}
-
-		// Check if church has schedule_display set to 'static' (legacy mode).
-		$display_mode = get_post_meta( $post_id, 'parish_schedule_display', true );
-		if ( 'static' === $display_mode ) {
-			return self::render_static_schedule( $post_id, $attributes );
+			return self::render_placeholder( __( 'This block only works on Church posts.', 'parish-core' ) );
 		}
 
 		$church_id       = (int) $post_id;
+		$filter_type     = sanitize_text_field( $attributes['eventType'] ?? '' );
 		$show_icon       = (bool) ( $attributes['showIcon'] ?? true );
 		$show_livestream = (bool) ( $attributes['showLivestream'] ?? true );
+		$show_special    = (bool) ( $attributes['showSpecial'] ?? true );
 		$show_all_days   = (bool) ( $attributes['showAllDays'] ?? true );
-		$event_types     = $attributes['eventTypes'] ?? array( 'mass', 'confession' );
 		$icon_color      = sanitize_hex_color( $attributes['iconColor'] ?? '' ) ?: 'var(--wp--preset--color--accent,#609fae)';
 		$time_color      = sanitize_hex_color( $attributes['timeColor'] ?? '' ) ?: 'var(--wp--preset--color--accent,#609fae)';
 
@@ -143,12 +133,12 @@ class Parish_Church_Schedule_Block {
 			),
 		);
 
-		// Filter by event types if specified.
-		if ( ! empty( $event_types ) && is_array( $event_types ) ) {
+		// Filter by type if specified.
+		if ( ! empty( $filter_type ) ) {
 			$meta_query[] = array(
 				'key'     => 'parish_mass_time_liturgical_type',
-				'value'   => $event_types,
-				'compare' => 'IN',
+				'value'   => $filter_type,
+				'compare' => '=',
 			);
 		}
 
@@ -159,10 +149,10 @@ class Parish_Church_Schedule_Block {
 			'meta_query'     => $meta_query,
 		) );
 
-		// Day order for weekly schedule.
+		// Day order for weekly schedule (Saturday first for weekend visibility).
 		$day_order = array( 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday' );
 
-		// Categorize posts by day.
+		// Categorize posts into regular weekly and special events.
 		$weekly_data    = array();
 		$special_events = array();
 
@@ -174,8 +164,8 @@ class Parish_Church_Schedule_Block {
 			$notes            = get_post_meta( $mt_post->ID, 'parish_mass_time_notes', true );
 			$side_note        = get_post_meta( $mt_post->ID, 'parish_mass_time_side_note', true );
 			$is_livestreamed  = get_post_meta( $mt_post->ID, 'parish_mass_time_is_livestreamed', true );
-			$liturgical_type  = get_post_meta( $mt_post->ID, 'parish_mass_time_liturgical_type', true );
 
+			// Parse time from datetime (handles ISO 8601 format).
 			$time = self::format_time( $start_datetime );
 
 			$event_data = array(
@@ -185,9 +175,9 @@ class Parish_Church_Schedule_Block {
 				'notes'           => $notes,
 				'side_note'       => $side_note,
 				'is_livestreamed' => $is_livestreamed,
-				'type'            => $liturgical_type,
 			);
 
+			// Determine if this is a special event or regular weekly schedule.
 			if ( $is_special ) {
 				$special_events[] = $event_data;
 			} elseif ( $is_recurring && is_array( $recurrence ) ) {
@@ -218,6 +208,7 @@ class Parish_Church_Schedule_Block {
 				}
 			} else {
 				// Fallback: try to extract day of week from start_datetime.
+				// This handles cases where recurrence data is missing but we have a datetime.
 				$day_from_datetime = self::get_day_from_datetime( $start_datetime );
 				if ( $day_from_datetime && in_array( $day_from_datetime, $day_order, true ) ) {
 					if ( ! isset( $weekly_data[ $day_from_datetime ] ) ) {
@@ -225,6 +216,7 @@ class Parish_Church_Schedule_Block {
 					}
 					$weekly_data[ $day_from_datetime ][] = $event_data;
 				} elseif ( ! empty( $event_data['title'] ) ) {
+					// Only add to special events if it has a title (otherwise skip it).
 					$special_events[] = $event_data;
 				}
 			}
@@ -237,10 +229,10 @@ class Parish_Church_Schedule_Block {
 			} );
 		}
 
-		// Build HTML output.
-		$html = '<div class="parish-church-schedule-rows">';
+		// Build HTML output directly (more reliable than do_blocks for dynamic content).
+		$html = '<div class="parish-mass-schedule-rows">';
 
-		// Weekly schedule section.
+		// Weekly schedule section - show all days if enabled.
 		foreach ( $day_order as $day ) {
 			$events = $weekly_data[ $day ] ?? array();
 
@@ -252,8 +244,8 @@ class Parish_Church_Schedule_Block {
 		}
 
 		// Special events section.
-		if ( ! empty( $special_events ) ) {
-			$html .= '<div class="parish-church-schedule-divider"></div>';
+		if ( $show_special && ! empty( $special_events ) ) {
+			$html .= '<div class="parish-mass-schedule-divider"></div>';
 			foreach ( $special_events as $event ) {
 				$html .= self::render_schedule_row_html(
 					$event['title'],
@@ -268,20 +260,10 @@ class Parish_Church_Schedule_Block {
 
 		$html .= '</div>';
 
-		if ( empty( $weekly_data ) && empty( $special_events ) ) {
-			if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-				return sprintf(
-					'<div class="parish-church-schedule-placeholder">%s</div>',
-					esc_html__( 'No schedule found for this church.', 'parish-core' )
-				);
-			}
-			return '';
-		}
-
 		// Get block wrapper attributes.
 		$wrapper_attributes = get_block_wrapper_attributes(
 			array(
-				'class' => 'parish-church-schedule-block',
+				'class' => 'parish-mass-schedule-block',
 			)
 		);
 
@@ -310,12 +292,12 @@ class Parish_Church_Schedule_Block {
 		$day_style   = 'flex:0 0 120px;font-weight:500;';
 		$times_style = 'flex:1 1 auto;display:inline-flex;flex-wrap:wrap;align-items:center;gap:0.25em;';
 
-		$html = sprintf( '<div class="parish-church-schedule-row" style="%s">', $row_style );
+		$html = sprintf( '<div class="parish-mass-schedule-row" style="%s">', $row_style );
 
 		// Clock icon (optional).
 		if ( $show_icon ) {
 			$html .= sprintf(
-				'<div class="parish-church-schedule-icon" style="%s"><i class="fa-regular fa-clock" style="color:%s;font-size:1em;"></i></div>',
+				'<div class="parish-mass-schedule-icon" style="%s"><i class="fa-regular fa-clock" style="color:%s;font-size:1em;"></i></div>',
 				$icon_style,
 				esc_attr( $icon_color )
 			);
@@ -323,28 +305,28 @@ class Parish_Church_Schedule_Block {
 
 		// Day name.
 		$html .= sprintf(
-			'<div class="parish-church-schedule-day" style="%s">%s</div>',
+			'<div class="parish-mass-schedule-day" style="%s">%s</div>',
 			$day_style,
 			esc_html( $label )
 		);
 
 		// Times.
-		$html .= sprintf( '<div class="parish-church-schedule-times" style="%s">', $times_style );
+		$html .= sprintf( '<div class="parish-mass-schedule-times" style="%s">', $times_style );
 
 		if ( empty( $events ) ) {
-			$html .= '<span class="parish-church-schedule-no-event" style="font-style:italic;opacity:0.5;">' . esc_html__( 'No events', 'parish-core' ) . '</span>';
+			$html .= '<span class="parish-mass-schedule-no-mass" style="font-style:italic;opacity:0.5;">' . esc_html__( 'No Mass', 'parish-core' ) . '</span>';
 		} else {
 			$times_parts = array();
 
 			foreach ( $events as $event ) {
 				$time_html = sprintf(
-					'<span class="parish-church-schedule-time" style="color:%s;font-weight:600;">%s</span>',
+					'<span class="parish-mass-schedule-time" style="color:%s;font-weight:600;">%s</span>',
 					esc_attr( $time_color ),
 					esc_html( $event['time'] )
 				);
 
 				if ( ! empty( $event['notes'] ) ) {
-					$time_html .= ' <span class="parish-church-schedule-note" style="font-size:0.9em;opacity:0.7;">(' . esc_html( wp_strip_all_tags( $event['notes'] ) ) . ')</span>';
+					$time_html .= ' <span class="parish-mass-schedule-note" style="font-size:0.9em;opacity:0.7;">(' . esc_html( wp_strip_all_tags( $event['notes'] ) ) . ')</span>';
 				}
 
 				// Add livestream icon right after this time if applicable.
@@ -359,12 +341,12 @@ class Parish_Church_Schedule_Block {
 				$times_parts[] = $time_html;
 			}
 
-			$html .= implode( '<span class="parish-church-schedule-sep" style="opacity:0.5;">, </span>', $times_parts );
+			$html .= implode( '<span class="parish-mass-schedule-sep" style="opacity:0.5;">, </span>', $times_parts );
 		}
 
 		$html .= '</div>';
 
-		// Side note.
+		// Side note (from first event that has one).
 		$side_note = '';
 		foreach ( $events as $event ) {
 			if ( ! empty( $event['side_note'] ) ) {
@@ -373,7 +355,7 @@ class Parish_Church_Schedule_Block {
 			}
 		}
 		if ( $side_note ) {
-			$html .= '<div class="parish-church-schedule-sidenote" style="flex:0 0 auto;font-size:0.85em;font-style:italic;opacity:0.6;margin-left:auto;text-align:right;">' . esc_html( $side_note ) . '</div>';
+			$html .= '<div class="parish-mass-schedule-sidenote" style="flex:0 0 auto;font-size:0.85em;font-style:italic;opacity:0.6;margin-left:auto;text-align:right;">' . esc_html( $side_note ) . '</div>';
 		}
 
 		$html .= '</div>';
@@ -382,59 +364,10 @@ class Parish_Church_Schedule_Block {
 	}
 
 	/**
-	 * Render static/legacy schedule from meta fields.
-	 *
-	 * @param int   $post_id    Church post ID.
-	 * @param array $attributes Block attributes.
-	 * @return string Rendered HTML.
-	 */
-	private static function render_static_schedule( int $post_id, array $attributes ): string {
-		$mass_times       = get_post_meta( $post_id, 'parish_mass_times', true );
-		$confession_times = get_post_meta( $post_id, 'parish_confession_times', true );
-		$icon_color       = sanitize_hex_color( $attributes['iconColor'] ?? '' ) ?: 'var(--wp--preset--color--accent,#609fae)';
-
-		if ( empty( $mass_times ) && empty( $confession_times ) ) {
-			return '';
-		}
-
-		$wrapper_attributes = get_block_wrapper_attributes(
-			array( 'class' => 'parish-church-schedule-block parish-church-schedule-block--static' )
-		);
-
-		$output = sprintf( '<div %s>', $wrapper_attributes );
-
-		if ( ! empty( $mass_times ) ) {
-			$output .= '<div class="parish-church-schedule-section">';
-			$output .= sprintf(
-				'<h3 class="parish-church-schedule-section-title"><i class="fa-solid fa-church" style="color:%s;margin-right:0.5em;"></i>%s</h3>',
-				esc_attr( $icon_color ),
-				esc_html__( 'Mass Times', 'parish-core' )
-			);
-			$output .= '<div class="parish-church-schedule-section-content">' . wp_kses_post( nl2br( $mass_times ) ) . '</div>';
-			$output .= '</div>';
-		}
-
-		if ( ! empty( $confession_times ) ) {
-			$output .= '<div class="parish-church-schedule-section">';
-			$output .= sprintf(
-				'<h3 class="parish-church-schedule-section-title"><i class="fa-solid fa-hands-praying" style="color:%s;margin-right:0.5em;"></i>%s</h3>',
-				esc_attr( $icon_color ),
-				esc_html__( 'Confession Times', 'parish-core' )
-			);
-			$output .= '<div class="parish-church-schedule-section-content">' . wp_kses_post( nl2br( $confession_times ) ) . '</div>';
-			$output .= '</div>';
-		}
-
-		$output .= '</div>';
-
-		return $output;
-	}
-
-	/**
 	 * Format time from various input formats.
 	 *
 	 * @param string $datetime DateTime or time string.
-	 * @return string Formatted time.
+	 * @return string Formatted time (e.g., "10:00 AM").
 	 */
 	private static function format_time( string $datetime ): string {
 		if ( empty( $datetime ) ) {
@@ -477,11 +410,35 @@ class Parish_Church_Schedule_Block {
 			return null;
 		}
 
+		// Try to parse the datetime.
 		$timestamp = strtotime( $datetime );
 		if ( $timestamp === false ) {
 			return null;
 		}
 
+		// Return the full day name (e.g., "Monday", "Tuesday").
 		return gmdate( 'l', $timestamp );
+	}
+
+	/**
+	 * Render placeholder message for editor preview.
+	 *
+	 * @param string $message Placeholder message.
+	 * @return string HTML output.
+	 */
+	private static function render_placeholder( string $message ): string {
+		if ( ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			return '';
+		}
+
+		$wrapper_attributes = get_block_wrapper_attributes(
+			array( 'class' => 'parish-mass-schedule-placeholder' )
+		);
+
+		return sprintf(
+			'<div %s><p>%s</p></div>',
+			$wrapper_attributes,
+			esc_html( $message )
+		);
 	}
 }

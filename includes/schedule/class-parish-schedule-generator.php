@@ -343,14 +343,15 @@ class Parish_Schedule_Generator {
 			$dates = $this->expand_recurrence( $recurrence, $base_timestamp, $start_ts, $end_ts );
 
 			foreach ( $dates as $date_ts ) {
-				$date = gmdate( 'Y-m-d', $date_ts );
+				// Use wp_date for timezone-aware formatting.
+				$date = wp_date( 'Y-m-d', $date_ts );
 
 				// Skip exception dates.
 				if ( isset( $exceptions[ $date ] ) ) {
 					continue;
 				}
 
-				$time     = gmdate( 'H:i', $base_timestamp );
+				$time     = wp_date( 'H:i', $base_timestamp );
 				$datetime = $date . ' ' . $time;
 
 				$occurrences[] = array_merge(
@@ -364,7 +365,7 @@ class Parish_Schedule_Generator {
 			}
 		} else {
 			// Single occurrence (or special event).
-			$event_date = gmdate( 'Y-m-d', $base_timestamp );
+			$event_date = wp_date( 'Y-m-d', $base_timestamp );
 			$event_ts   = strtotime( $event_date );
 
 			if ( $event_ts >= $start_ts && $event_ts <= $end_ts ) {
@@ -374,8 +375,8 @@ class Parish_Schedule_Generator {
 						$base_data,
 						array(
 							'date'     => $event_date,
-							'time'     => gmdate( 'H:i', $base_timestamp ),
-							'datetime' => gmdate( 'Y-m-d H:i', $base_timestamp ),
+							'time'     => wp_date( 'H:i', $base_timestamp ),
+							'datetime' => wp_date( 'Y-m-d H:i', $base_timestamp ),
 						)
 					);
 				}
@@ -482,9 +483,13 @@ class Parish_Schedule_Generator {
 			return $dates;
 		}
 
+		// Normalize day names to handle case inconsistencies.
+		$normalized_days = array_map( 'ucfirst', array_map( 'strtolower', $days ) );
+
 		while ( $current <= $end ) {
-			$day_name = gmdate( 'l', $current );
-			if ( in_array( $day_name, $days, true ) ) {
+			// Use wp_date for timezone-aware day name.
+			$day_name = wp_date( 'l', $current );
+			if ( in_array( $day_name, $normalized_days, true ) ) {
 				$dates[] = $current;
 			}
 			$current = strtotime( '+1 day', $current );
@@ -510,17 +515,21 @@ class Parish_Schedule_Generator {
 			return $dates;
 		}
 
-		// Determine the week number of the base date.
-		$base_week = (int) gmdate( 'W', $base_ts );
+		// Normalize day names to handle case inconsistencies.
+		$normalized_days = array_map( 'ucfirst', array_map( 'strtolower', $days ) );
+
+		// Determine the week number of the base date using timezone-aware function.
+		$base_week = (int) wp_date( 'W', $base_ts );
 
 		while ( $current <= $end ) {
-			$current_week = (int) gmdate( 'W', $current );
+			$current_week = (int) wp_date( 'W', $current );
 			$week_diff    = abs( $current_week - $base_week );
 
 			// Check if this is an "on" week (every other week).
 			if ( 0 === $week_diff % 2 ) {
-				$day_name = gmdate( 'l', $current );
-				if ( in_array( $day_name, $days, true ) ) {
+				// Use wp_date for timezone-aware day name.
+				$day_name = wp_date( 'l', $current );
+				if ( in_array( $day_name, $normalized_days, true ) ) {
 					$dates[] = $current;
 				}
 			}
@@ -543,20 +552,20 @@ class Parish_Schedule_Generator {
 		$dates = array();
 
 		// Start from the beginning of the month of $start.
-		$current_month = gmdate( 'Y-m', $start );
+		$current_month = wp_date( 'Y-m', $start );
 
 		for ( $i = 0; $i < 4; $i++ ) { // Max 4 months.
 			$date_str  = $current_month . '-' . str_pad( (string) $day_of_month, 2, '0', STR_PAD_LEFT );
 			$timestamp = strtotime( $date_str );
 
 			// Handle months with fewer days.
-			if ( $timestamp && (int) gmdate( 'd', $timestamp ) === $day_of_month ) {
+			if ( $timestamp && (int) wp_date( 'd', $timestamp ) === $day_of_month ) {
 				if ( $timestamp >= $start && $timestamp <= $end ) {
 					$dates[] = $timestamp;
 				}
 			}
 
-			$current_month = gmdate( 'Y-m', strtotime( $current_month . '-01 +1 month' ) );
+			$current_month = wp_date( 'Y-m', strtotime( $current_month . '-01 +1 month' ) );
 		}
 
 		return $dates;
@@ -585,7 +594,7 @@ class Parish_Schedule_Generator {
 		$ord = $ordinal_map[ strtolower( $ordinal ) ] ?? 'first';
 
 		// Start from the beginning of the month of $start.
-		$current_month = gmdate( 'Y-m', $start );
+		$current_month = wp_date( 'Y-m', $start );
 
 		for ( $i = 0; $i < 4; $i++ ) { // Max 4 months.
 			$date_str  = "{$ord} {$day} of {$current_month}";
@@ -595,7 +604,7 @@ class Parish_Schedule_Generator {
 				$dates[] = $timestamp;
 			}
 
-			$current_month = gmdate( 'Y-m', strtotime( $current_month . '-01 +1 month' ) );
+			$current_month = wp_date( 'Y-m', strtotime( $current_month . '-01 +1 month' ) );
 		}
 
 		return $dates;
@@ -614,7 +623,7 @@ class Parish_Schedule_Generator {
 		$dates = array();
 
 		// Check current year and next year.
-		$start_year = (int) gmdate( 'Y', $start );
+		$start_year = (int) wp_date( 'Y', $start );
 
 		for ( $year = $start_year; $year <= $start_year + 1; $year++ ) {
 			$date_str  = sprintf( '%04d-%02d-%02d', $year, $month, $day );
@@ -712,7 +721,7 @@ class Parish_Schedule_Generator {
 			if ( $start_datetime ) {
 				$ts = strtotime( $start_datetime );
 				if ( $ts ) {
-					$time = gmdate( 'H:i', $ts );
+					$time = wp_date( 'H:i', $ts );
 				}
 			}
 
@@ -727,9 +736,11 @@ class Parish_Schedule_Generator {
 				'notes'           => $notes,
 			);
 
+			// Normalize day names for comparison.
 			foreach ( $rec_days as $day ) {
-				if ( isset( $days[ $day ] ) ) {
-					$days[ $day ][] = $item;
+				$normalized_day = ucfirst( strtolower( $day ) );
+				if ( isset( $days[ $normalized_day ] ) ) {
+					$days[ $normalized_day ][] = $item;
 				}
 			}
 		}
@@ -818,7 +829,7 @@ class Parish_Schedule_Generator {
 			if ( $start_datetime ) {
 				$ts = strtotime( $start_datetime );
 				if ( $ts ) {
-					$time = gmdate( 'H:i', $ts );
+					$time = wp_date( 'H:i', $ts );
 				}
 			}
 
@@ -830,7 +841,7 @@ class Parish_Schedule_Generator {
 			} elseif ( 'yearly' === $type ) {
 				$month = absint( $recurrence['month'] ?? 1 );
 				$day   = absint( $recurrence['day_of_month'] ?? 1 );
-				$description = gmdate( 'F j', strtotime( "2024-{$month}-{$day}" ) );
+				$description = wp_date( 'F j', strtotime( "2024-{$month}-{$day}" ) );
 			}
 
 			$events[] = array(

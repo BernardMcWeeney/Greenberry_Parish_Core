@@ -3,7 +3,7 @@
  * Plugin Name: Parish Core
  * Plugin URI: https://github.com/greenberry/parish-core
  * Description: A comprehensive parish management system for Catholic parishes.
- * Version: 4.5.0
+ * Version: 5.2.0
  * Author: Greenberry
  * Author URI: https://greenberry.ie
  * License: GPL v2 or later

@@ -1145,3 +1145,391 @@
 		margin-top: 0.25em;
 	}
 }
+
+/* ==========================================================================
+   MASS SCHEDULE GUTENBERG BLOCK
+   ========================================================================== */
+.parish-mass-schedule-block {
+	line-height: 1.4;
+}
+
+.parish-mass-schedule-rows {
+	display: block !important;
+}
+
+.parish-mass-schedule-row {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: center !important;
+	gap: 0.75em !important;
+	padding: 0.35em 0 !important;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.parish-mass-schedule-row:last-child {
+	border-bottom: none;
+}
+
+.parish-mass-schedule-row > * {
+	display: inline-flex !important;
+}
+
+.parish-mass-schedule-icon {
+	flex: 0 0 auto !important;
+	width: 1.2em !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+}
+
+.parish-mass-schedule-icon i {
+	font-size: 1em;
+	display: inline-block !important;
+}
+
+.parish-mass-schedule-day {
+	flex: 0 0 90px !important;
+	font-weight: 500;
+}
+
+.parish-mass-schedule-times {
+	flex: 1 1 auto !important;
+	display: inline-flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.25em !important;
+}
+
+.parish-mass-schedule-time {
+	font-weight: 600;
+	display: inline !important;
+}
+
+.parish-mass-schedule-sep {
+	color: inherit;
+	opacity: 0.5;
+	display: inline !important;
+}
+
+.parish-mass-schedule-note {
+	font-size: 0.9em;
+	opacity: 0.7;
+	display: inline !important;
+}
+
+.parish-mass-schedule-no-mass {
+	font-style: italic;
+	opacity: 0.5;
+	display: inline !important;
+}
+
+.parish-mass-schedule-live {
+	margin-left: 0.5em;
+	font-size: 0.9em;
+	display: inline !important;
+}
+
+.parish-mass-schedule-sidenote {
+	flex: 0 0 auto !important;
+	font-size: 0.85em;
+	font-style: italic;
+	opacity: 0.6;
+	margin-left: auto !important;
+	text-align: right;
+}
+
+.parish-mass-schedule-divider {
+	height: 1px;
+	background: rgba(0, 0, 0, 0.1);
+	margin: 0.5em 0;
+	border-top: 1px dashed rgba(0, 0, 0, 0.15);
+}
+
+/* Editor placeholder */
+.parish-mass-schedule-placeholder,
+.parish-mass-schedule-error {
+	padding: 1.5em;
+	background: #f8f8f8;
+	border: 1px dashed #ccc;
+	border-radius: 4px;
+	text-align: center;
+	color: #666;
+	font-style: italic;
+}
+
+/* Responsive - Mass Schedule Block */
+@media (max-width: 600px) {
+	.parish-mass-schedule-row {
+		flex-wrap: wrap !important;
+	}
+
+	.parish-mass-schedule-day {
+		flex: 0 0 calc(100% - 2em) !important;
+	}
+
+	.parish-mass-schedule-times {
+		width: 100%;
+		padding-left: 2em;
+	}
+
+	.parish-mass-schedule-sidenote {
+		width: 100%;
+		padding-left: 2em;
+		text-align: left;
+		margin-left: 0;
+		margin-top: 0.25em;
+	}
+}
+
+/* ==========================================================================
+   CHURCH SCHEDULE GUTENBERG BLOCK
+   ========================================================================== */
+.parish-church-schedule-block {
+	line-height: 1.4;
+}
+
+.parish-church-schedule-rows {
+	display: block !important;
+}
+
+.parish-church-schedule-row {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: center !important;
+	gap: 0.75em !important;
+	padding: 0.35em 0 !important;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.parish-church-schedule-row:last-child {
+	border-bottom: none;
+}
+
+.parish-church-schedule-row > * {
+	display: inline-flex !important;
+}
+
+.parish-church-schedule-icon {
+	flex: 0 0 auto !important;
+	width: 1.2em !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+}
+
+.parish-church-schedule-icon i {
+	font-size: 1em;
+	display: inline-block !important;
+}
+
+.parish-church-schedule-day {
+	flex: 0 0 90px !important;
+	font-weight: 500;
+}
+
+.parish-church-schedule-times {
+	flex: 1 1 auto !important;
+	display: inline-flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.25em !important;
+}
+
+.parish-church-schedule-time {
+	font-weight: 600;
+	display: inline !important;
+}
+
+.parish-church-schedule-sep {
+	color: inherit;
+	opacity: 0.5;
+	display: inline !important;
+}
+
+.parish-church-schedule-note {
+	font-size: 0.9em;
+	opacity: 0.7;
+	display: inline !important;
+}
+
+.parish-church-schedule-no-event {
+	font-style: italic;
+	opacity: 0.5;
+	display: inline !important;
+}
+
+.parish-church-schedule-live {
+	margin-left: 0.5em;
+	font-size: 0.9em;
+	display: inline !important;
+}
+
+.parish-church-schedule-sidenote {
+	flex: 0 0 auto !important;
+	font-size: 0.85em;
+	font-style: italic;
+	opacity: 0.6;
+	margin-left: auto !important;
+	text-align: right;
+}
+
+.parish-church-schedule-divider {
+	height: 1px;
+	background: rgba(0, 0, 0, 0.1);
+	margin: 0.5em 0;
+	border-top: 1px dashed rgba(0, 0, 0, 0.15);
+}
+
+/* Static schedule fallback */
+.parish-church-schedule-block--static .parish-church-schedule-section {
+	margin-bottom: 1.5em;
+}
+
+.parish-church-schedule-block--static .parish-church-schedule-section:last-child {
+	margin-bottom: 0;
+}
+
+.parish-church-schedule-block--static .parish-church-schedule-section-title {
+	font-size: 1.1em;
+	font-weight: 600;
+	margin: 0 0 0.5em 0;
+}
+
+.parish-church-schedule-block--static .parish-church-schedule-section-content {
+	line-height: 1.8;
+}
+
+/* Editor placeholder */
+.parish-church-schedule-placeholder {
+	padding: 1.5em;
+	background: #f8f8f8;
+	border: 1px dashed #ccc;
+	border-radius: 4px;
+	text-align: center;
+	color: #666;
+	font-style: italic;
+}
+
+/* Responsive - Church Schedule Block */
+@media (max-width: 600px) {
+	.parish-church-schedule-row {
+		flex-wrap: wrap !important;
+	}
+
+	.parish-church-schedule-day {
+		flex: 0 0 calc(100% - 2em) !important;
+	}
+
+	.parish-church-schedule-times {
+		width: 100%;
+		padding-left: 2em;
+	}
+
+	.parish-church-schedule-sidenote {
+		width: 100%;
+		padding-left: 2em;
+		text-align: left;
+		margin-left: 0;
+		margin-top: 0.25em;
+	}
+}
+
+/* ==========================================================================
+   TODAY MASS WIDGET BLOCK
+   ========================================================================== */
+.parish-today-mass-block {
+	line-height: 1.4;
+}
+
+.parish-today-mass-date {
+	font-weight: 600;
+	margin-bottom: 0.5em;
+}
+
+.parish-today-mass-rows {
+	display: block !important;
+}
+
+.parish-today-mass-row {
+	display: flex !important;
+	flex-direction: row !important;
+	align-items: center !important;
+	gap: 0.75em !important;
+	padding: 0.35em 0 !important;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.parish-today-mass-row:last-child {
+	border-bottom: none;
+}
+
+.parish-today-mass-row > * {
+	display: inline-flex !important;
+}
+
+.parish-today-mass-icon {
+	flex: 0 0 auto !important;
+	width: 1.2em !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+}
+
+.parish-today-mass-icon i {
+	font-size: 1em;
+	display: inline-block !important;
+}
+
+.parish-today-mass-church {
+	flex: 0 0 auto !important;
+	font-weight: 500;
+	min-width: 120px;
+}
+
+.parish-today-mass-times {
+	flex: 1 1 auto !important;
+	display: inline-flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.25em !important;
+}
+
+.parish-today-mass-time {
+	font-weight: 600;
+	display: inline !important;
+}
+
+.parish-today-mass-sep {
+	color: inherit;
+	opacity: 0.5;
+	display: inline !important;
+}
+
+.parish-today-mass-note {
+	font-size: 0.9em;
+	opacity: 0.7;
+	display: inline !important;
+}
+
+.parish-today-mass-no-mass {
+	font-style: italic;
+	opacity: 0.5;
+	display: inline !important;
+}
+
+.parish-today-mass-live {
+	margin-left: 0.5em;
+	font-size: 0.9em;
+	display: inline !important;
+}
+
+/* Editor placeholder */
+.parish-today-mass-placeholder {
+	padding: 1.5em;
+	background: #f8f8f8;
+	border: 1px dashed #ccc;
+	border-radius: 4px;
+	text-align: center;
+	color: #666;
+	font-style: italic;
+}

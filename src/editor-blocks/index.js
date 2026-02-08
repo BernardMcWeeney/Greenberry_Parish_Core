@@ -14,6 +14,10 @@ import { __ } from '@wordpress/i18n';
 
 // Import additional blocks.
 import './church-selector';
+import './mass-schedule';
+import './church-schedule';
+import './today-mass';
+import './events';
 
 /**
  * Related Church Selector Block

@@ -512,12 +512,52 @@
 	}
 
 	/**
+	 * Delete Confirmation Dialog for Recurring Events
+	 */
+	function DeleteConfirmDialog({ massTime, onDeleteSingle, onDeleteSeries, onCancel }) {
+		const isRecurring = massTime && massTime.is_recurring;
+
+		return el(Modal, {
+			title: 'Delete Mass Time',
+			onRequestClose: onCancel,
+			className: 'parish-modal delete-confirm-modal',
+			style: { maxWidth: '400px' },
+		},
+			el('p', { style: { marginBottom: '16px' } },
+				isRecurring
+					? 'This is a recurring event. What would you like to delete?'
+					: 'Are you sure you want to delete this Mass Time?'
+			),
+			isRecurring && el('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' } },
+				el(Button, {
+					variant: 'secondary',
+					onClick: onDeleteSingle,
+					style: { justifyContent: 'flex-start' },
+				}, 'Only this occurrence (add exception date)'),
+				el(Button, {
+					isDestructive: true,
+					onClick: onDeleteSeries,
+					style: { justifyContent: 'flex-start' },
+				}, 'Delete entire recurring series')
+			),
+			!isRecurring && el('div', { style: { display: 'flex', gap: '8px', justifyContent: 'flex-end' } },
+				el(Button, { variant: 'secondary', onClick: onCancel }, 'Cancel'),
+				el(Button, { isDestructive: true, onClick: onDeleteSeries }, 'Delete')
+			),
+			isRecurring && el('div', { style: { display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid #ddd' } },
+				el(Button, { variant: 'secondary', onClick: onCancel }, 'Cancel')
+			)
+		);
+	}
+
+	/**
 	 * Mass Time Form Modal
 	 */
-	function MassTimeModal({ massTime, churches, eventTypes, isNew, onSave, onDelete, onClose }) {
+	function MassTimeModal({ massTime, churches, eventTypes, isNew, onSave, onDelete, onDeleteSingle, onClose }) {
 		const [form, setForm] = useState(massTime);
 		const [saving, setSaving] = useState(false);
 		const [activeTab, setActiveTab] = useState('basic');
+		const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 		const upd = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -699,13 +739,9 @@
 
 			// Actions
 			el('div', { className: 'modal-actions', style: { display: 'flex', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid #ddd', marginTop: '16px' } },
-				!isNew ? el(Button, {
+				!isNew && form && form.id ? el(Button, {
 					isDestructive: true,
-					onClick: () => {
-						if (window.confirm('Are you sure you want to delete this Mass Time?')) {
-							onDelete(form.id);
-						}
-					}
+					onClick: () => setShowDeleteConfirm(true),
 				}, 'Delete') : el('div'),
 				el(Flex, { gap: 2 },
 					el(Button, { variant: 'secondary', onClick: onClose }, 'Cancel'),
@@ -713,7 +749,24 @@
 						saving ? 'Saving...' : 'Save'
 					)
 				)
-			)
+			),
+			// Delete confirmation dialog
+			showDeleteConfirm && el(DeleteConfirmDialog, {
+				massTime: form,
+				onDeleteSingle: () => {
+					setShowDeleteConfirm(false);
+					if (form && form.id) {
+						onDeleteSingle(form.id, form.start_datetime ? form.start_datetime.split('T')[0] : null);
+					}
+				},
+				onDeleteSeries: () => {
+					setShowDeleteConfirm(false);
+					if (form && form.id) {
+						onDelete(form.id);
+					}
+				},
+				onCancel: () => setShowDeleteConfirm(false),
+			})
 		);
 	}
 
@@ -732,6 +785,7 @@
 		const [weekStart, setWeekStart] = useState(new Date().toISOString().split('T')[0]);
 		const [monthYear, setMonthYear] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
 		const [editing, setEditing] = useState(null);
+		const [editingOccurrenceDate, setEditingOccurrenceDate] = useState(null); // Track which occurrence date we're editing
 		const [isNew, setIsNew] = useState(false);
 		const [filterChurch, setFilterChurch] = useState('');
 		const [filterType, setFilterType] = useState('');
@@ -861,6 +915,9 @@
 			if (post) {
 				setIsNew(false);
 				setEditing(post);
+				setEditingOccurrenceDate(occ.date); // Track which occurrence date we clicked on
+			} else {
+				setNotice({ type: 'error', message: 'Could not find the Mass Time post. Try refreshing the page.' });
 			}
 		};
 
@@ -871,11 +928,13 @@
 			apiFetch({ path, method, data })
 				.then(() => {
 					setEditing(null);
+					setEditingOccurrenceDate(null);
 					setNotice({
 						type: 'success',
 						message: isNew ? 'Mass Time created!' : 'Mass Time updated!',
 					});
-					loadData();
+					// Small delay to ensure server cache is cleared before refetching
+					setTimeout(() => loadData(), 200);
 				})
 				.catch(err => {
 					setNotice({ type: 'error', message: err.message });
@@ -883,11 +942,62 @@
 		};
 
 		const handleDelete = (id) => {
+			if (!id) {
+				setNotice({ type: 'error', message: 'Cannot delete: Invalid ID.' });
+				return;
+			}
 			apiFetch({ path: `/parish/v1/mass-times/${id}`, method: 'DELETE' })
 				.then(() => {
 					setEditing(null);
+					setEditingOccurrenceDate(null);
 					setNotice({ type: 'success', message: 'Mass Time deleted.' });
-					loadData();
+					// Small delay to ensure server cache is cleared before refetching
+					setTimeout(() => loadData(), 200);
+				})
+				.catch(err => {
+					setNotice({ type: 'error', message: err.message });
+				});
+		};
+
+		// Delete single occurrence by adding an exception date
+		const handleDeleteSingle = (id, occurrenceDate) => {
+			if (!id) {
+				setNotice({ type: 'error', message: 'Cannot delete occurrence: Invalid ID.' });
+				return;
+			}
+			// Find the post and add the occurrence date to exception_dates
+			const post = massTimePosts.find(p => p.id === id);
+			if (!post) {
+				setNotice({ type: 'error', message: 'Could not find the Mass Time post.' });
+				return;
+			}
+
+			// Use the tracked occurrence date or fall back to the passed date
+			const dateToExclude = editingOccurrenceDate || occurrenceDate;
+			if (!dateToExclude) {
+				setNotice({ type: 'error', message: 'Could not determine which occurrence to delete.' });
+				return;
+			}
+
+			const currentExceptions = post.exception_dates || [];
+			if (currentExceptions.includes(dateToExclude)) {
+				setNotice({ type: 'warning', message: 'This date is already excluded.' });
+				return;
+			}
+
+			const updatedExceptions = [...currentExceptions, dateToExclude];
+
+			apiFetch({
+				path: `/parish/v1/mass-times/${id}`,
+				method: 'PUT',
+				data: { ...post, exception_dates: updatedExceptions },
+			})
+				.then(() => {
+					setEditing(null);
+					setEditingOccurrenceDate(null);
+					setNotice({ type: 'success', message: `Occurrence on ${dateToExclude} has been removed from the series.` });
+					// Small delay to ensure server cache is cleared before refetching
+					setTimeout(() => loadData(), 200);
 				})
 				.catch(err => {
 					setNotice({ type: 'error', message: err.message });
@@ -1021,7 +1131,11 @@
 				isNew,
 				onSave: handleSave,
 				onDelete: handleDelete,
-				onClose: () => setEditing(null),
+				onDeleteSingle: handleDeleteSingle,
+				onClose: () => {
+					setEditing(null);
+					setEditingOccurrenceDate(null);
+				},
 			})
 		);
 	}

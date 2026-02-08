@@ -179,7 +179,7 @@ class Parish_Blocks {
 	 */
 	private function register_module_blocks(): void {
 		$base  = PARISH_CORE_PATH . 'includes/cpt/modules/';
-		$files = glob( $base . '*/block.php' );
+		$files = glob( $base . '*/*block.php' );
 
 		if ( empty( $files ) ) {
 			return;
