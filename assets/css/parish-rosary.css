@@ -1,0 +1,198 @@
+/**
+ * Parish Rosary Styles
+ *
+ * CSS styling for rosary shortcodes and blocks.
+ *
+ * @package ParishCore
+ * @since 1.0.0
+ */
+
+/* ========================================================================
+   Today's Rosary Summary
+   ======================================================================== */
+
+.parish-rosary-today {
+	padding: 20px;
+	background: #f9f9f9;
+	border-radius: 8px;
+	border-left: 4px solid #609fae;
+	margin: 20px 0;
+}
+
+.parish-rosary-today .rosary-header {
+	margin-bottom: 15px;
+}
+
+.parish-rosary-today .rosary-date {
+	font-size: 0.9em;
+	color: #666;
+	margin-bottom: 5px;
+}
+
+.parish-rosary-today .rosary-title {
+	margin: 0 0 5px 0;
+	color: #333;
+	font-size: 1.5em;
+	font-weight: 600;
+}
+
+.parish-rosary-today .rosary-season-note {
+	font-size: 0.85em;
+	color: #888;
+	font-style: italic;
+}
+
+.parish-rosary-today .rosary-mysteries-list {
+	margin: 15px 0;
+	padding-left: 25px;
+	list-style-type: decimal;
+}
+
+.parish-rosary-today .rosary-mysteries-list li {
+	margin: 8px 0;
+	line-height: 1.6;
+	color: #333;
+}
+
+/* ========================================================================
+   Full Rosary Display
+   ======================================================================== */
+
+.parish-rosary-full {
+	max-width: 800px;
+	margin: 0 auto 30px;
+}
+
+.parish-rosary-full .rosary-header {
+	text-align: center;
+	margin-bottom: 30px;
+	padding-bottom: 20px;
+	border-bottom: 2px solid #609fae;
+}
+
+.parish-rosary-full .rosary-title {
+	color: #609fae;
+	margin: 0 0 10px 0;
+	font-size: 2em;
+	font-weight: 600;
+}
+
+.parish-rosary-full .rosary-description {
+	margin: 0;
+	font-size: 1.1em;
+	color: #666;
+	line-height: 1.6;
+}
+
+.parish-rosary-full .rosary-mystery {
+	margin: 30px 0;
+	padding: 20px;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	border-left: 4px solid #609fae;
+}
+
+.parish-rosary-full .mystery-title {
+	color: #609fae;
+	margin: 0 0 15px 0;
+	font-size: 1.5em;
+	font-weight: 600;
+}
+
+.parish-rosary-full .mystery-summary {
+	margin: 0 0 15px 0;
+	font-size: 1.1em;
+	color: #555;
+	font-weight: 500;
+}
+
+.parish-rosary-full .mystery-fruit,
+.parish-rosary-full .mystery-scripture {
+	margin: 10px 0;
+	line-height: 1.6;
+	color: #333;
+}
+
+.parish-rosary-full .mystery-fruit strong,
+.parish-rosary-full .mystery-scripture strong {
+	color: #609fae;
+}
+
+.parish-rosary-full .mystery-quote {
+	margin: 15px 0;
+	padding: 15px 20px;
+	background: #f5f5f5;
+	border-left: 4px solid #609fae;
+	font-style: italic;
+	color: #555;
+	line-height: 1.8;
+}
+
+.parish-rosary-full .mystery-meditation {
+	margin: 15px 0 0 0;
+	line-height: 1.8;
+	color: #333;
+}
+
+/* ========================================================================
+   Block-Specific Styles
+   ======================================================================== */
+
+.parish-rosary-today-block {
+	margin: 20px 0;
+}
+
+.parish-rosary-full-block {
+	margin: 30px 0;
+}
+
+/* ========================================================================
+   Responsive Design
+   ======================================================================== */
+
+@media (max-width: 768px) {
+	.parish-rosary-today {
+		padding: 15px;
+		margin: 15px 0;
+	}
+
+	.parish-rosary-today .rosary-title {
+		font-size: 1.3em;
+	}
+
+	.parish-rosary-full {
+		max-width: 100%;
+		padding: 0 15px;
+	}
+
+	.parish-rosary-full .rosary-title {
+		font-size: 1.5em;
+	}
+
+	.parish-rosary-full .rosary-mystery {
+		padding: 15px;
+		margin: 20px 0;
+	}
+
+	.parish-rosary-full .mystery-title {
+		font-size: 1.3em;
+	}
+}
+
+/* ========================================================================
+   Print Styles
+   ======================================================================== */
+
+@media print {
+	.parish-rosary-today,
+	.parish-rosary-full .rosary-mystery {
+		box-shadow: none;
+		border: 1px solid #ddd;
+		page-break-inside: avoid;
+	}
+
+	.parish-rosary-full .rosary-header {
+		border-bottom: 2px solid #333;
+	}
+}

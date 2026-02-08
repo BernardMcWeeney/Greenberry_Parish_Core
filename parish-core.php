@@ -65,6 +65,15 @@ function parish_core_includes(): void {
 		// Schedule system.
 		'schedule/class-parish-schedule-generator.php',
 
+		// Rosary classes.
+		'class-parish-rosary-data.php',
+		'class-parish-rosary-schedule.php',
+		'class-parish-rosary-shortcodes.php',
+		'class-parish-rosary-blocks.php',
+
+		// Events migrator.
+		'class-parish-events-migrator.php',
+
 		// Other modules you already have.
 		'class-parish-rest-api.php',
 		'class-parish-admin-ui.php',
@@ -281,6 +290,9 @@ function parish_core_get_default_settings(): array {
 		// Readings API settings (admin only).
 		'readings_api_key'        => '',
 		'readings_schedules'      => '{}',
+
+		// Mass Times settings.
+		'default_livestream_url'  => 'https://bohermeenparish.ie/online-live-mass/',
 
 		// Admin Color settings.
 		'admin_colors_enabled'     => false,

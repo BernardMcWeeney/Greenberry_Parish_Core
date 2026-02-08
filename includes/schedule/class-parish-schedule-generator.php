@@ -870,4 +870,93 @@ class Parish_Schedule_Generator {
 		// This is a placeholder for legacy compatibility.
 		// The new CPT-based system doesn't use overrides in the same way.
 	}
+
+	/**
+	 * Cancel a single occurrence of a recurring event.
+	 * Adds the date to the exception_dates meta field.
+	 *
+	 * @param int    $post_id Mass Time post ID.
+	 * @param string $date    Date to cancel in Y-m-d format.
+	 * @return bool True on success, false if already cancelled or error.
+	 */
+	public static function cancel_occurrence( int $post_id, string $date ): bool {
+		$exception_dates = get_post_meta( $post_id, 'parish_mass_time_exception_dates', true ) ?: array();
+
+		// Ensure it's an array.
+		if ( ! is_array( $exception_dates ) ) {
+			$exception_dates = array();
+		}
+
+		// Check if already cancelled.
+		if ( in_array( $date, $exception_dates, true ) ) {
+			return false;
+		}
+
+		// Add to exceptions.
+		$exception_dates[] = $date;
+
+		$result = update_post_meta( $post_id, 'parish_mass_time_exception_dates', $exception_dates );
+
+		// Clear cache on success.
+		if ( $result ) {
+			self::instance()->clear_cache( $post_id );
+		}
+
+		return (bool) $result;
+	}
+
+	/**
+	 * Cancel an entire recurring series by marking it as inactive.
+	 *
+	 * @param int $post_id Mass Time post ID.
+	 * @return bool True on success, false on error.
+	 */
+	public static function cancel_series( int $post_id ): bool {
+		$result = update_post_meta( $post_id, 'parish_mass_time_is_active', false );
+
+		// Clear cache on success.
+		if ( $result ) {
+			self::instance()->clear_cache( $post_id );
+		}
+
+		return (bool) $result;
+	}
+
+	/**
+	 * Restore a previously cancelled occurrence.
+	 * Removes the date from the exception_dates meta field.
+	 *
+	 * @param int    $post_id Mass Time post ID.
+	 * @param string $date    Date to restore in Y-m-d format.
+	 * @return bool True on success, false if not found or error.
+	 */
+	public static function restore_occurrence( int $post_id, string $date ): bool {
+		$exception_dates = get_post_meta( $post_id, 'parish_mass_time_exception_dates', true ) ?: array();
+
+		// Ensure it's an array.
+		if ( ! is_array( $exception_dates ) ) {
+			return false;
+		}
+
+		// Find and remove the date.
+		$key = array_search( $date, $exception_dates, true );
+
+		if ( false === $key ) {
+			return false;
+		}
+
+		unset( $exception_dates[ $key ] );
+
+		// Re-index array.
+		$exception_dates = array_values( $exception_dates );
+
+		$result = update_post_meta( $post_id, 'parish_mass_time_exception_dates', $exception_dates );
+
+		// Clear cache on success.
+		if ( $result ) {
+			self::instance()->clear_cache( $post_id );
+		}
+
+		return (bool) $result;
+	}
 }

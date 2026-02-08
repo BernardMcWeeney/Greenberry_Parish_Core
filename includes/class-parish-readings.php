@@ -136,6 +136,38 @@ class Parish_Readings {
 	}
 
 	/**
+	 * Schedule options configuration.
+	 *
+	 * @var array
+	 */
+	private array $schedule_options = array(
+		'daily_once'     => array(
+			'label'        => 'Once Daily',
+			'frequency'    => 'daily',
+			'times'        => 1,
+			'default_time' => '05:00',
+		),
+		'daily_twice'    => array(
+			'label'         => 'Twice Daily',
+			'frequency'     => 'twicedaily',
+			'times'         => 2,
+			'default_times' => array( '05:00', '17:00' ),
+		),
+		'every_6_hours'  => array(
+			'label'     => 'Every 6 Hours',
+			'frequency' => 'every_6_hours',
+			'times'     => 4,
+			'interval'  => 21600,
+		),
+		'every_4_hours'  => array(
+			'label'     => 'Every 4 Hours',
+			'frequency' => 'every_4_hours',
+			'times'     => 6,
+			'interval'  => 14400,
+		),
+	);
+
+	/**
 	 * Constructor.
 	 */
 	private function __construct() {
@@ -143,6 +175,9 @@ class Parish_Readings {
 
 		// Register shortcodes.
 		add_action( 'init', array( $this, 'register_shortcodes' ) );
+
+		// Register custom cron schedules.
+		add_filter( 'cron_schedules', array( $this, 'register_custom_schedules' ) );
 
 		// Schedule daily fetch.
 		add_action( 'init', array( $this, 'schedule_cron' ) );
@@ -257,14 +292,134 @@ class Parish_Readings {
 	}
 
 	/**
-	 * Schedule daily cron job.
+	 * Schedule cron jobs for all endpoints.
+	 * Each endpoint can have its own schedule configuration.
 	 */
 	public function schedule_cron(): void {
-		if ( ! wp_next_scheduled( 'parish_fetch_readings_cron' ) ) {
-			// Schedule for 5am daily.
-			$timestamp = strtotime( 'tomorrow 05:00:00' );
-			wp_schedule_event( $timestamp, 'daily', 'parish_fetch_readings_cron' );
+		// Get per-endpoint schedules from settings.
+		$schedules = json_decode( Parish_Core::get_setting( 'readings_schedules', '{}' ), true ) ?: array();
+
+		// Schedule each endpoint with its specific configuration.
+		foreach ( array_keys( $this->endpoints ) as $endpoint ) {
+			$schedule_config = $schedules[ $endpoint ] ?? array(
+				'schedule' => 'daily_once',
+				'time'     => '05:00',
+			);
+
+			$this->schedule_endpoint( $endpoint, $schedule_config );
 		}
+
+		// Also keep the legacy global cron hook for fetch_all_readings().
+		$hook      = 'parish_fetch_readings_cron';
+		$timestamp = wp_next_scheduled( $hook );
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, $hook );
+		}
+
+		$timezone  = wp_timezone();
+		$now       = new DateTime( 'now', $timezone );
+		$next_run  = new DateTime( 'tomorrow 05:00:00', $timezone );
+		$today_5am = new DateTime( 'today 05:00:00', $timezone );
+		if ( $now < $today_5am ) {
+			$next_run = $today_5am;
+		}
+
+		wp_schedule_event( $next_run->getTimestamp(), 'daily', $hook );
+	}
+
+	/**
+	 * Register custom cron schedules.
+	 *
+	 * @param array $schedules Existing schedules.
+	 * @return array Modified schedules.
+	 */
+	public function register_custom_schedules( array $schedules ): array {
+		$schedules['every_6_hours'] = array(
+			'interval' => 21600, // 6 * 3600
+			'display'  => __( 'Every 6 Hours', 'parish-core' ),
+		);
+
+		$schedules['every_4_hours'] = array(
+			'interval' => 14400, // 4 * 3600
+			'display'  => __( 'Every 4 Hours', 'parish-core' ),
+		);
+
+		return $schedules;
+	}
+
+	/**
+	 * Schedule a single endpoint with its specific schedule configuration.
+	 *
+	 * @param string $endpoint Endpoint key.
+	 * @param array  $config   Schedule configuration.
+	 */
+	public function schedule_endpoint( string $endpoint, array $config ): void {
+		$hook = "parish_fetch_{$endpoint}";
+
+		// Clear existing schedules for this endpoint.
+		wp_clear_scheduled_hook( $hook );
+
+		$schedule_type = $config['schedule'] ?? 'daily_once';
+		$timezone      = wp_timezone();
+
+		switch ( $schedule_type ) {
+			case 'daily_once':
+				$time     = $config['time'] ?? '05:00';
+				$next_run = $this->calculate_next_daily_run( $time, $timezone );
+				wp_schedule_event( $next_run->getTimestamp(), 'daily', $hook );
+				break;
+
+			case 'daily_twice':
+				$times = $config['times'] ?? array( '05:00', '17:00' );
+				foreach ( $times as $idx => $time ) {
+					$hook_with_idx = $hook . '_' . $idx;
+					$next_run      = $this->calculate_next_daily_run( $time, $timezone );
+					wp_schedule_event( $next_run->getTimestamp(), 'twicedaily', $hook_with_idx );
+					// Register action for each time.
+					add_action(
+						$hook_with_idx,
+						function () use ( $endpoint ) {
+							$this->fetch_endpoint( $endpoint );
+						}
+					);
+				}
+				break;
+
+			case 'every_6_hours':
+			case 'every_4_hours':
+				$start    = $config['start_time'] ?? '00:00';
+				$next_run = $this->calculate_next_daily_run( $start, $timezone );
+				wp_schedule_event( $next_run->getTimestamp(), $schedule_type, $hook );
+				break;
+		}
+
+		// Register action for this endpoint (for daily_once and interval schedules).
+		if ( 'daily_twice' !== $schedule_type ) {
+			add_action(
+				$hook,
+				function () use ( $endpoint ) {
+					$this->fetch_endpoint( $endpoint );
+				}
+			);
+		}
+	}
+
+	/**
+	 * Calculate next daily run time.
+	 *
+	 * @param string       $time     Time in HH:MM format.
+	 * @param DateTimeZone $timezone Timezone.
+	 * @return DateTime Next run datetime.
+	 */
+	private function calculate_next_daily_run( string $time, DateTimeZone $timezone ): DateTime {
+		$now    = new DateTime( 'now', $timezone );
+		$target = new DateTime( "today {$time}", $timezone );
+
+		if ( $now >= $target ) {
+			$target = new DateTime( "tomorrow {$time}", $timezone );
+		}
+
+		return $target;
 	}
 
 	/**

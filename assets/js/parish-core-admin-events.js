@@ -1,5 +1,5 @@
 /**
- * Parish Core Admin - Events Calendar
+ * Parish Core Admin - Events Calendar (CPT-based)
  */
 (function (window) {
 	'use strict';
@@ -14,10 +14,10 @@
 		SelectControl,
 		TextControl,
 		TextareaControl,
+		CheckboxControl,
 		Flex,
 		apiFetch,
 		LoadingSpinner,
-		generateId,
 	} = window.ParishCoreAdmin;
 
 	function MonthView(props) {
@@ -140,95 +140,231 @@
 
 	function EventModal(props) {
 		const event = props.event;
+		const churches = props.churches;
+		const taxonomies = props.taxonomies;
 		const onSave = props.onSave;
 		const onDelete = props.onDelete;
 		const onClose = props.onClose;
 
 		const [form, setForm] = useState(event);
+		const [saving, setSaving] = useState(false);
+
 		const upd = function (k, v) {
 			setForm(function (p) {
 				return Object.assign({}, p, { [k]: v });
 			});
 		};
 
-		const eventTypes = [
-			{ label: 'Parish Event', value: 'parish' },
-			{ label: 'Sacrament', value: 'sacrament' },
-			{ label: 'Feast Day', value: 'feast' },
-			{ label: 'Meeting', value: 'meeting' },
-		];
+		const handleSave = function () {
+			setSaving(true);
+			onSave(form).finally(function () {
+				setSaving(false);
+			});
+		};
+
+		const handleDelete = function () {
+			if (confirm('Are you sure you want to delete this event?')) {
+				setSaving(true);
+				onDelete(form.id).finally(function () {
+					setSaving(false);
+				});
+			}
+		};
+
 		const colors = [
+			{ label: 'Parish Blue', value: '#609fae' },
 			{ label: 'Blue', value: '#2271b1' },
 			{ label: 'Green', value: '#00a32a' },
 			{ label: 'Red', value: '#d63638' },
 			{ label: 'Purple', value: '#8c5cb5' },
 			{ label: 'Orange', value: '#dba617' },
+			{ label: 'Gold', value: '#FFD700' },
 		];
+
+		const churchOptions = [{ label: 'All Churches', value: 0 }].concat(
+			(churches || []).map(function (c) {
+				return { label: c.title, value: c.id };
+			})
+		);
+
+		const sacramentOptions = [{ label: 'None', value: '' }].concat(
+			(taxonomies.sacraments || []).map(function (t) {
+				return { label: t.name, value: t.slug };
+			})
+		);
+
+		const typeOptions = [{ label: 'None', value: '' }].concat(
+			(taxonomies.types || []).map(function (t) {
+				return { label: t.name, value: t.slug };
+			})
+		);
 
 		return el(
 			Modal,
-			{ title: 'Event', onRequestClose: onClose, className: 'parish-modal' },
+			{ title: form.id ? 'Edit Event' : 'New Event', onRequestClose: onClose, className: 'parish-modal parish-event-modal' },
 			el(
 				'div',
-				{ className: 'modal-form' },
+				{ className: 'modal-form', style: { maxHeight: '70vh', overflowY: 'auto' } },
 				el(TextControl, {
-					label: 'Title',
+					label: 'Event Title *',
 					value: form.title,
 					onChange: function (v) {
 						upd('title', v);
 					},
+					required: true,
 				}),
-				el(TextControl, {
-					label: 'Date',
-					type: 'date',
-					value: form.date,
-					onChange: function (v) {
-						upd('date', v);
-					},
-				}),
-				el(TextControl, {
-					label: 'Time',
-					type: 'time',
-					value: form.time,
-					onChange: function (v) {
-						upd('time', v);
-					},
-				}),
-				el(SelectControl, {
-					label: 'Type',
-					value: form.event_type,
-					options: eventTypes,
-					onChange: function (v) {
-						upd('event_type', v);
-					},
-					__nextHasNoMarginBottom: true,
-					__next40pxDefaultSize: true,
-				}),
-				el(SelectControl, {
-					label: 'Color',
-					value: form.color,
-					options: colors,
-					onChange: function (v) {
-						upd('color', v);
-					},
-					__nextHasNoMarginBottom: true,
-					__next40pxDefaultSize: true,
-				}),
+				el(
+					'div',
+					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' } },
+					el(TextControl, {
+						label: 'Date *',
+						type: 'date',
+						value: form.date,
+						onChange: function (v) {
+							upd('date', v);
+						},
+						required: true,
+					}),
+					el(TextControl, {
+						label: 'Start Time',
+						type: 'time',
+						value: form.time,
+						onChange: function (v) {
+							upd('time', v);
+						},
+					}),
+					el(TextControl, {
+						label: 'End Time',
+						type: 'time',
+						value: form.end_time || '',
+						onChange: function (v) {
+							upd('end_time', v);
+						},
+					})
+				),
+				el(
+					'div',
+					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
+					el(SelectControl, {
+						label: 'Church',
+						value: form.church_id || 0,
+						options: churchOptions,
+						onChange: function (v) {
+							upd('church_id', parseInt(v, 10));
+						},
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
+					}),
+					el(SelectControl, {
+						label: 'Color',
+						value: form.color,
+						options: colors,
+						onChange: function (v) {
+							upd('color', v);
+						},
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
+					})
+				),
 				el(TextControl, {
 					label: 'Location',
-					value: form.location,
+					value: form.location || '',
 					onChange: function (v) {
 						upd('location', v);
 					},
 				}),
+				el(
+					'div',
+					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
+					el(SelectControl, {
+						label: 'Sacrament',
+						value: form.sacrament || '',
+						options: sacramentOptions,
+						onChange: function (v) {
+							upd('sacrament', v);
+						},
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
+					}),
+					el(SelectControl, {
+						label: 'Event Type',
+						value: form.type || '',
+						options: typeOptions,
+						onChange: function (v) {
+							upd('type', v);
+						},
+						__nextHasNoMarginBottom: true,
+						__next40pxDefaultSize: true,
+					})
+				),
 				el(TextareaControl, {
 					label: 'Description',
-					value: form.description,
-					rows: 2,
+					value: form.description || '',
+					rows: 3,
 					onChange: function (v) {
 						upd('description', v);
 					},
-				})
+				}),
+				el(
+					'div',
+					{ style: { borderTop: '1px solid #ddd', paddingTop: '16px', marginTop: '16px' } },
+					el('h4', { style: { marginTop: 0, marginBottom: '12px' } }, 'Organizer & Contact Info')
+				),
+				el(TextControl, {
+					label: 'Organizer Name',
+					value: form.organizer || '',
+					onChange: function (v) {
+						upd('organizer', v);
+					},
+				}),
+				el(
+					'div',
+					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
+					el(TextControl, {
+						label: 'Contact Email',
+						type: 'email',
+						value: form.contact_email || '',
+						onChange: function (v) {
+							upd('contact_email', v);
+						},
+					}),
+					el(TextControl, {
+						label: 'Contact Phone',
+						type: 'tel',
+						value: form.contact_phone || '',
+						onChange: function (v) {
+							upd('contact_phone', v);
+						},
+					})
+				),
+				el(TextControl, {
+					label: 'Registration URL',
+					type: 'url',
+					value: form.registration_url || '',
+					onChange: function (v) {
+						upd('registration_url', v);
+					},
+					help: 'URL for event registration or ticket purchase',
+				}),
+				el(
+					'div',
+					{ style: { display: 'flex', gap: '24px', marginTop: '16px' } },
+					el(CheckboxControl, {
+						label: 'Featured Event',
+						checked: form.featured || false,
+						onChange: function (v) {
+							upd('featured', v);
+						},
+						help: 'Highlight on homepage',
+					}),
+					el(CheckboxControl, {
+						label: 'Cemetery Event',
+						checked: form.is_cemetery || false,
+						onChange: function (v) {
+							upd('is_cemetery', v);
+						},
+					})
+				)
 			),
 			el(
 				'div',
@@ -236,28 +372,30 @@
 				el(
 					Flex,
 					{ justify: 'space-between' },
-					el(
-						Button,
-						{ isDestructive: true, onClick: onDelete },
-						'Delete'
-					),
+					form.id
+						? el(
+								Button,
+								{ isDestructive: true, onClick: handleDelete, disabled: saving },
+								'Delete'
+						  )
+						: el('span'),
 					el(
 						Flex,
 						{ gap: 2 },
 						el(
 							Button,
-							{ isSecondary: true, onClick: onClose },
+							{ isSecondary: true, onClick: onClose, disabled: saving },
 							'Cancel'
 						),
 						el(
 							Button,
 							{
 								isPrimary: true,
-								onClick: function () {
-									onSave(form);
-								},
+								onClick: handleSave,
+								isBusy: saving,
+								disabled: saving || !form.title || !form.date,
 							},
-							'Save'
+							saving ? 'Saving...' : 'Save'
 						)
 					)
 				)
@@ -267,73 +405,228 @@
 
 	function EventsCalendar() {
 		const [events, setEvents] = useState([]);
+		const [churches, setChurches] = useState([]);
+		const [taxonomies, setTaxonomies] = useState({ sacraments: [], types: [], locations: [], feast_days: [] });
 		const [loading, setLoading] = useState(true);
-		const [saving, setSaving] = useState(false);
 		const [notice, setNotice] = useState(null);
 		const [viewDate, setViewDate] = useState(new Date());
 		const [editing, setEditing] = useState(null);
+		const [needsMigration, setNeedsMigration] = useState(false);
+		const [migrating, setMigrating] = useState(false);
 
-		useEffect(function () {
-			apiFetch({ path: '/parish/v1/events' })
-				.then(function (res) {
-					setEvents(res.events || []);
-					setLoading(false);
-				})
-				.catch(function () {
-					setLoading(false);
-				});
-		}, []);
+		const loadMonth = function (date) {
+			const year = date.getFullYear();
+			const month = date.getMonth();
+			const start = year + '-' + String(month + 1).padStart(2, '0') + '-01';
+			const lastDay = new Date(year, month + 1, 0).getDate();
+			const end = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
 
-		const save = function () {
-			setSaving(true);
+			setLoading(true);
 			apiFetch({
-				path: '/parish/v1/events',
-				method: 'POST',
-				data: { events: events },
+				path: '/parish/v1/events/calendar?start=' + start + '&end=' + end,
 			})
-				.then(function () {
-					setSaving(false);
-					setNotice({ type: 'success', message: 'Saved!' });
+				.then(function (res) {
+					setEvents(res || []);
+					setLoading(false);
 				})
 				.catch(function (err) {
-					setSaving(false);
-					setNotice({ type: 'error', message: err.message });
+					console.error('Failed to load events:', err);
+					setLoading(false);
+					setNotice({ type: 'error', message: 'Failed to load events.' });
+				});
+		};
+
+		useEffect(function () {
+			// Load churches
+			apiFetch({ path: '/parish/v1/churches/list' })
+				.then(function (res) {
+					setChurches(res || []);
+				})
+				.catch(function (err) {
+					console.error('Failed to load churches:', err);
+				});
+
+			// Load taxonomies
+			apiFetch({ path: '/parish/v1/events/taxonomies' })
+				.then(function (res) {
+					setTaxonomies(res || { sacraments: [], types: [], locations: [], feast_days: [] });
+				})
+				.catch(function (err) {
+					console.error('Failed to load taxonomies:', err);
+				});
+
+			// Check if migration is needed
+			apiFetch({ path: '/parish/v1/events' })
+				.then(function (res) {
+					if (res.events && res.events.length > 0) {
+						setNeedsMigration(true);
+					}
+				})
+				.catch(function () {
+					// Ignore error
+				});
+
+			loadMonth(viewDate);
+		}, []);
+
+		useEffect(
+			function () {
+				loadMonth(viewDate);
+			},
+			[viewDate]
+		);
+
+		const runMigration = function () {
+			if (!confirm('This will migrate all events from JSON storage to the database. Continue?')) {
+				return;
+			}
+
+			setMigrating(true);
+			apiFetch({
+				path: '/parish/v1/events/migrate',
+				method: 'POST',
+			})
+				.then(function (res) {
+					setMigrating(false);
+					setNeedsMigration(false);
+					setNotice({
+						type: res.success ? 'success' : 'error',
+						message: res.message || 'Migration completed.',
+					});
+					loadMonth(viewDate);
+				})
+				.catch(function (err) {
+					setMigrating(false);
+					setNotice({ type: 'error', message: err.message || 'Migration failed.' });
 				});
 		};
 
 		const add = function (date) {
 			setEditing({
-				id: generateId(),
+				id: null,
 				title: '',
 				date: date || new Date().toISOString().split('T')[0],
 				time: '',
+				end_time: '',
 				location: '',
 				description: '',
-				event_type: 'parish',
-				color: '#2271b1',
+				church_id: 0,
+				sacrament: '',
+				type: '',
+				organizer: '',
+				contact_email: '',
+				contact_phone: '',
+				registration_url: '',
+				featured: false,
+				is_cemetery: false,
+				color: '#609fae',
 			});
 		};
 
 		const saveEvent = function (evt) {
-			const idx = events.findIndex(function (e) {
-				return e.id === evt.id;
+			return new Promise(function (resolve, reject) {
+				const isNew = !evt.id;
+				const endpoint = isNew ? '/wp/v2/parish_event' : '/wp/v2/parish_event/' + evt.id;
+				const method = isNew ? 'POST' : 'PUT';
+
+				const data = {
+					title: evt.title,
+					content: evt.description || '',
+					status: 'publish',
+					meta: {
+						parish_event_date: evt.date,
+						parish_event_time: evt.time || '',
+						parish_event_end_time: evt.end_time || '',
+						parish_event_location: evt.location || '',
+						parish_event_church_id: evt.church_id || 0,
+						parish_event_is_cemetery: evt.is_cemetery || false,
+						parish_event_organizer: evt.organizer || '',
+						parish_event_contact_email: evt.contact_email || '',
+						parish_event_contact_phone: evt.contact_phone || '',
+						parish_event_registration_url: evt.registration_url || '',
+						parish_event_featured: evt.featured || false,
+						parish_event_color: evt.color || '#609fae',
+					},
+				};
+
+				// Add taxonomies
+				if (evt.sacrament) {
+					apiFetch({ path: '/wp/v2/parish_sacrament?slug=' + evt.sacrament })
+						.then(function (terms) {
+							if (terms && terms.length > 0) {
+								data.parish_sacrament = [terms[0].id];
+							}
+						})
+						.catch(function () {});
+				}
+
+				if (evt.type) {
+					apiFetch({ path: '/wp/v2/parish_event_type?slug=' + evt.type })
+						.then(function (terms) {
+							if (terms && terms.length > 0) {
+								data.parish_event_type = [terms[0].id];
+							}
+						})
+						.catch(function () {});
+				}
+
+				apiFetch({
+					path: endpoint,
+					method: method,
+					data: data,
+				})
+					.then(function (res) {
+						setNotice({ type: 'success', message: isNew ? 'Event created!' : 'Event updated!' });
+						setEditing(null);
+						loadMonth(viewDate);
+						resolve(res);
+					})
+					.catch(function (err) {
+						setNotice({ type: 'error', message: err.message || 'Failed to save event.' });
+						reject(err);
+					});
 			});
-			if (idx >= 0) {
-				const u = events.slice();
-				u[idx] = evt;
-				setEvents(u);
-			} else {
-				setEvents(events.concat([evt]));
-			}
-			setEditing(null);
 		};
 
 		const deleteEvent = function (id) {
-			setEvents(
-				events.filter(function (e) {
-					return e.id !== id;
+			return new Promise(function (resolve, reject) {
+				apiFetch({
+					path: '/wp/v2/parish_event/' + id,
+					method: 'DELETE',
 				})
-			);
+					.then(function () {
+						setNotice({ type: 'success', message: 'Event deleted.' });
+						setEditing(null);
+						loadMonth(viewDate);
+						resolve();
+					})
+					.catch(function (err) {
+						setNotice({ type: 'error', message: err.message || 'Failed to delete event.' });
+						reject(err);
+					});
+			});
+		};
+
+		const editEvent = function (evt) {
+			setEditing({
+				id: evt.id,
+				title: evt.title,
+				date: evt.date,
+				time: evt.time || '',
+				end_time: evt.end_time || '',
+				location: evt.location || '',
+				description: evt.description || '',
+				church_id: evt.church_id || 0,
+				sacrament: evt.sacraments && evt.sacraments.length > 0 ? evt.sacraments[0] : '',
+				type: evt.types && evt.types.length > 0 ? evt.types[0] : '',
+				organizer: evt.organizer || '',
+				contact_email: evt.contact_email || '',
+				contact_phone: evt.contact_phone || '',
+				registration_url: evt.registration_url || '',
+				featured: evt.featured || false,
+				is_cemetery: evt.is_cemetery || false,
+				color: evt.color || '#609fae',
+			});
 		};
 
 		if (loading) return el(LoadingSpinner, { text: 'Loading...' });
@@ -355,6 +648,17 @@
 						},
 					},
 					notice.message
+				),
+			needsMigration &&
+				el(
+					Notice,
+					{ status: 'warning', isDismissible: false },
+					el('p', null, 'Events need to be migrated from JSON to the new database structure.'),
+					el(
+						Button,
+						{ isPrimary: true, isBusy: migrating, onClick: runMigration },
+						migrating ? 'Migrating...' : 'Migrate Events Now'
+					)
 				),
 			el(
 				'div',
@@ -408,7 +712,12 @@
 				),
 				el(
 					Button,
-					{ isPrimary: true, onClick: function () { add(); } },
+					{
+						isPrimary: true,
+						onClick: function () {
+							add();
+						},
+					},
 					'+ Add Event'
 				)
 			),
@@ -417,29 +726,19 @@
 				month: month,
 				events: events,
 				onDayClick: add,
-				onEventClick: setEditing,
+				onEventClick: editEvent,
 			}),
 			editing &&
 				el(EventModal, {
 					event: editing,
+					churches: churches,
+					taxonomies: taxonomies,
 					onSave: saveEvent,
-					onDelete: function () {
-						deleteEvent(editing.id);
-						setEditing(null);
-					},
+					onDelete: deleteEvent,
 					onClose: function () {
 						setEditing(null);
 					},
-				}),
-			el(
-				'div',
-				{ className: 'parish-save-bar' },
-				el(
-					Button,
-					{ isPrimary: true, isBusy: saving, onClick: save },
-					saving ? 'Saving...' : 'Save All'
-				)
-			)
+				})
 		);
 	}
 

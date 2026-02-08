@@ -1,0 +1,214 @@
+{
+  "joyful": {
+    "name": "The Joyful Mysteries",
+    "description": "The Joyful Mysteries focus on the joy surrounding Christ's birth and early life.",
+    "season_note": "Traditionally prayed on Mondays and Saturdays",
+    "color": "#FFD700",
+    "mysteries": [
+      {
+        "number": 1,
+        "title": "The Annunciation",
+        "summary": "Mary is chosen to be the mother of Jesus.",
+        "fruit": "Humility",
+        "scripture_ref": "Luke 1:26-38",
+        "scripture_quote": "Behold, I am the handmaid of the Lord. May it be done to me according to your word.",
+        "meditation": "Mary's complete surrender to God's will teaches us the virtue of humility. When the angel Gabriel appeared to her, Mary did not question her worthiness but humbly accepted God's plan. Her 'yes' to God changed the course of human history and brought salvation to the world."
+      },
+      {
+        "number": 2,
+        "title": "The Visitation",
+        "summary": "Elizabeth recognizes Mary as the mother of our Lord.",
+        "fruit": "Love of neighbor",
+        "scripture_ref": "Luke 1:39-56",
+        "scripture_quote": "Blessed are you among women, and blessed is the fruit of your womb.",
+        "meditation": "Mary's immediate response to Elizabeth's need shows us the importance of serving others. Despite being pregnant herself, Mary traveled to help her cousin. Her act of charity reminds us that true faith is expressed through loving service to our neighbors."
+      },
+      {
+        "number": 3,
+        "title": "The Nativity",
+        "summary": "Jesus is born and laid in a manger.",
+        "fruit": "Poverty of spirit / detachment",
+        "scripture_ref": "Luke 2:1-20",
+        "scripture_quote": "And she gave birth to her firstborn son and wrapped him in swaddling clothes and laid him in a manger.",
+        "meditation": "The Son of God chose to be born in poverty, in a humble stable, teaching us detachment from worldly possessions. Jesus' birth shows us that true richness comes not from material wealth but from spiritual treasures and closeness to God."
+      },
+      {
+        "number": 4,
+        "title": "The Presentation",
+        "summary": "Jesus is presented in the Temple of Jerusalem.",
+        "fruit": "Obedience",
+        "scripture_ref": "Luke 2:22-40",
+        "scripture_quote": "They brought him up to Jerusalem to present him to the Lord.",
+        "meditation": "Mary and Joseph obediently followed the Jewish law by presenting Jesus in the Temple. Their obedience to God's commands, even when it required sacrifice and effort, teaches us the importance of following God's will in all things, trusting in His divine providence."
+      },
+      {
+        "number": 5,
+        "title": "Finding Jesus in the Temple",
+        "summary": "Jesus is found discussing God's laws in the temple.",
+        "fruit": "Piety",
+        "scripture_ref": "Luke 2:41-52",
+        "scripture_quote": "Did you not know that I must be in my Father's house?",
+        "meditation": "Even at twelve years old, Jesus showed perfect devotion to His Father. His dedication to the things of God teaches us to prioritize our relationship with Him above all else and to seek Him constantly in prayer and worship."
+      }
+    ]
+  },
+  "sorrowful": {
+    "name": "The Sorrowful Mysteries",
+    "description": "The Sorrowful Mysteries contemplate the Passion and Death of Jesus.",
+    "season_note": "Traditionally prayed on Tuesdays and Fridays",
+    "color": "#8B4513",
+    "mysteries": [
+      {
+        "number": 1,
+        "title": "The Agony in the Garden",
+        "summary": "Jesus prays when confronted with the sins of the world.",
+        "fruit": "Contrition / conformity to God's will",
+        "scripture_ref": "Matthew 26:36-46",
+        "scripture_quote": "My Father, if it is possible, let this cup pass from me; yet, not as I will, but as you will.",
+        "meditation": "In the Garden of Gethsemane, Jesus experienced profound anguish as He contemplated the sins of humanity. Yet, He surrendered completely to the Father's will. His prayer teaches us to seek God's will above our own, even in our darkest moments, and to trust in His perfect plan."
+      },
+      {
+        "number": 2,
+        "title": "The Scourging at the Pillar",
+        "summary": "Jesus is whipped before His execution.",
+        "fruit": "Purity / mortification",
+        "scripture_ref": "Mark 15:15",
+        "scripture_quote": "So Pilate, wishing to satisfy the crowd, released for them Barabbas, and having scourged Jesus, he delivered him to be crucified.",
+        "meditation": "Jesus endured brutal scourging for our sins, particularly the sins of the flesh. His willingness to suffer such agony calls us to practice self-denial and to purify our hearts and bodies, offering up our small sacrifices united with His great sacrifice."
+      },
+      {
+        "number": 3,
+        "title": "The Crowning with Thorns",
+        "summary": "Jesus is mocked with a painful crown of thorns.",
+        "fruit": "Moral courage",
+        "scripture_ref": "Matthew 27:27-31",
+        "scripture_quote": "And twisting together a crown of thorns, they put it on his head and put a reed in his right hand.",
+        "meditation": "The soldiers mocked Jesus as a false king, placing a crown of thorns on His head. Despite the pain and humiliation, Jesus remained steadfast in His mission. His courage in the face of mockery inspires us to stand firm in our faith, even when the world ridicules us."
+      },
+      {
+        "number": 4,
+        "title": "The Carrying of the Cross",
+        "summary": "Jesus carries the weight of our sins to His crucifixion.",
+        "fruit": "Patience",
+        "scripture_ref": "John 19:17",
+        "scripture_quote": "So they took Jesus, and he went out, bearing his own cross, to the place called The Place of a Skull.",
+        "meditation": "Jesus carried His cross with patience, falling yet rising again, teaching us perseverance in our trials. Every step He took was an act of love for us. When we carry our own crosses in life, we unite our sufferings with His, knowing that He walks beside us."
+      },
+      {
+        "number": 5,
+        "title": "The Crucifixion",
+        "summary": "Jesus Christ dies to save all mankind.",
+        "fruit": "Salvation / self-denial",
+        "scripture_ref": "Luke 23:33-46",
+        "scripture_quote": "Father, into your hands I commit my spirit.",
+        "meditation": "On the cross, Jesus gave His life completely for our salvation. His ultimate sacrifice shows us the depth of God's love and calls us to die to ourselves, to deny our selfish desires, and to live fully for God and others. Through His death, we have been given the gift of eternal life."
+      }
+    ]
+  },
+  "glorious": {
+    "name": "The Glorious Mysteries",
+    "description": "The Glorious Mysteries celebrate the Resurrection and glory of Christ and Mary.",
+    "season_note": "Traditionally prayed on Wednesdays and Sundays",
+    "color": "#FFFFFF",
+    "mysteries": [
+      {
+        "number": 1,
+        "title": "The Resurrection",
+        "summary": "Jesus rises triumphant over death.",
+        "fruit": "Faith",
+        "scripture_ref": "Matthew 28:1-10",
+        "scripture_quote": "Do not be afraid! I know that you are seeking Jesus the crucified. He is not here, for he has been raised.",
+        "meditation": "Christ's Resurrection is the foundation of our faith. Death has been conquered, and the gates of heaven opened. This glorious mystery gives us hope and assurance that we too shall rise. It calls us to live with faith, knowing that Christ lives and walks with us always."
+      },
+      {
+        "number": 2,
+        "title": "The Ascension",
+        "summary": "As Jesus ascends, He gives us a special task.",
+        "fruit": "Hope / desire for heaven",
+        "scripture_ref": "Acts 1:6-11",
+        "scripture_quote": "This Jesus, who was taken up from you into heaven, will come in the same way as you saw him go into heaven.",
+        "meditation": "Jesus ascended to heaven to prepare a place for us, but He also commissioned His disciples to spread the Gospel. His Ascension fills us with hope for our heavenly home and reminds us that we are called to be His witnesses on earth, sharing His love with all."
+      },
+      {
+        "number": 3,
+        "title": "The Descent of the Holy Spirit",
+        "summary": "At Pentecost the Church is born.",
+        "fruit": "Wisdom / love of God",
+        "scripture_ref": "Acts 2:1-4",
+        "scripture_quote": "And they were all filled with the Holy Spirit and began to speak in other tongues as the Spirit gave them utterance.",
+        "meditation": "The Holy Spirit descended upon the apostles with power, transforming them from fearful men into bold witnesses of Christ. The same Spirit dwells within us, guiding us in truth and wisdom. We are called to open our hearts to the Spirit's gifts and allow Him to work through us."
+      },
+      {
+        "number": 4,
+        "title": "The Assumption of Mary",
+        "summary": "The Virgin Mary is gloriously assumed into heaven.",
+        "fruit": "Devotion to Mary",
+        "scripture_ref": "Revelation 12:1",
+        "scripture_quote": "And a great sign appeared in heaven: a woman clothed with the sun, with the moon under her feet, and on her head a crown of twelve stars.",
+        "meditation": "At the end of her earthly life, Mary was assumed body and soul into heaven. This mystery shows us the dignity of the human body and soul, and the glory that awaits the faithful. Mary's Assumption gives us hope and encourages us to turn to her as our Mother and intercessor."
+      },
+      {
+        "number": 5,
+        "title": "The Coronation of Mary",
+        "summary": "Mary is honored above all creatures.",
+        "fruit": "Eternal happiness",
+        "scripture_ref": "Revelation 12:1",
+        "scripture_quote": "A great sign appeared in heaven: a woman clothed with the sun, with the moon under her feet, and on her head a crown of twelve stars.",
+        "meditation": "Mary is crowned as Queen of Heaven and Earth, honored by her Son above all creation. Her coronation reminds us of our ultimate goal: to be with God forever in heaven. Through her intercession, Mary leads us to her Son and helps us on our journey to eternal happiness."
+      }
+    ]
+  },
+  "luminous": {
+    "name": "The Luminous Mysteries",
+    "description": "The Luminous Mysteries reflect on Christ's public ministry.",
+    "season_note": "Traditionally prayed on Thursdays",
+    "color": "#87CEEB",
+    "mysteries": [
+      {
+        "number": 1,
+        "title": "The Baptism in the Jordan",
+        "summary": "God proclaims Jesus is His Son.",
+        "fruit": "Openness to the Holy Spirit",
+        "scripture_ref": "Matthew 3:13-17",
+        "scripture_quote": "This is my beloved Son, with whom I am well pleased.",
+        "meditation": "When Jesus was baptized by John, the heavens opened and the Holy Spirit descended like a dove. The Father's voice proclaimed Jesus as His beloved Son. This mystery reminds us of our own baptism and calls us to live as children of God, open to the Holy Spirit's guidance in our lives."
+      },
+      {
+        "number": 2,
+        "title": "The Wedding at Cana",
+        "summary": "Jesus performs a surprising miracle at a wedding.",
+        "fruit": "To Jesus through Mary",
+        "scripture_ref": "John 2:1-11",
+        "scripture_quote": "Do whatever he tells you.",
+        "meditation": "At Mary's request, Jesus performed His first miracle, changing water into wine at the wedding feast. Mary's words to the servants, 'Do whatever he tells you,' are her instruction to all of us. Through Mary's intercession, we come to know Jesus more deeply and learn to trust in His providence."
+      },
+      {
+        "number": 3,
+        "title": "The Proclamation of the Kingdom",
+        "summary": "Jesus calls us to do something important.",
+        "fruit": "Repentance / trust in God",
+        "scripture_ref": "Mark 1:14-15",
+        "scripture_quote": "The time is fulfilled, and the kingdom of God is at hand; repent and believe in the gospel.",
+        "meditation": "Jesus began His ministry by proclaiming the Kingdom of God and calling people to repentance. His message is urgent and transformative. We are called to turn away from sin, place our trust completely in God, and live according to the values of His kingdom: love, justice, mercy, and peace."
+      },
+      {
+        "number": 4,
+        "title": "The Transfiguration",
+        "summary": "Jesus is gloriously transformed.",
+        "fruit": "Desire for holiness",
+        "scripture_ref": "Matthew 17:1-8",
+        "scripture_quote": "And he was transfigured before them, and his face shone like the sun, and his clothes became white as light.",
+        "meditation": "On Mount Tabor, Jesus revealed His divine glory to Peter, James, and John. This glimpse of heaven strengthened them for the trials ahead. The Transfiguration reminds us that we are called to holiness and transformation, to become more like Christ, reflecting His light in our world."
+      },
+      {
+        "number": 5,
+        "title": "The Institution of the Eucharist",
+        "summary": "Jesus shares His Body and Blood for our salvation.",
+        "fruit": "Eucharistic devotion / active participation at Mass",
+        "scripture_ref": "Luke 22:19-20",
+        "scripture_quote": "This is my body, which is given for you. Do this in remembrance of me.",
+        "meditation": "At the Last Supper, Jesus gave us the greatest gift: Himself in the Eucharist. In this sacrament, He is truly present—Body, Blood, Soul, and Divinity. The Eucharist is the source and summit of our faith, calling us to receive Him worthily and to participate actively in the Mass, where heaven touches earth."
+      }
+    ]
+  }
+}

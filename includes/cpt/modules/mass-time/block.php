@@ -164,6 +164,7 @@ class Parish_Mass_Schedule_Block {
 			$notes            = get_post_meta( $mt_post->ID, 'parish_mass_time_notes', true );
 			$side_note        = get_post_meta( $mt_post->ID, 'parish_mass_time_side_note', true );
 			$is_livestreamed  = get_post_meta( $mt_post->ID, 'parish_mass_time_is_livestreamed', true );
+			$livestream_url   = get_post_meta( $mt_post->ID, 'parish_mass_time_livestream_url', true );
 
 			// Parse time from datetime (handles ISO 8601 format).
 			$time = self::format_time( $start_datetime );
@@ -175,6 +176,7 @@ class Parish_Mass_Schedule_Block {
 				'notes'           => $notes,
 				'side_note'       => $side_note,
 				'is_livestreamed' => $is_livestreamed,
+				'livestream_url'  => $livestream_url,
 			);
 
 			// Determine if this is a special event or regular weekly schedule.
@@ -331,11 +333,22 @@ class Parish_Mass_Schedule_Block {
 
 				// Add livestream icon right after this time if applicable.
 				if ( $show_livestream && ! empty( $event['is_livestreamed'] ) ) {
-					$time_html .= sprintf(
-						' <i class="fa-solid fa-video" style="color:%s;font-size:0.9em;" aria-label="%s"></i>',
-						esc_attr( $icon_color ),
-						esc_attr__( 'Livestreamed', 'parish-core' )
-					);
+					$livestream_url = ! empty( $event['livestream_url'] ) ? $event['livestream_url'] : '';
+					if ( ! empty( $livestream_url ) ) {
+						$time_html .= sprintf(
+							' <a href="%s" class="livestream-link" target="_blank" rel="noopener" title="%s" style="text-decoration:none;"><i class="fa-solid fa-video" style="color:%s;font-size:0.9em;" aria-label="%s"></i></a>',
+							esc_url( $livestream_url ),
+							esc_attr__( 'Watch Live', 'parish-core' ),
+							esc_attr( $icon_color ),
+							esc_attr__( 'Livestreamed', 'parish-core' )
+						);
+					} else {
+						$time_html .= sprintf(
+							' <i class="fa-solid fa-video" style="color:%s;font-size:0.9em;" aria-label="%s"></i>',
+							esc_attr( $icon_color ),
+							esc_attr__( 'Livestreamed', 'parish-core' )
+						);
+					}
 				}
 
 				$times_parts[] = $time_html;

@@ -314,5 +314,26 @@ class Parish_Assets {
 				true
 			);
 		}
+
+		// Rosary styles - load if rosary shortcodes or blocks detected.
+		$should_load_rosary = false;
+
+		if ( is_a( $post, 'WP_Post' ) ) {
+			if ( has_shortcode( $post->post_content, 'rosary_today' ) || has_shortcode( $post->post_content, 'rosary_full' ) ) {
+				$should_load_rosary = true;
+			}
+			if ( function_exists( 'has_block' ) && ( has_block( 'parish/rosary-today', $post ) || has_block( 'parish/rosary-full', $post ) ) ) {
+				$should_load_rosary = true;
+			}
+		}
+
+		if ( $should_load_rosary ) {
+			wp_enqueue_style(
+				'parish-rosary',
+				PARISH_CORE_URL . 'assets/css/parish-rosary.css',
+				array(),
+				PARISH_CORE_VERSION
+			);
+		}
 	}
 }

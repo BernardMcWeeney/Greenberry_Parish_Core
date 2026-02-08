@@ -48,15 +48,51 @@ class Parish_REST_API {
 			array( 'methods' => 'POST', 'callback' => array( $this, 'update_settings' ), 'permission_callback' => array( $this, 'can_manage' ) ),
 		));
 
-		// Events.
+		// Events (legacy JSON endpoint).
 		register_rest_route( $this->namespace, '/events', array(
 			array( 'methods' => 'GET', 'callback' => array( $this, 'get_events' ), 'permission_callback' => array( $this, 'can_edit' ) ),
 			array( 'methods' => 'POST', 'callback' => array( $this, 'update_events' ), 'permission_callback' => array( $this, 'can_edit' ) ),
 		));
 
+		// Events CPT - Calendar view for React admin.
+		register_rest_route( $this->namespace, '/events/calendar', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'get_events_calendar' ),
+			'permission_callback' => array( $this, 'can_edit' ),
+			'args'                => array(
+				'start'      => array( 'type' => 'string', 'format' => 'date', 'required' => true ),
+				'end'        => array( 'type' => 'string', 'format' => 'date', 'required' => true ),
+				'church_id'  => array( 'type' => 'integer' ),
+				'sacrament'  => array( 'type' => 'string' ),
+				'type'       => array( 'type' => 'string' ),
+				'featured'   => array( 'type' => 'boolean' ),
+			),
+		));
+
+		// Events - Taxonomies for filters.
+		register_rest_route( $this->namespace, '/events/taxonomies', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'get_event_taxonomies' ),
+			'permission_callback' => '__return_true',
+		));
+
+		// Events - Migration endpoint.
+		register_rest_route( $this->namespace, '/events/migrate', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'migrate_events' ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		));
+
 		// Churches.
 		register_rest_route( $this->namespace, '/churches', array(
 			'methods' => 'GET', 'callback' => array( $this, 'get_churches' ), 'permission_callback' => array( $this, 'can_edit' ),
+		));
+
+		// Churches list for event creation.
+		register_rest_route( $this->namespace, '/churches/list', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'get_churches_list' ),
+			'permission_callback' => array( $this, 'can_edit' ),
 		));
 
 		// Readings API.
@@ -70,6 +106,37 @@ class Parish_REST_API {
 
 		register_rest_route( $this->namespace, '/readings/(?P<endpoint>[a-z_]+)', array(
 			'methods' => 'GET', 'callback' => array( $this, 'get_reading' ), 'permission_callback' => '__return_true',
+		));
+
+		// Readings schedule management.
+		register_rest_route( $this->namespace, '/readings/schedules', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'get_readings_schedules' ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		));
+
+		register_rest_route( $this->namespace, '/readings/schedules/(?P<endpoint>[a-z_]+)', array(
+			'methods'             => 'PUT',
+			'callback'            => array( $this, 'update_endpoint_schedule' ),
+			'permission_callback' => array( $this, 'can_manage' ),
+			'args'                => array(
+				'schedule'   => array( 'type' => 'string', 'required' => true ),
+				'time'       => array( 'type' => 'string' ),
+				'times'      => array( 'type' => 'array' ),
+				'start_time' => array( 'type' => 'string' ),
+			),
+		));
+
+		register_rest_route( $this->namespace, '/readings/fetch/(?P<endpoint>[a-z_]+)', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'fetch_single_reading' ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		));
+
+		register_rest_route( $this->namespace, '/readings/schedule-options', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'get_schedule_options' ),
+			'permission_callback' => array( $this, 'can_manage' ),
 		));
 
 		// Shortcode reference.
@@ -174,6 +241,38 @@ class Parish_REST_API {
 			array( 'methods' => 'GET', 'callback' => array( $this, 'get_mass_time' ), 'permission_callback' => array( $this, 'can_edit' ) ),
 			array( 'methods' => 'PUT', 'callback' => array( $this, 'update_mass_time' ), 'permission_callback' => array( $this, 'can_edit' ) ),
 			array( 'methods' => 'DELETE', 'callback' => array( $this, 'delete_mass_time' ), 'permission_callback' => array( $this, 'can_edit' ) ),
+		));
+
+		// Cancel single occurrence.
+		register_rest_route( $this->namespace, '/mass-times/(?P<id>\d+)/cancel/(?P<date>[0-9-]+)', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'cancel_mass_occurrence' ),
+			'permission_callback' => array( $this, 'can_edit' ),
+			'args'                => array(
+				'id'   => array( 'type' => 'integer', 'required' => true ),
+				'date' => array( 'type' => 'string', 'format' => 'date', 'required' => true ),
+			),
+		));
+
+		// Cancel entire series.
+		register_rest_route( $this->namespace, '/mass-times/(?P<id>\d+)/cancel-series', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'cancel_mass_series' ),
+			'permission_callback' => array( $this, 'can_edit' ),
+			'args'                => array(
+				'id' => array( 'type' => 'integer', 'required' => true ),
+			),
+		));
+
+		// Restore cancelled occurrence.
+		register_rest_route( $this->namespace, '/mass-times/(?P<id>\d+)/restore/(?P<date>[0-9-]+)', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'restore_mass_occurrence' ),
+			'permission_callback' => array( $this, 'can_edit' ),
+			'args'                => array(
+				'id'   => array( 'type' => 'integer', 'required' => true ),
+				'date' => array( 'type' => 'string', 'format' => 'date', 'required' => true ),
+			),
 		));
 
 		// Mass Times occurrences query.
@@ -645,6 +744,146 @@ class Parish_REST_API {
 		return rest_ensure_response( array( 'success' => true, 'message' => __( 'Saved.', 'parish-core' ) ) );
 	}
 
+	/**
+	 * Get events for calendar view (CPT-based).
+	 */
+	public function get_events_calendar( \WP_REST_Request $request ): \WP_REST_Response {
+		$start      = sanitize_text_field( $request['start'] );
+		$end        = sanitize_text_field( $request['end'] );
+		$church_id  = isset( $request['church_id'] ) ? (int) $request['church_id'] : 0;
+		$sacrament  = isset( $request['sacrament'] ) ? sanitize_text_field( $request['sacrament'] ) : '';
+		$type       = isset( $request['type'] ) ? sanitize_text_field( $request['type'] ) : '';
+		$featured   = isset( $request['featured'] ) ? rest_sanitize_boolean( $request['featured'] ) : null;
+
+		$args = array(
+			'post_type'      => 'parish_event',
+			'posts_per_page' => -1,
+			'post_status'    => 'publish',
+			'meta_query'     => array(
+				array(
+					'key'     => 'parish_event_date',
+					'value'   => array( $start, $end ),
+					'compare' => 'BETWEEN',
+					'type'    => 'DATE',
+				),
+			),
+			'orderby'        => 'meta_value',
+			'meta_key'       => 'parish_event_date',
+			'order'          => 'ASC',
+		);
+
+		// Filter by church.
+		if ( $church_id > 0 ) {
+			$args['meta_query'][] = array(
+				'key'   => 'parish_event_church_id',
+				'value' => $church_id,
+			);
+		}
+
+		// Filter by featured.
+		if ( null !== $featured ) {
+			$args['meta_query'][] = array(
+				'key'   => 'parish_event_featured',
+				'value' => $featured ? '1' : '0',
+			);
+		}
+
+		// Filter by taxonomy.
+		if ( ! empty( $sacrament ) || ! empty( $type ) ) {
+			$args['tax_query'] = array();
+
+			if ( ! empty( $sacrament ) ) {
+				$args['tax_query'][] = array(
+					'taxonomy' => 'parish_sacrament',
+					'field'    => 'slug',
+					'terms'    => $sacrament,
+				);
+			}
+
+			if ( ! empty( $type ) ) {
+				$args['tax_query'][] = array(
+					'taxonomy' => 'parish_event_type',
+					'field'    => 'slug',
+					'terms'    => $type,
+				);
+			}
+		}
+
+		$query  = new \WP_Query( $args );
+		$events = array();
+
+		foreach ( $query->posts as $post ) {
+			$events[] = array(
+				'id'                 => $post->ID,
+				'title'              => $post->post_title,
+				'description'        => $post->post_content,
+				'excerpt'            => $post->post_excerpt,
+				'date'               => get_post_meta( $post->ID, 'parish_event_date', true ),
+				'time'               => get_post_meta( $post->ID, 'parish_event_time', true ),
+				'end_time'           => get_post_meta( $post->ID, 'parish_event_end_time', true ),
+				'location'           => get_post_meta( $post->ID, 'parish_event_location', true ),
+				'church_id'          => (int) get_post_meta( $post->ID, 'parish_event_church_id', true ),
+				'is_cemetery'        => (bool) get_post_meta( $post->ID, 'parish_event_is_cemetery', true ),
+				'organizer'          => get_post_meta( $post->ID, 'parish_event_organizer', true ),
+				'contact_email'      => get_post_meta( $post->ID, 'parish_event_contact_email', true ),
+				'contact_phone'      => get_post_meta( $post->ID, 'parish_event_contact_phone', true ),
+				'registration_url'   => get_post_meta( $post->ID, 'parish_event_registration_url', true ),
+				'featured'           => (bool) get_post_meta( $post->ID, 'parish_event_featured', true ),
+				'color'              => get_post_meta( $post->ID, 'parish_event_color', true ),
+				'thumbnail'          => get_the_post_thumbnail_url( $post->ID, 'medium' ),
+				'sacraments'         => wp_get_post_terms( $post->ID, 'parish_sacrament', array( 'fields' => 'names' ) ),
+				'types'              => wp_get_post_terms( $post->ID, 'parish_event_type', array( 'fields' => 'names' ) ),
+				'feast_days'         => wp_get_post_terms( $post->ID, 'parish_feast_day', array( 'fields' => 'names' ) ),
+				'event_locations'    => wp_get_post_terms( $post->ID, 'parish_event_location', array( 'fields' => 'names' ) ),
+			);
+		}
+
+		return rest_ensure_response( $events );
+	}
+
+	/**
+	 * Get event taxonomies for filters.
+	 */
+	public function get_event_taxonomies( \WP_REST_Request $request ): \WP_REST_Response {
+		return rest_ensure_response(
+			array(
+				'sacraments' => get_terms( array( 'taxonomy' => 'parish_sacrament', 'hide_empty' => false ) ),
+				'types'      => get_terms( array( 'taxonomy' => 'parish_event_type', 'hide_empty' => false ) ),
+				'locations'  => get_terms( array( 'taxonomy' => 'parish_event_location', 'hide_empty' => false ) ),
+				'feast_days' => get_terms( array( 'taxonomy' => 'parish_feast_day', 'hide_empty' => false ) ),
+			)
+		);
+	}
+
+	/**
+	 * Migrate events from JSON to CPT.
+	 */
+	public function migrate_events( \WP_REST_Request $request ): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Events_Migrator' ) ) {
+			return rest_ensure_response(
+				array(
+					'success' => false,
+					'message' => __( 'Migrator class not found.', 'parish-core' ),
+				)
+			);
+		}
+
+		$result = Parish_Events_Migrator::migrate_json_to_cpt();
+
+		return rest_ensure_response(
+			array(
+				'success'  => empty( $result['errors'] ),
+				'migrated' => $result['migrated'],
+				'errors'   => $result['errors'],
+				'message'  => sprintf(
+					/* translators: %d: Number of events migrated */
+					__( 'Successfully migrated %d events.', 'parish-core' ),
+					$result['migrated']
+				),
+			)
+		);
+	}
+
 	// =========================================================================
 	// CHURCHES
 	// =========================================================================
@@ -694,6 +933,128 @@ class Parish_REST_API {
 		$endpoint = $request->get_param( 'endpoint' );
 		$readings = Parish_Readings::instance();
 		return rest_ensure_response( $readings->get_reading( $endpoint ) );
+	}
+
+	/**
+	 * Get all endpoint schedules.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_readings_schedules(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Readings' ) ) {
+			return rest_ensure_response( array( 'error' => 'Readings module not available.' ) );
+		}
+
+		$schedules = json_decode( Parish_Core::get_setting( 'readings_schedules', '{}' ), true ) ?: array();
+		$readings  = Parish_Readings::instance();
+		$endpoints = $readings->get_endpoints_status();
+
+		return rest_ensure_response( array(
+			'schedules' => $schedules,
+			'endpoints' => $endpoints,
+		) );
+	}
+
+	/**
+	 * Update a single endpoint's schedule.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function update_endpoint_schedule( \WP_REST_Request $request ): \WP_REST_Response {
+		$endpoint = sanitize_text_field( $request->get_param( 'endpoint' ) );
+		$params   = $request->get_json_params();
+
+		// Get current schedules.
+		$schedules = json_decode( Parish_Core::get_setting( 'readings_schedules', '{}' ), true ) ?: array();
+
+		// Build new schedule config.
+		$config = array(
+			'schedule' => sanitize_text_field( $params['schedule'] ?? 'daily_once' ),
+		);
+
+		if ( isset( $params['time'] ) ) {
+			$config['time'] = sanitize_text_field( $params['time'] );
+		}
+		if ( isset( $params['times'] ) && is_array( $params['times'] ) ) {
+			$config['times'] = array_map( 'sanitize_text_field', $params['times'] );
+		}
+		if ( isset( $params['start_time'] ) ) {
+			$config['start_time'] = sanitize_text_field( $params['start_time'] );
+		}
+
+		// Update schedules.
+		$schedules[ $endpoint ] = $config;
+
+		// Save to settings.
+		$settings                       = Parish_Core::get_all_settings();
+		$settings['readings_schedules'] = wp_json_encode( $schedules );
+		Parish_Core::update_settings( $settings );
+
+		// Reschedule this endpoint.
+		if ( class_exists( 'Parish_Readings' ) ) {
+			$readings = Parish_Readings::instance();
+			$readings->schedule_endpoint( $endpoint, $config );
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Schedule updated successfully.', 'parish-core' ),
+			'config'  => $config,
+		) );
+	}
+
+	/**
+	 * Manually fetch a single reading endpoint.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function fetch_single_reading( \WP_REST_Request $request ): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Readings' ) ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => 'Readings module not available.',
+			) );
+		}
+
+		$endpoint = sanitize_text_field( $request->get_param( 'endpoint' ) );
+		$readings = Parish_Readings::instance();
+		$result   = $readings->fetch_endpoint( $endpoint );
+
+		return rest_ensure_response( array(
+			'success' => ! empty( $result ),
+			'message' => ! empty( $result ) ? __( 'Fetch successful.', 'parish-core' ) : __( 'Fetch failed.', 'parish-core' ),
+			'data'    => $result,
+		) );
+	}
+
+	/**
+	 * Get available schedule options.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_schedule_options(): \WP_REST_Response {
+		$options = array(
+			array(
+				'value' => 'daily_once',
+				'label' => __( 'Once Daily', 'parish-core' ),
+			),
+			array(
+				'value' => 'daily_twice',
+				'label' => __( 'Twice Daily', 'parish-core' ),
+			),
+			array(
+				'value' => 'every_6_hours',
+				'label' => __( 'Every 6 Hours', 'parish-core' ),
+			),
+			array(
+				'value' => 'every_4_hours',
+				'label' => __( 'Every 4 Hours', 'parish-core' ),
+			),
+		);
+
+		return rest_ensure_response( $options );
 	}
 
 	// =========================================================================
@@ -1345,6 +1706,123 @@ class Parish_REST_API {
 	}
 
 	/**
+	 * Cancel a single occurrence of a recurring Mass Time.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function cancel_mass_occurrence( \WP_REST_Request $request ): \WP_REST_Response {
+		$id   = absint( $request->get_param( 'id' ) );
+		$date = sanitize_text_field( $request->get_param( 'date' ) );
+
+		// Validate post exists and is a mass time.
+		$post = get_post( $id );
+		if ( ! $post || 'parish_mass_time' !== $post->post_type ) {
+			return new \WP_REST_Response( array( 'error' => 'Mass Time not found.' ), 404 );
+		}
+
+		// Validate date format.
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			return new \WP_REST_Response( array( 'error' => 'Invalid date format. Use Y-m-d.' ), 400 );
+		}
+
+		// Cancel the occurrence.
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return new \WP_REST_Response( array( 'error' => 'Schedule generator not available.' ), 500 );
+		}
+
+		$success = Parish_Schedule_Generator::cancel_occurrence( $id, $date );
+
+		if ( ! $success ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => __( 'Failed to cancel occurrence. It may already be cancelled.', 'parish-core' ),
+			) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Occurrence cancelled successfully.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Cancel an entire recurring series.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function cancel_mass_series( \WP_REST_Request $request ): \WP_REST_Response {
+		$id = absint( $request->get_param( 'id' ) );
+
+		// Validate post exists and is a mass time.
+		$post = get_post( $id );
+		if ( ! $post || 'parish_mass_time' !== $post->post_type ) {
+			return new \WP_REST_Response( array( 'error' => 'Mass Time not found.' ), 404 );
+		}
+
+		// Cancel the series.
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return new \WP_REST_Response( array( 'error' => 'Schedule generator not available.' ), 500 );
+		}
+
+		$success = Parish_Schedule_Generator::cancel_series( $id );
+
+		if ( ! $success ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => __( 'Failed to cancel series.', 'parish-core' ),
+			) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Series cancelled successfully.', 'parish-core' ),
+		) );
+	}
+
+	/**
+	 * Restore a previously cancelled occurrence.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public function restore_mass_occurrence( \WP_REST_Request $request ): \WP_REST_Response {
+		$id   = absint( $request->get_param( 'id' ) );
+		$date = sanitize_text_field( $request->get_param( 'date' ) );
+
+		// Validate post exists and is a mass time.
+		$post = get_post( $id );
+		if ( ! $post || 'parish_mass_time' !== $post->post_type ) {
+			return new \WP_REST_Response( array( 'error' => 'Mass Time not found.' ), 404 );
+		}
+
+		// Validate date format.
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			return new \WP_REST_Response( array( 'error' => 'Invalid date format. Use Y-m-d.' ), 400 );
+		}
+
+		// Restore the occurrence.
+		if ( ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return new \WP_REST_Response( array( 'error' => 'Schedule generator not available.' ), 500 );
+		}
+
+		$success = Parish_Schedule_Generator::restore_occurrence( $id, $date );
+
+		if ( ! $success ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => __( 'Failed to restore occurrence. It may not be cancelled.', 'parish-core' ),
+			) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Occurrence restored successfully.', 'parish-core' ),
+		) );
+	}
+
+	/**
 	 * Get Mass Time occurrences for a date range.
 	 *
 	 * @param \WP_REST_Request $request Request object.
@@ -1515,6 +1993,12 @@ class Parish_REST_API {
 
 		if ( isset( $params['livestream_url'] ) ) {
 			$meta[ $prefix . 'livestream_url' ] = esc_url_raw( $params['livestream_url'] );
+		} elseif ( isset( $params['is_livestreamed'] ) && $params['is_livestreamed'] ) {
+			// If livestream is enabled but no URL provided, use default.
+			$default_url = Parish_Core::get_setting( 'default_livestream_url', '' );
+			if ( ! empty( $default_url ) ) {
+				$meta[ $prefix . 'livestream_url' ] = esc_url_raw( $default_url );
+			}
 		}
 
 		if ( isset( $params['livestream_embed'] ) ) {

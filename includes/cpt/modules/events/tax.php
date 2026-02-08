@@ -1,0 +1,156 @@
+<?php
+/**
+ * Events Taxonomies Configuration
+ *
+ * @package ParishCore
+ * @since 1.0.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+return array(
+	'post_type'  => 'parish_event',
+	'taxonomies' => array(
+		'parish_event_type'     => array(
+			'args'          => array(
+				'label'             => __( 'Event Types', 'parish-core' ),
+				'labels'            => array(
+					'name'                       => __( 'Event Types', 'parish-core' ),
+					'singular_name'              => __( 'Event Type', 'parish-core' ),
+					'search_items'               => __( 'Search Event Types', 'parish-core' ),
+					'popular_items'              => __( 'Popular Event Types', 'parish-core' ),
+					'all_items'                  => __( 'All Event Types', 'parish-core' ),
+					'edit_item'                  => __( 'Edit Event Type', 'parish-core' ),
+					'update_item'                => __( 'Update Event Type', 'parish-core' ),
+					'add_new_item'               => __( 'Add New Event Type', 'parish-core' ),
+					'new_item_name'              => __( 'New Event Type Name', 'parish-core' ),
+					'separate_items_with_commas' => __( 'Separate event types with commas', 'parish-core' ),
+					'add_or_remove_items'        => __( 'Add or remove event types', 'parish-core' ),
+					'choose_from_most_used'      => __( 'Choose from most used event types', 'parish-core' ),
+					'not_found'                  => __( 'No event types found', 'parish-core' ),
+					'menu_name'                  => __( 'Event Types', 'parish-core' ),
+					'back_to_items'              => __( '← Back to Event Types', 'parish-core' ),
+				),
+				'hierarchical'      => false,
+				'show_ui'           => true,
+				'show_in_rest'      => true,
+				'show_admin_column' => true,
+				'query_var'         => true,
+				'rewrite'           => array( 'slug' => 'event-type' ),
+				'show_tagcloud'     => false,
+				'show_in_quick_edit' => true,
+			),
+			'default_terms' => array(
+				'Parish Event',
+				'Community Gathering',
+				'Fundraiser',
+				'Social Event',
+				'Other',
+			),
+		),
+		'parish_sacrament'      => array(
+			'args'          => array(
+				'label'             => __( 'Sacraments', 'parish-core' ),
+				'labels'            => array(
+					'name'                  => __( 'Sacraments', 'parish-core' ),
+					'singular_name'         => __( 'Sacrament', 'parish-core' ),
+					'search_items'          => __( 'Search Sacraments', 'parish-core' ),
+					'all_items'             => __( 'All Sacraments', 'parish-core' ),
+					'parent_item'           => __( 'Parent Sacrament', 'parish-core' ),
+					'parent_item_colon'     => __( 'Parent Sacrament:', 'parish-core' ),
+					'edit_item'             => __( 'Edit Sacrament', 'parish-core' ),
+					'update_item'           => __( 'Update Sacrament', 'parish-core' ),
+					'add_new_item'          => __( 'Add New Sacrament', 'parish-core' ),
+					'new_item_name'         => __( 'New Sacrament Name', 'parish-core' ),
+					'menu_name'             => __( 'Sacraments', 'parish-core' ),
+					'not_found'             => __( 'No sacraments found', 'parish-core' ),
+					'back_to_items'         => __( '← Back to Sacraments', 'parish-core' ),
+				),
+				'hierarchical'      => true,
+				'show_ui'           => true,
+				'show_in_rest'      => true,
+				'show_admin_column' => true,
+				'query_var'         => true,
+				'rewrite'           => array( 'slug' => 'sacrament' ),
+				'show_tagcloud'     => false,
+				'show_in_quick_edit' => true,
+			),
+			'default_terms' => array(
+				'Baptisms',
+				'First Holy Communion',
+				'First Confession',
+				'Confirmation',
+				'Weddings',
+				'Holy Orders',
+				'Anointing of the Sick',
+				'Reconciliation Services',
+			),
+		),
+		'parish_feast_day'      => array(
+			'args'          => array(
+				'label'             => __( 'Feast Days', 'parish-core' ),
+				'labels'            => array(
+					'name'                       => __( 'Feast Days', 'parish-core' ),
+					'singular_name'              => __( 'Feast Day', 'parish-core' ),
+					'search_items'               => __( 'Search Feast Days', 'parish-core' ),
+					'popular_items'              => __( 'Popular Feast Days', 'parish-core' ),
+					'all_items'                  => __( 'All Feast Days', 'parish-core' ),
+					'edit_item'                  => __( 'Edit Feast Day', 'parish-core' ),
+					'update_item'                => __( 'Update Feast Day', 'parish-core' ),
+					'add_new_item'               => __( 'Add New Feast Day', 'parish-core' ),
+					'new_item_name'              => __( 'New Feast Day Name', 'parish-core' ),
+					'separate_items_with_commas' => __( 'Separate feast days with commas', 'parish-core' ),
+					'add_or_remove_items'        => __( 'Add or remove feast days', 'parish-core' ),
+					'choose_from_most_used'      => __( 'Choose from most used feast days', 'parish-core' ),
+					'not_found'                  => __( 'No feast days found', 'parish-core' ),
+					'menu_name'                  => __( 'Feast Days', 'parish-core' ),
+					'back_to_items'              => __( '← Back to Feast Days', 'parish-core' ),
+				),
+				'hierarchical'      => false,
+				'show_ui'           => true,
+				'show_in_rest'      => true,
+				'show_admin_column' => true,
+				'query_var'         => true,
+				'rewrite'           => array( 'slug' => 'feast-day' ),
+				'show_tagcloud'     => false,
+				'show_in_quick_edit' => true,
+			),
+			'default_terms' => array(),
+		),
+		'parish_event_location' => array(
+			'args'          => array(
+				'label'             => __( 'Event Locations', 'parish-core' ),
+				'labels'            => array(
+					'name'                       => __( 'Event Locations', 'parish-core' ),
+					'singular_name'              => __( 'Event Location', 'parish-core' ),
+					'search_items'               => __( 'Search Locations', 'parish-core' ),
+					'popular_items'              => __( 'Popular Locations', 'parish-core' ),
+					'all_items'                  => __( 'All Locations', 'parish-core' ),
+					'edit_item'                  => __( 'Edit Location', 'parish-core' ),
+					'update_item'                => __( 'Update Location', 'parish-core' ),
+					'add_new_item'               => __( 'Add New Location', 'parish-core' ),
+					'new_item_name'              => __( 'New Location Name', 'parish-core' ),
+					'separate_items_with_commas' => __( 'Separate locations with commas', 'parish-core' ),
+					'add_or_remove_items'        => __( 'Add or remove locations', 'parish-core' ),
+					'choose_from_most_used'      => __( 'Choose from most used locations', 'parish-core' ),
+					'not_found'                  => __( 'No locations found', 'parish-core' ),
+					'menu_name'                  => __( 'Locations', 'parish-core' ),
+					'back_to_items'              => __( '← Back to Locations', 'parish-core' ),
+				),
+				'hierarchical'      => false,
+				'show_ui'           => true,
+				'show_in_rest'      => true,
+				'show_admin_column' => true,
+				'query_var'         => true,
+				'rewrite'           => array( 'slug' => 'event-location' ),
+				'show_tagcloud'     => false,
+				'show_in_quick_edit' => true,
+			),
+			'default_terms' => array(
+				'Cemetery',
+			),
+		),
+	),
+);

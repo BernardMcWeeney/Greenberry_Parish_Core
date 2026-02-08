@@ -166,11 +166,22 @@ class Parish_Today_Mass_Block {
 
 					// Add livestream icon next to this specific time if applicable.
 					if ( $show_icon && ! empty( $event['is_livestreamed'] ) ) {
-						$time_html .= sprintf(
-							' <i class="fa-solid fa-video" style="color:%s;font-size:0.9em;" aria-label="%s"></i>',
-							esc_attr( $icon_color ),
-							esc_attr__( 'Livestreamed', 'parish-core' )
-						);
+						$livestream_url = ! empty( $event['livestream_url'] ) ? $event['livestream_url'] : '';
+						if ( ! empty( $livestream_url ) ) {
+							$time_html .= sprintf(
+								' <a href="%s" class="livestream-link" target="_blank" rel="noopener" title="%s" style="text-decoration:none;"><i class="fa-solid fa-video" style="color:%s;font-size:0.9em;" aria-label="%s"></i></a>',
+								esc_url( $livestream_url ),
+								esc_attr__( 'Watch Live', 'parish-core' ),
+								esc_attr( $icon_color ),
+								esc_attr__( 'Livestreamed', 'parish-core' )
+							);
+						} else {
+							$time_html .= sprintf(
+								' <i class="fa-solid fa-video" style="color:%s;font-size:0.9em;" aria-label="%s"></i>',
+								esc_attr( $icon_color ),
+								esc_attr__( 'Livestreamed', 'parish-core' )
+							);
+						}
 					}
 
 					$times_parts[] = $time_html;

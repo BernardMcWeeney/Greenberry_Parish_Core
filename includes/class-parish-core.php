@@ -82,6 +82,16 @@ class Parish_Core {
 			Parish_Readings::instance();
 		}
 
+		// Rosary shortcodes.
+		if ( class_exists( 'Parish_Rosary_Shortcodes' ) ) {
+			Parish_Rosary_Shortcodes::register();
+		}
+
+		// Rosary blocks.
+		if ( class_exists( 'Parish_Rosary_Blocks' ) ) {
+			Parish_Rosary_Blocks::register();
+		}
+
 	}
 
 	public static function get_settings(): array {
