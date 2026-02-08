@@ -1,8 +1,7 @@
 /**
- * Events Block
+ * Events Calendar Block
  *
- * Dynamic Gutenberg block that displays parish events with filtering.
- * Supports auto-detection of church/cemetery context.
+ * Full month calendar view with iCal subscription support.
  *
  * @package ParishCore
  */
@@ -13,7 +12,6 @@ import {
 	PanelBody,
 	ToggleControl,
 	SelectControl,
-	RangeControl,
 	ColorPicker,
 	BaseControl,
 	Spinner,
@@ -23,7 +21,7 @@ import { useSelect } from '@wordpress/data';
 import ServerSideRender from '@wordpress/server-side-render';
 
 /**
- * Block icon - calendar.
+ * Block icon - calendar grid.
  */
 const blockIcon = (
 	<svg
@@ -41,53 +39,41 @@ const blockIcon = (
 		<line x1="16" x2="16" y1="2" y2="6" />
 		<line x1="8" x2="8" y1="2" y2="6" />
 		<line x1="3" x2="21" y1="10" y2="10" />
-		<line x1="9" x2="9" y1="14" y2="14" />
-		<line x1="15" x2="15" y1="14" y2="14" />
-		<line x1="9" x2="9" y1="18" y2="18" />
-		<line x1="15" x2="15" y1="18" y2="18" />
+		<rect x="6" y="13" width="3" height="3" fill="currentColor" />
+		<rect x="10.5" y="13" width="3" height="3" fill="currentColor" />
+		<rect x="15" y="13" width="3" height="3" fill="currentColor" />
 	</svg>
 );
 
 /**
- * View options.
+ * Register the Events Calendar block.
  */
-const VIEW_OPTIONS = [
-	{ value: 'upcoming', label: __( 'All Upcoming Events', 'parish-core' ) },
-	{ value: 'today', label: __( "Today's Events", 'parish-core' ) },
-	{ value: 'week', label: __( "This Week's Events", 'parish-core' ) },
-];
-
-/**
- * Register the Events block.
- */
-registerBlockType( 'parish/events', {
-	title: __( 'Events', 'parish-core' ),
+registerBlockType( 'parish/events-calendar', {
+	title: __( 'Events Calendar', 'parish-core' ),
 	description: __(
-		'Display parish events with filtering by sacrament, church, or cemetery. Auto-detects context when placed on church/cemetery pages.',
+		'Display a full month calendar of parish events with iCal subscription and download options.',
 		'parish-core'
 	),
 	icon: blockIcon,
 	category: 'widgets',
 	keywords: [
-		__( 'events', 'parish-core' ),
 		__( 'calendar', 'parish-core' ),
-		__( 'today', 'parish-core' ),
-		__( 'week', 'parish-core' ),
-		__( 'schedule', 'parish-core' ),
-		__( 'upcoming', 'parish-core' ),
-		__( 'sacrament', 'parish-core' ),
+		__( 'events', 'parish-core' ),
+		__( 'month', 'parish-core' ),
+		__( 'ical', 'parish-core' ),
+		__( 'subscribe', 'parish-core' ),
+		__( 'google calendar', 'parish-core' ),
 	],
 
-	edit: function EventsEdit( { attributes, setAttributes } ) {
+	edit: function EventsCalendarEdit( { attributes, setAttributes } ) {
 		const blockProps = useBlockProps();
 		const {
-			view,
-			limit,
 			sacrament,
 			churchId,
 			cemeteryId,
 			autoDetect,
-			showIcon,
+			showSubscribe,
+			showDownload,
 			iconColor,
 			timeColor,
 		} = attributes;
@@ -191,37 +177,28 @@ registerBlockType( 'parish/events', {
 						title={ __( 'Display Settings', 'parish-core' ) }
 						initialOpen={ true }
 					>
-						<SelectControl
-							label={ __( 'View', 'parish-core' ) }
-							value={ view }
-							options={ VIEW_OPTIONS }
+						<ToggleControl
+							label={ __( 'Show Subscribe Buttons', 'parish-core' ) }
+							help={ __(
+								'Show iCal and Google Calendar subscribe buttons.',
+								'parish-core'
+							) }
+							checked={ showSubscribe !== false }
 							onChange={ ( value ) =>
-								setAttributes( { view: value } )
+								setAttributes( { showSubscribe: value } )
 							}
-							__nextHasNoMarginBottom
-							__next40pxDefaultSize
-						/>
-
-						<RangeControl
-							label={ __( 'Maximum Events', 'parish-core' ) }
-							value={ limit }
-							onChange={ ( value ) =>
-								setAttributes( { limit: value } )
-							}
-							min={ 1 }
-							max={ 50 }
 							__nextHasNoMarginBottom
 						/>
 
 						<ToggleControl
-							label={ __( 'Show Calendar Icon', 'parish-core' ) }
+							label={ __( 'Show Download Button', 'parish-core' ) }
 							help={ __(
-								'Display calendar icon next to event titles.',
+								'Show button to download .ics file.',
 								'parish-core'
 							) }
-							checked={ showIcon !== false }
+							checked={ showDownload !== false }
 							onChange={ ( value ) =>
-								setAttributes( { showIcon: value } )
+								setAttributes( { showDownload: value } )
 							}
 							__nextHasNoMarginBottom
 						/>
@@ -234,7 +211,7 @@ registerBlockType( 'parish/events', {
 						<ToggleControl
 							label={ __( 'Auto-detect Context', 'parish-core' ) }
 							help={ __(
-								'Automatically filter by church/cemetery when block is on those pages.',
+								'Automatically filter by church/cemetery when on those pages.',
 								'parish-core'
 							) }
 							checked={ autoDetect !== false }
@@ -306,8 +283,8 @@ registerBlockType( 'parish/events', {
 						initialOpen={ false }
 					>
 						<BaseControl
-							label={ __( 'Icon Color', 'parish-core' ) }
-							help={ __( 'Color for calendar and location icons.', 'parish-core' ) }
+							label={ __( 'Accent Color', 'parish-core' ) }
+							help={ __( 'Color for today highlight and event indicators.', 'parish-core' ) }
 							__nextHasNoMarginBottom
 						>
 							<ColorPicker
@@ -320,8 +297,8 @@ registerBlockType( 'parish/events', {
 						</BaseControl>
 
 						<BaseControl
-							label={ __( 'Date/Time Color', 'parish-core' ) }
-							help={ __( 'Color for date and time text.', 'parish-core' ) }
+							label={ __( 'Time Color', 'parish-core' ) }
+							help={ __( 'Color for event times.', 'parish-core' ) }
 							__nextHasNoMarginBottom
 						>
 							<ColorPicker
@@ -336,23 +313,23 @@ registerBlockType( 'parish/events', {
 				</InspectorControls>
 
 				<ServerSideRender
-					block="parish/events"
+					block="parish/events-calendar"
 					attributes={ attributes }
 					EmptyResponsePlaceholder={ () => (
-						<div className="parish-events-placeholder">
+						<div className="parish-events-calendar-placeholder">
 							<p>
 								{ __(
-									'Events — Displays parish events. Configure filters in the sidebar.',
+									'Events Calendar — Displays a full month calendar with subscription options.',
 									'parish-core'
 								) }
 							</p>
 						</div>
 					) }
 					ErrorResponsePlaceholder={ () => (
-						<div className="parish-events-placeholder">
+						<div className="parish-events-calendar-placeholder">
 							<p>
 								{ __(
-									'Error loading events.',
+									'Error loading calendar.',
 									'parish-core'
 								) }
 							</p>

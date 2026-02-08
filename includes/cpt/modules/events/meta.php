@@ -67,6 +67,15 @@ return array(
 			'label'             => __( 'Cemetery Event', 'parish-core' ),
 			'description'       => __( 'Is this a cemetery event?', 'parish-core' ),
 		),
+		'event_cemetery_id'     => array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'show_in_rest'      => true,
+			'single'            => true,
+			'default'           => 0,
+			'label'             => __( 'Cemetery', 'parish-core' ),
+			'description'       => __( 'Select a specific cemetery for this event, or 0 for none', 'parish-core' ),
+		),
 		'event_organizer'       => array(
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',

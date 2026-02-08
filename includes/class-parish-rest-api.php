@@ -83,6 +83,26 @@ class Parish_REST_API {
 			'permission_callback' => array( $this, 'can_manage' ),
 		));
 
+		// Events - List view for admin.
+		register_rest_route( $this->namespace, '/events/list', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'get_events_list' ),
+			'permission_callback' => array( $this, 'can_edit' ),
+			'args'                => array(
+				'filter'    => array( 'type' => 'string', 'default' => 'upcoming' ),
+				'church'    => array( 'type' => 'integer', 'default' => 0 ),
+				'sacrament' => array( 'type' => 'integer', 'default' => 0 ),
+				'cemetery'  => array( 'type' => 'boolean', 'default' => false ),
+			),
+		));
+
+		// Events - Delete past events.
+		register_rest_route( $this->namespace, '/events/delete-past', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'delete_past_events' ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		));
+
 		// Churches.
 		register_rest_route( $this->namespace, '/churches', array(
 			'methods' => 'GET', 'callback' => array( $this, 'get_churches' ), 'permission_callback' => array( $this, 'can_edit' ),
@@ -689,7 +709,7 @@ class Parish_REST_API {
 			'enable_events' => (bool) ( $s['enable_events'] ?? true ),
 			'enable_liturgical' => (bool) ( $s['enable_liturgical'] ?? true ),
 			'enable_slider' => (bool) ( $s['enable_slider'] ?? true ),
-			'readings_api_key' => $s['readings_api_key'] ?? '',
+			'readings_api_key' => $this->mask_api_key( $s['readings_api_key'] ?? '' ),
 			'admin_colors_enabled' => (bool) ( $s['admin_colors_enabled'] ?? false ),
 			'admin_color_menu_text' => $s['admin_color_menu_text'] ?? '#ffffff',
 			'admin_color_base_menu' => $s['admin_color_base_menu'] ?? '#1d2327',
@@ -721,7 +741,7 @@ class Parish_REST_API {
 	public function get_events(): \WP_REST_Response {
 		return rest_ensure_response( array(
 			'events' => json_decode( Parish_Core::get_setting( 'parish_events', '[]' ), true ) ?: array(),
-			'churches' => $this->get_churches_list(),
+			'churches' => $this->get_churches_array(),
 		));
 	}
 
@@ -856,6 +876,160 @@ class Parish_REST_API {
 	}
 
 	/**
+	 * Get events list for admin panel.
+	 */
+	public function get_events_list( \WP_REST_Request $request ): \WP_REST_Response {
+		$filter       = sanitize_text_field( $request['filter'] ?? 'upcoming' );
+		$church_id    = (int) ( $request['church'] ?? 0 );
+		$sacrament_id = (int) ( $request['sacrament'] ?? 0 );
+		$cemetery     = (bool) ( $request['cemetery'] ?? false );
+		$today        = current_time( 'Y-m-d' );
+
+		$args = array(
+			'post_type'      => 'parish_event',
+			'posts_per_page' => 100,
+			'post_status'    => 'publish',
+			'orderby'        => 'meta_value',
+			'meta_key'       => 'parish_event_date',
+			'order'          => 'ASC',
+		);
+
+		// Filter by date.
+		if ( 'upcoming' === $filter ) {
+			$args['meta_query'] = array(
+				array(
+					'key'     => 'parish_event_date',
+					'value'   => $today,
+					'compare' => '>=',
+					'type'    => 'DATE',
+				),
+			);
+		} elseif ( 'past' === $filter ) {
+			$args['meta_query'] = array(
+				array(
+					'key'     => 'parish_event_date',
+					'value'   => $today,
+					'compare' => '<',
+					'type'    => 'DATE',
+				),
+			);
+			$args['order'] = 'DESC';
+		}
+
+		// Filter by church.
+		if ( $church_id > 0 ) {
+			if ( ! isset( $args['meta_query'] ) ) {
+				$args['meta_query'] = array();
+			}
+			$args['meta_query'][] = array(
+				'key'   => 'parish_event_church_id',
+				'value' => $church_id,
+			);
+		}
+
+		// Filter by cemetery.
+		if ( $cemetery ) {
+			if ( ! isset( $args['meta_query'] ) ) {
+				$args['meta_query'] = array();
+			}
+			$args['meta_query'][] = array(
+				'key'   => 'parish_event_is_cemetery',
+				'value' => '1',
+			);
+		}
+
+		// Filter by sacrament taxonomy.
+		if ( $sacrament_id > 0 ) {
+			$args['tax_query'] = array(
+				array(
+					'taxonomy' => 'parish_sacrament',
+					'field'    => 'term_id',
+					'terms'    => $sacrament_id,
+				),
+			);
+		}
+
+		$query  = new \WP_Query( $args );
+		$events = array();
+
+		foreach ( $query->posts as $post ) {
+			$event_church_id = (int) get_post_meta( $post->ID, 'parish_event_church_id', true );
+			$church_name     = '';
+			if ( $event_church_id > 0 ) {
+				$church_post = get_post( $event_church_id );
+				$church_name = $church_post ? $church_post->post_title : '';
+			}
+
+			// Get sacrament terms.
+			$sacrament_terms = wp_get_post_terms( $post->ID, 'parish_sacrament', array( 'fields' => 'all' ) );
+			$sacrament_names = '';
+			$sacrament_id    = 0;
+			if ( is_array( $sacrament_terms ) && ! empty( $sacrament_terms ) ) {
+				$sacrament_names = implode( ', ', wp_list_pluck( $sacrament_terms, 'name' ) );
+				$sacrament_id    = $sacrament_terms[0]->term_id;
+			}
+
+			$events[] = array(
+				'id'               => $post->ID,
+				'title'            => $post->post_title,
+				'description'      => $post->post_content,
+				'date'             => get_post_meta( $post->ID, 'parish_event_date', true ),
+				'time'             => get_post_meta( $post->ID, 'parish_event_time', true ),
+				'location'         => get_post_meta( $post->ID, 'parish_event_location', true ),
+				'registration_url' => get_post_meta( $post->ID, 'parish_event_registration_url', true ),
+				'church_id'        => $event_church_id,
+				'church_name'      => $church_name,
+				'cemetery_id'      => (int) get_post_meta( $post->ID, 'parish_event_cemetery_id', true ),
+				'featured'         => (bool) get_post_meta( $post->ID, 'parish_event_featured', true ),
+				'is_cemetery'      => (bool) get_post_meta( $post->ID, 'parish_event_is_cemetery', true ),
+				'sacrament'        => $sacrament_names,
+				'sacrament_id'     => $sacrament_id,
+			);
+		}
+
+		return rest_ensure_response( $events );
+	}
+
+	/**
+	 * Delete all past events.
+	 */
+	public function delete_past_events( \WP_REST_Request $request ): \WP_REST_Response {
+		$today = current_time( 'Y-m-d' );
+
+		$args = array(
+			'post_type'      => 'parish_event',
+			'posts_per_page' => -1,
+			'post_status'    => 'any',
+			'meta_query'     => array(
+				array(
+					'key'     => 'parish_event_date',
+					'value'   => $today,
+					'compare' => '<',
+					'type'    => 'DATE',
+				),
+			),
+			'fields'         => 'ids',
+		);
+
+		$query   = new \WP_Query( $args );
+		$deleted = 0;
+
+		foreach ( $query->posts as $post_id ) {
+			if ( wp_delete_post( $post_id, true ) ) {
+				$deleted++;
+			}
+		}
+
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'message' => sprintf( __( 'Deleted %d past event(s).', 'parish-core' ), $deleted ),
+				'count'   => $deleted,
+			)
+		);
+	}
+
+	/**
 	 * Migrate events from JSON to CPT.
 	 */
 	public function migrate_events( \WP_REST_Request $request ): \WP_REST_Response {
@@ -888,11 +1062,17 @@ class Parish_REST_API {
 	// CHURCHES
 	// =========================================================================
 	public function get_churches(): \WP_REST_Response {
-		return rest_ensure_response( $this->get_churches_list() );
+		return rest_ensure_response( $this->get_churches_array() );
 	}
 
-	private function get_churches_list(): array {
-		if ( ! post_type_exists( 'parish_church' ) ) return array();
+	public function get_churches_list(): \WP_REST_Response {
+		return rest_ensure_response( $this->get_churches_array() );
+	}
+
+	private function get_churches_array(): array {
+		if ( ! post_type_exists( 'parish_church' ) ) {
+			return array();
+		}
 		$churches = get_posts( array( 'post_type' => 'parish_church', 'posts_per_page' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC' ) );
 		return array_map( fn( $c ) => array( 'id' => $c->ID, 'title' => html_entity_decode( $c->post_title, ENT_QUOTES, 'UTF-8' ) ), $churches );
 	}
@@ -902,11 +1082,15 @@ class Parish_REST_API {
 	// =========================================================================
 	public function get_readings_status(): \WP_REST_Response {
 		if ( ! class_exists( 'Parish_Readings' ) ) {
-			return rest_ensure_response( array( 'error' => 'Readings module not available.' ) );
+			return rest_ensure_response( array(
+				'error'       => 'Readings module not available.',
+				'endpoints'   => array(),
+				'api_key_set' => false,
+			) );
 		}
 		$readings = Parish_Readings::instance();
 		return rest_ensure_response( array(
-			'endpoints' => $readings->get_endpoints_status(),
+			'endpoints'   => $readings->get_endpoints_status(),
 			'api_key_set' => ! empty( Parish_Core::get_setting( 'readings_api_key', '' ) ),
 		));
 	}
@@ -987,7 +1171,7 @@ class Parish_REST_API {
 		$schedules[ $endpoint ] = $config;
 
 		// Save to settings.
-		$settings                       = Parish_Core::get_all_settings();
+		$settings                       = Parish_Core::get_settings();
 		$settings['readings_schedules'] = wp_json_encode( $schedules );
 		Parish_Core::update_settings( $settings );
 
@@ -1097,7 +1281,7 @@ class Parish_REST_API {
 
 		return rest_ensure_response( array(
 			'templates' => array_values( $templates ),
-			'churches'  => $this->get_churches_list(),
+			'churches'  => $this->get_churches_array(),
 		) );
 	}
 
@@ -1568,7 +1752,7 @@ class Parish_REST_API {
 
 		return rest_ensure_response( array(
 			'mass_times'  => $mass_times,
-			'churches'    => $this->get_churches_list(),
+			'churches'    => $this->get_churches_array(),
 			'event_types' => class_exists( 'Parish_Schedule_Generator' )
 				? Parish_Schedule_Generator::instance()->get_event_types()
 				: array(),
@@ -1688,6 +1872,11 @@ class Parish_REST_API {
 
 		if ( ! $post || 'parish_mass_time' !== $post->post_type ) {
 			return new \WP_REST_Response( array( 'error' => 'Mass Time not found.' ), 404 );
+		}
+
+		// Clear schedule cache BEFORE delete (since clear_cache checks post type).
+		if ( class_exists( 'Parish_Schedule_Generator' ) ) {
+			Parish_Schedule_Generator::instance()->clear_cache( $id );
 		}
 
 		$result = wp_delete_post( $id, true );
@@ -1894,8 +2083,13 @@ class Parish_REST_API {
 			}
 		}
 
-		$recurrence = get_post_meta( $post->ID, 'parish_mass_time_recurrence', true );
-		$exception_dates = get_post_meta( $post->ID, 'parish_mass_time_exception_dates', true );
+		$recurrence_raw = get_post_meta( $post->ID, 'parish_mass_time_recurrence', true );
+		$exception_dates_raw = get_post_meta( $post->ID, 'parish_mass_time_exception_dates', true );
+
+		// Use the global sanitize functions to ensure consistent data structure
+		// This also validates that days contains only valid weekday names
+		$recurrence = parish_sanitize_recurrence( $recurrence_raw );
+		$exception_dates = parish_sanitize_exception_dates( $exception_dates_raw );
 
 		return array(
 			'id'               => $post->ID,
@@ -1908,8 +2102,8 @@ class Parish_REST_API {
 			'is_active'        => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_active', true ),
 			'is_special_event' => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_special_event', true ),
 			'is_recurring'     => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_recurring', true ),
-			'recurrence'       => is_array( $recurrence ) ? $recurrence : array(),
-			'exception_dates'  => is_array( $exception_dates ) ? $exception_dates : array(),
+			'recurrence'       => $recurrence,
+			'exception_dates'  => $exception_dates,
 			'is_livestreamed'  => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_livestreamed', true ),
 			'livestream_url'   => get_post_meta( $post->ID, 'parish_mass_time_livestream_url', true ),
 			'livestream_embed' => get_post_meta( $post->ID, 'parish_mass_time_livestream_embed', true ),
@@ -1955,36 +2149,14 @@ class Parish_REST_API {
 			$meta[ $prefix . 'is_recurring' ] = (bool) $params['is_recurring'];
 		}
 
-		if ( isset( $params['recurrence'] ) && is_array( $params['recurrence'] ) ) {
-			$rec = $params['recurrence'];
-			$sanitized_rec = array(
-				'type' => sanitize_text_field( $rec['type'] ?? 'weekly' ),
-			);
-
-			if ( ! empty( $rec['days'] ) && is_array( $rec['days'] ) ) {
-				$sanitized_rec['days'] = array_map( 'sanitize_text_field', $rec['days'] );
-			}
-			if ( isset( $rec['day_of_month'] ) ) {
-				$sanitized_rec['day_of_month'] = absint( $rec['day_of_month'] );
-			}
-			if ( isset( $rec['ordinal'] ) ) {
-				$sanitized_rec['ordinal'] = sanitize_text_field( $rec['ordinal'] );
-			}
-			if ( isset( $rec['ordinal_day'] ) ) {
-				$sanitized_rec['ordinal_day'] = sanitize_text_field( $rec['ordinal_day'] );
-			}
-			if ( isset( $rec['month'] ) ) {
-				$sanitized_rec['month'] = absint( $rec['month'] );
-			}
-			if ( isset( $rec['end_date'] ) ) {
-				$sanitized_rec['end_date'] = sanitize_text_field( $rec['end_date'] );
-			}
-
-			$meta[ $prefix . 'recurrence' ] = $sanitized_rec;
+		// Use the global sanitize function for recurrence - ensures proper validation
+		if ( isset( $params['recurrence'] ) ) {
+			$meta[ $prefix . 'recurrence' ] = parish_sanitize_recurrence( $params['recurrence'] );
 		}
 
-		if ( isset( $params['exception_dates'] ) && is_array( $params['exception_dates'] ) ) {
-			$meta[ $prefix . 'exception_dates' ] = array_map( 'sanitize_text_field', $params['exception_dates'] );
+		// Use the global sanitize function for exception dates
+		if ( isset( $params['exception_dates'] ) ) {
+			$meta[ $prefix . 'exception_dates' ] = parish_sanitize_exception_dates( $params['exception_dates'] );
 		}
 
 		if ( isset( $params['is_livestreamed'] ) ) {
@@ -2018,5 +2190,23 @@ class Parish_REST_API {
 	private function get_image_url( int $id ): string {
 		if ( ! $id ) return '';
 		return wp_get_attachment_url( $id ) ?: '';
+	}
+
+	/**
+	 * Mask an API key for display, showing only first 4 and last 4 characters.
+	 * Returns empty string if no key is set.
+	 *
+	 * @param string $key The API key to mask.
+	 * @return string Masked key or empty string.
+	 */
+	private function mask_api_key( string $key ): string {
+		if ( empty( $key ) ) {
+			return '';
+		}
+		$length = strlen( $key );
+		if ( $length <= 8 ) {
+			return str_repeat( '*', $length );
+		}
+		return substr( $key, 0, 4 ) . str_repeat( '*', $length - 8 ) . substr( $key, -4 );
 	}
 }

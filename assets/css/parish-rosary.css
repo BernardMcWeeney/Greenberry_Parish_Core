@@ -12,11 +12,10 @@
    ======================================================================== */
 
 .parish-rosary-today {
-	padding: 20px;
-	background: #f9f9f9;
-	border-radius: 8px;
-	border-left: 4px solid #609fae;
+	padding: 0;
+	background: transparent;
 	margin: 20px 0;
+	text-align: left;
 }
 
 .parish-rosary-today .rosary-header {
@@ -32,8 +31,9 @@
 .parish-rosary-today .rosary-title {
 	margin: 0 0 5px 0;
 	color: #333;
-	font-size: 1.5em;
+	font-size: 1.2em;
 	font-weight: 600;
+	text-align: left;
 }
 
 .parish-rosary-today .rosary-season-note {
@@ -44,7 +44,7 @@
 
 .parish-rosary-today .rosary-mysteries-list {
 	margin: 15px 0;
-	padding-left: 25px;
+	padding-left: 20px;
 	list-style-type: decimal;
 }
 
@@ -67,7 +67,7 @@
 	text-align: center;
 	margin-bottom: 30px;
 	padding-bottom: 20px;
-	border-bottom: 2px solid #609fae;
+	border-bottom: 1px solid #e0e0e0;
 }
 
 .parish-rosary-full .rosary-title {
@@ -89,8 +89,7 @@
 	padding: 20px;
 	background: #fff;
 	border-radius: 8px;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	border-left: 4px solid #609fae;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .parish-rosary-full .mystery-title {
@@ -122,8 +121,7 @@
 .parish-rosary-full .mystery-quote {
 	margin: 15px 0;
 	padding: 15px 20px;
-	background: #f5f5f5;
-	border-left: 4px solid #609fae;
+	background: #f9f9f9;
 	font-style: italic;
 	color: #555;
 	line-height: 1.8;
@@ -153,12 +151,12 @@
 
 @media (max-width: 768px) {
 	.parish-rosary-today {
-		padding: 15px;
+		padding: 0;
 		margin: 15px 0;
 	}
 
 	.parish-rosary-today .rosary-title {
-		font-size: 1.3em;
+		font-size: 1.1em;
 	}
 
 	.parish-rosary-full {
@@ -185,7 +183,10 @@
    ======================================================================== */
 
 @media print {
-	.parish-rosary-today,
+	.parish-rosary-today {
+		page-break-inside: avoid;
+	}
+
 	.parish-rosary-full .rosary-mystery {
 		box-shadow: none;
 		border: 1px solid #ddd;

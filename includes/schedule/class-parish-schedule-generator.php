@@ -180,10 +180,18 @@ class Parish_Schedule_Generator {
 		$meta_query = array();
 
 		if ( $filters['active_only'] ) {
+			// Include posts where is_active is explicitly true OR where it's not set (defaults to true).
 			$meta_query[] = array(
-				'key'     => 'parish_mass_time_is_active',
-				'value'   => '1',
-				'compare' => '=',
+				'relation' => 'OR',
+				array(
+					'key'     => 'parish_mass_time_is_active',
+					'value'   => '1',
+					'compare' => '=',
+				),
+				array(
+					'key'     => 'parish_mass_time_is_active',
+					'compare' => 'NOT EXISTS',
+				),
 			);
 		}
 
@@ -205,8 +213,13 @@ class Parish_Schedule_Generator {
 
 		$posts       = get_posts( $args );
 		$occurrences = array();
-		$start_ts    = strtotime( $start );
-		$end_ts      = strtotime( $end );
+
+		// Use WordPress timezone for consistent date handling.
+		$tz       = wp_timezone();
+		$start_dt = new DateTime( $start . ' 00:00:00', $tz );
+		$end_dt   = new DateTime( $end . ' 23:59:59', $tz );
+		$start_ts = $start_dt->getTimestamp();
+		$end_ts   = $end_dt->getTimestamp();
 
 		foreach ( $posts as $post ) {
 			$church_id = absint( get_post_meta( $post->ID, 'parish_mass_time_church_id', true ) );
@@ -366,9 +379,17 @@ class Parish_Schedule_Generator {
 		} else {
 			// Single occurrence (or special event).
 			$event_date = wp_date( 'Y-m-d', $base_timestamp );
-			$event_ts   = strtotime( $event_date );
 
-			if ( $event_ts >= $start_ts && $event_ts <= $end_ts ) {
+			// Use WordPress timezone for comparison.
+			$tz       = wp_timezone();
+			$event_dt = new DateTime( $event_date . ' 00:00:00', $tz );
+			$event_ts = $event_dt->getTimestamp();
+
+			// Compare date only (not time) to ensure same-day events are included.
+			$start_date_ts = ( new DateTime( '@' . $start_ts ) )->setTimezone( $tz )->setTime( 0, 0, 0 )->getTimestamp();
+			$end_date_ts   = ( new DateTime( '@' . $end_ts ) )->setTimezone( $tz )->setTime( 23, 59, 59 )->getTimestamp();
+
+			if ( $event_ts >= $start_date_ts && $event_ts <= $end_date_ts ) {
 				// Check if not in exceptions.
 				if ( ! isset( $exceptions[ $event_date ] ) ) {
 					$occurrences[] = array_merge(
@@ -418,12 +439,20 @@ class Parish_Schedule_Generator {
 				break;
 
 			case 'weekly':
-				$days  = $recurrence['days'] ?? array();
+				$days = $recurrence['days'] ?? array();
+				// If no days specified, default to the day of the week from base timestamp
+				if ( empty( $days ) ) {
+					$days = array( wp_date( 'l', $base_ts ) );
+				}
 				$dates = $this->expand_weekly( $days, $range_start, $range_end );
 				break;
 
 			case 'biweekly':
-				$days  = $recurrence['days'] ?? array();
+				$days = $recurrence['days'] ?? array();
+				// If no days specified, default to the day of the week from base timestamp
+				if ( empty( $days ) ) {
+					$days = array( wp_date( 'l', $base_ts ) );
+				}
 				$dates = $this->expand_biweekly( $days, $base_ts, $range_start, $range_end );
 				break;
 
@@ -456,10 +485,14 @@ class Parish_Schedule_Generator {
 	 * @return array Dates.
 	 */
 	private function expand_daily( int $start, int $end ): array {
-		$dates   = array();
-		$current = $start;
+		$dates = array();
 
-		while ( $current <= $end ) {
+		// Normalize to start of day using WordPress timezone.
+		$tz      = wp_timezone();
+		$current = ( new DateTime( '@' . $start ) )->setTimezone( $tz )->setTime( 0, 0, 0 )->getTimestamp();
+		$end_day = ( new DateTime( '@' . $end ) )->setTimezone( $tz )->setTime( 23, 59, 59 )->getTimestamp();
+
+		while ( $current <= $end_day ) {
 			$dates[] = $current;
 			$current = strtotime( '+1 day', $current );
 		}
@@ -476,17 +509,26 @@ class Parish_Schedule_Generator {
 	 * @return array Dates.
 	 */
 	private function expand_weekly( array $days, int $start, int $end ): array {
-		$dates   = array();
-		$current = $start;
+		$dates = array();
+
+		// Trim whitespace and filter out empty/invalid day values
+		$days = array_filter( array_map( 'trim', $days ), function( $day ) {
+			return is_string( $day ) && ! empty( $day );
+		} );
 
 		if ( empty( $days ) ) {
 			return $dates;
 		}
 
-		// Normalize day names to handle case inconsistencies.
-		$normalized_days = array_map( 'ucfirst', array_map( 'strtolower', $days ) );
+		// Normalize to start of day using WordPress timezone.
+		$tz      = wp_timezone();
+		$current = ( new DateTime( '@' . $start ) )->setTimezone( $tz )->setTime( 0, 0, 0 )->getTimestamp();
+		$end_day = ( new DateTime( '@' . $end ) )->setTimezone( $tz )->setTime( 23, 59, 59 )->getTimestamp();
 
-		while ( $current <= $end ) {
+		// Normalize day names to handle case inconsistencies.
+		$normalized_days = array_map( 'ucfirst', array_map( 'strtolower', array_values( $days ) ) );
+
+		while ( $current <= $end_day ) {
 			// Use wp_date for timezone-aware day name.
 			$day_name = wp_date( 'l', $current );
 			if ( in_array( $day_name, $normalized_days, true ) ) {
@@ -508,20 +550,29 @@ class Parish_Schedule_Generator {
 	 * @return array Dates.
 	 */
 	private function expand_biweekly( array $days, int $base_ts, int $start, int $end ): array {
-		$dates   = array();
-		$current = $start;
+		$dates = array();
+
+		// Trim whitespace and filter out empty/invalid day values
+		$days = array_filter( array_map( 'trim', $days ), function( $day ) {
+			return is_string( $day ) && ! empty( $day );
+		} );
 
 		if ( empty( $days ) ) {
 			return $dates;
 		}
 
+		// Normalize to start of day using WordPress timezone.
+		$tz      = wp_timezone();
+		$current = ( new DateTime( '@' . $start ) )->setTimezone( $tz )->setTime( 0, 0, 0 )->getTimestamp();
+		$end_day = ( new DateTime( '@' . $end ) )->setTimezone( $tz )->setTime( 23, 59, 59 )->getTimestamp();
+
 		// Normalize day names to handle case inconsistencies.
-		$normalized_days = array_map( 'ucfirst', array_map( 'strtolower', $days ) );
+		$normalized_days = array_map( 'ucfirst', array_map( 'strtolower', array_values( $days ) ) );
 
 		// Determine the week number of the base date using timezone-aware function.
 		$base_week = (int) wp_date( 'W', $base_ts );
 
-		while ( $current <= $end ) {
+		while ( $current <= $end_day ) {
 			$current_week = (int) wp_date( 'W', $current );
 			$week_diff    = abs( $current_week - $base_week );
 
@@ -655,11 +706,21 @@ class Parish_Schedule_Generator {
 		);
 
 		$meta_query = array(
+			'relation' => 'AND',
+			// Active check: is_active = 1 OR is_active not set (defaults to true).
 			array(
-				'key'     => 'parish_mass_time_is_active',
-				'value'   => '1',
-				'compare' => '=',
+				'relation' => 'OR',
+				array(
+					'key'     => 'parish_mass_time_is_active',
+					'value'   => '1',
+					'compare' => '=',
+				),
+				array(
+					'key'     => 'parish_mass_time_is_active',
+					'compare' => 'NOT EXISTS',
+				),
 			),
+			// Recurring check.
 			array(
 				'key'     => 'parish_mass_time_is_recurring',
 				'value'   => '1',
@@ -704,14 +765,21 @@ class Parish_Schedule_Generator {
 				continue;
 			}
 
+			$start_datetime  = get_post_meta( $post->ID, 'parish_mass_time_start_datetime', true );
+
 			$rec_days = array();
 			if ( 'daily' === $type ) {
 				$rec_days = array_keys( $days );
 			} else {
 				$rec_days = $recurrence['days'] ?? array();
+				// If no days specified, default to the day of the week from start datetime
+				if ( empty( $rec_days ) && $start_datetime ) {
+					$ts = strtotime( $start_datetime );
+					if ( $ts ) {
+						$rec_days = array( wp_date( 'l', $ts ) );
+					}
+				}
 			}
-
-			$start_datetime  = get_post_meta( $post->ID, 'parish_mass_time_start_datetime', true );
 			$lit_type        = get_post_meta( $post->ID, 'parish_mass_time_liturgical_type', true ) ?: 'mass';
 			$is_livestreamed = (bool) get_post_meta( $post->ID, 'parish_mass_time_is_livestreamed', true );
 			$livestream_url  = get_post_meta( $post->ID, 'parish_mass_time_livestream_url', true );
@@ -769,11 +837,21 @@ class Parish_Schedule_Generator {
 		$events = array();
 
 		$meta_query = array(
+			'relation' => 'AND',
+			// Active check: is_active = 1 OR is_active not set (defaults to true).
 			array(
-				'key'     => 'parish_mass_time_is_active',
-				'value'   => '1',
-				'compare' => '=',
+				'relation' => 'OR',
+				array(
+					'key'     => 'parish_mass_time_is_active',
+					'value'   => '1',
+					'compare' => '=',
+				),
+				array(
+					'key'     => 'parish_mass_time_is_active',
+					'compare' => 'NOT EXISTS',
+				),
 			),
+			// Recurring check.
 			array(
 				'key'     => 'parish_mass_time_is_recurring',
 				'value'   => '1',

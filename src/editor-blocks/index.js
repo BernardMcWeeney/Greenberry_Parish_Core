@@ -18,6 +18,7 @@ import './mass-schedule';
 import './church-schedule';
 import './today-mass';
 import './events';
+import './events-calendar';
 
 /**
  * Related Church Selector Block

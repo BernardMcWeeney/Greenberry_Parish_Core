@@ -1,5 +1,5 @@
 /**
- * Parish Core Admin - Events Calendar (CPT-based)
+ * Parish Core Admin - Events Calendar & List View
  */
 (function (window) {
 	'use strict';
@@ -8,394 +8,233 @@
 		el,
 		useState,
 		useEffect,
+		useMemo,
+		useCallback,
+		Fragment,
 		Button,
 		Notice,
 		Modal,
 		SelectControl,
 		TextControl,
 		TextareaControl,
-		CheckboxControl,
+		ToggleControl,
 		Flex,
+		FlexBlock,
+		FlexItem,
 		apiFetch,
 		LoadingSpinner,
 	} = window.ParishCoreAdmin;
 
-	function MonthView(props) {
-		const year = props.year;
-		const month = props.month;
-		const events = props.events || [];
-		const onDayClick = props.onDayClick;
-		const onEventClick = props.onEventClick;
+	// =========================================================================
+	// UTILITY FUNCTIONS
+	// =========================================================================
+	const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+	function formatDate(dateStr) {
+		if (!dateStr) return '';
+		var d = new Date(dateStr + 'T00:00:00');
+		return d.toLocaleDateString('en-IE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+	}
+
+	function formatTime(timeStr) {
+		if (!timeStr) return '';
+		var parts = timeStr.split(':');
+		var h = parseInt(parts[0], 10);
+		var m = parts[1] || '00';
+		var ampm = h >= 12 ? 'PM' : 'AM';
+		h = h % 12 || 12;
+		return h + ':' + m + ' ' + ampm;
+	}
+
+	function getMonthDates(year, month) {
 		const firstDay = new Date(year, month, 1);
 		const lastDay = new Date(year, month + 1, 0);
-		const startDay = firstDay.getDay() || 7;
-		const daysInMonth = lastDay.getDate();
+		const startPad = firstDay.getDay();
+		const dates = [];
 
-		var weeks = [];
-		var week = [];
-
-		for (var i = 1; i < startDay; i++) week.push(null);
-		for (var day = 1; day <= daysInMonth; day++) {
-			week.push(day);
-			if (week.length === 7) {
-				weeks.push(week);
-				week = [];
-			}
-		}
-		if (week.length > 0) {
-			while (week.length < 7) week.push(null);
-			weeks.push(week);
-		}
-
-		const getEventsForDay = function (d) {
-			if (!d) return [];
-			var ds =
-				year +
-				'-' +
-				String(month + 1).padStart(2, '0') +
-				'-' +
-				String(d).padStart(2, '0');
-			return events.filter(function (e) {
-				return e.date === ds;
+		// Pad start with previous month's days
+		for (let i = startPad - 1; i >= 0; i--) {
+			const d = new Date(year, month, -i);
+			dates.push({
+				date: d.toISOString().split('T')[0],
+				dayNum: d.getDate(),
+				isCurrentMonth: false,
+				isToday: d.toDateString() === new Date().toDateString(),
 			});
-		};
+		}
 
-		const today = new Date();
+		// Current month days
+		for (let day = 1; day <= lastDay.getDate(); day++) {
+			const d = new Date(year, month, day);
+			dates.push({
+				date: d.toISOString().split('T')[0],
+				dayNum: day,
+				isCurrentMonth: true,
+				isToday: d.toDateString() === new Date().toDateString(),
+			});
+		}
 
-		return el(
-			'div',
-			{ className: 'month-view' },
-			el(
-				'div',
-				{ className: 'calendar-header' },
-				['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) {
-					return el('div', { key: d, className: 'calendar-day-header' }, d);
-				})
+		// Pad end to complete grid (6 rows)
+		const remaining = 42 - dates.length;
+		for (let i = 1; i <= remaining; i++) {
+			const d = new Date(year, month + 1, i);
+			dates.push({
+				date: d.toISOString().split('T')[0],
+				dayNum: i,
+				isCurrentMonth: false,
+				isToday: d.toDateString() === new Date().toDateString(),
+			});
+		}
+
+		return dates;
+	}
+
+	// =========================================================================
+	// CALENDAR VIEW COMPONENT
+	// =========================================================================
+	function CalendarView({ events, year, month, onDateClick, onEventClick }) {
+		const dates = useMemo(() => getMonthDates(year, month), [year, month]);
+
+		// Group events by date
+		const eventsByDate = useMemo(() => {
+			const grouped = {};
+			events.forEach(evt => {
+				if (evt.date) {
+					if (!grouped[evt.date]) grouped[evt.date] = [];
+					grouped[evt.date].push(evt);
+				}
+			});
+			return grouped;
+		}, [events]);
+
+		const weeks = [];
+		for (let i = 0; i < dates.length; i += 7) {
+			weeks.push(dates.slice(i, i + 7));
+		}
+
+		return el('div', { className: 'events-calendar' },
+			el('div', { className: 'calendar-header', style: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', marginBottom: '8px' } },
+				WEEKDAYS.map(day =>
+					el('div', { key: day, style: { textAlign: 'center', fontWeight: '600', padding: '8px', background: '#f0f0f1' } }, day)
+				)
 			),
-			el(
-				'div',
-				{ className: 'calendar-body' },
-				weeks.map(function (wk, wi) {
-					return el(
-						'div',
-						{ key: wi, className: 'calendar-week' },
-						wk.map(function (d, di) {
-							var dayEvents = getEventsForDay(d);
-							var isToday =
-								d &&
-								today.getFullYear() === year &&
-								today.getMonth() === month &&
-								today.getDate() === d;
-
-							return el(
-								'div',
-								{
-									key: di,
-									className:
-										'calendar-day' +
-										(d ? '' : ' empty') +
-										(isToday ? ' today' : ''),
-									onClick: d
-										? function () {
-												onDayClick(
-													year +
-														'-' +
-														String(month + 1).padStart(2, '0') +
-														'-' +
-														String(d).padStart(2, '0')
-												);
-										  }
-										: null,
+			el('div', { className: 'calendar-body' },
+				weeks.map((week, weekIdx) =>
+					el('div', { key: weekIdx, className: 'calendar-week', style: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px' } },
+						week.map(day => {
+							const dayEvents = eventsByDate[day.date] || [];
+							return el('div', {
+								key: day.date,
+								className: 'calendar-day',
+								onClick: () => onDateClick(day.date),
+								style: {
+									minHeight: '100px',
+									padding: '4px',
+									background: day.isCurrentMonth ? '#fff' : '#f9f9f9',
+									border: day.isToday ? '2px solid #2271b1' : '1px solid #e0e0e0',
+									cursor: 'pointer',
 								},
-								d && el('span', { className: 'day-number' }, d),
-								dayEvents.slice(0, 3).map(function (evt) {
-									return el(
-										'div',
-										{
-											key: evt.id,
-											className: 'calendar-event',
-											style: { background: evt.color },
-											onClick: function (e) {
-												e.stopPropagation();
-												onEventClick(evt);
-											},
-										},
-										evt.title || 'Event'
-									);
-								}),
-								dayEvents.length > 3 &&
-									el(
-										'div',
-										{ className: 'more-events' },
-										'+' + (dayEvents.length - 3)
-									)
+							},
+								el('div', { style: { fontWeight: day.isToday ? '700' : '500', marginBottom: '4px', color: day.isCurrentMonth ? '#1e1e1e' : '#999' } }, day.dayNum),
+								el('div', { className: 'day-events' },
+									dayEvents.slice(0, 3).map((evt, idx) =>
+										el('div', {
+											key: idx,
+											onClick: (e) => { e.stopPropagation(); onEventClick(evt); },
+											style: {
+												fontSize: '11px',
+												padding: '2px 4px',
+												marginBottom: '2px',
+												background: evt.featured ? '#dba617' : '#e8f4fc',
+												color: evt.featured ? '#fff' : '#1a5a8e',
+												borderRadius: '2px',
+												overflow: 'hidden',
+												textOverflow: 'ellipsis',
+												whiteSpace: 'nowrap',
+												cursor: 'pointer',
+											}
+										}, evt.title || '(No title)')
+									),
+									dayEvents.length > 3 && el('div', { style: { fontSize: '10px', color: '#666' } }, '+' + (dayEvents.length - 3) + ' more')
+								)
 							);
 						})
-					);
-				})
+					)
+				)
 			)
 		);
 	}
 
-	function EventModal(props) {
-		const event = props.event;
-		const churches = props.churches;
-		const taxonomies = props.taxonomies;
-		const onSave = props.onSave;
-		const onDelete = props.onDelete;
-		const onClose = props.onClose;
+	// =========================================================================
+	// LIST VIEW COMPONENT
+	// =========================================================================
+	function ListView({ events, onEdit, onDelete, deleting }) {
+		if (events.length === 0) {
+			return el('div', { className: 'no-events', style: { padding: '40px', textAlign: 'center', background: '#f9f9f9', borderRadius: '4px' } },
+				el('p', { style: { margin: 0, color: '#666' } }, 'No events found.')
+			);
+		}
 
-		const [form, setForm] = useState(event);
-		const [saving, setSaving] = useState(false);
-
-		const upd = function (k, v) {
-			setForm(function (p) {
-				return Object.assign({}, p, { [k]: v });
-			});
-		};
-
-		const handleSave = function () {
-			setSaving(true);
-			onSave(form).finally(function () {
-				setSaving(false);
-			});
-		};
-
-		const handleDelete = function () {
-			if (confirm('Are you sure you want to delete this event?')) {
-				setSaving(true);
-				onDelete(form.id).finally(function () {
-					setSaving(false);
-				});
-			}
-		};
-
-		const colors = [
-			{ label: 'Parish Blue', value: '#609fae' },
-			{ label: 'Blue', value: '#2271b1' },
-			{ label: 'Green', value: '#00a32a' },
-			{ label: 'Red', value: '#d63638' },
-			{ label: 'Purple', value: '#8c5cb5' },
-			{ label: 'Orange', value: '#dba617' },
-			{ label: 'Gold', value: '#FFD700' },
-		];
-
-		const churchOptions = [{ label: 'All Churches', value: 0 }].concat(
-			(churches || []).map(function (c) {
-				return { label: c.title, value: c.id };
-			})
-		);
-
-		const sacramentOptions = [{ label: 'None', value: '' }].concat(
-			(taxonomies.sacraments || []).map(function (t) {
-				return { label: t.name, value: t.slug };
-			})
-		);
-
-		const typeOptions = [{ label: 'None', value: '' }].concat(
-			(taxonomies.types || []).map(function (t) {
-				return { label: t.name, value: t.slug };
-			})
-		);
-
-		return el(
-			Modal,
-			{ title: form.id ? 'Edit Event' : 'New Event', onRequestClose: onClose, className: 'parish-modal parish-event-modal' },
-			el(
-				'div',
-				{ className: 'modal-form', style: { maxHeight: '70vh', overflowY: 'auto' } },
-				el(TextControl, {
-					label: 'Event Title *',
-					value: form.title,
-					onChange: function (v) {
-						upd('title', v);
-					},
-					required: true,
-				}),
-				el(
-					'div',
-					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' } },
-					el(TextControl, {
-						label: 'Date *',
-						type: 'date',
-						value: form.date,
-						onChange: function (v) {
-							upd('date', v);
-						},
-						required: true,
-					}),
-					el(TextControl, {
-						label: 'Start Time',
-						type: 'time',
-						value: form.time,
-						onChange: function (v) {
-							upd('time', v);
-						},
-					}),
-					el(TextControl, {
-						label: 'End Time',
-						type: 'time',
-						value: form.end_time || '',
-						onChange: function (v) {
-							upd('end_time', v);
-						},
-					})
-				),
-				el(
-					'div',
-					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
-					el(SelectControl, {
-						label: 'Church',
-						value: form.church_id || 0,
-						options: churchOptions,
-						onChange: function (v) {
-							upd('church_id', parseInt(v, 10));
-						},
-						__nextHasNoMarginBottom: true,
-						__next40pxDefaultSize: true,
-					}),
-					el(SelectControl, {
-						label: 'Color',
-						value: form.color,
-						options: colors,
-						onChange: function (v) {
-							upd('color', v);
-						},
-						__nextHasNoMarginBottom: true,
-						__next40pxDefaultSize: true,
-					})
-				),
-				el(TextControl, {
-					label: 'Location',
-					value: form.location || '',
-					onChange: function (v) {
-						upd('location', v);
-					},
-				}),
-				el(
-					'div',
-					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
-					el(SelectControl, {
-						label: 'Sacrament',
-						value: form.sacrament || '',
-						options: sacramentOptions,
-						onChange: function (v) {
-							upd('sacrament', v);
-						},
-						__nextHasNoMarginBottom: true,
-						__next40pxDefaultSize: true,
-					}),
-					el(SelectControl, {
-						label: 'Event Type',
-						value: form.type || '',
-						options: typeOptions,
-						onChange: function (v) {
-							upd('type', v);
-						},
-						__nextHasNoMarginBottom: true,
-						__next40pxDefaultSize: true,
-					})
-				),
-				el(TextareaControl, {
-					label: 'Description',
-					value: form.description || '',
-					rows: 3,
-					onChange: function (v) {
-						upd('description', v);
-					},
-				}),
-				el(
-					'div',
-					{ style: { borderTop: '1px solid #ddd', paddingTop: '16px', marginTop: '16px' } },
-					el('h4', { style: { marginTop: 0, marginBottom: '12px' } }, 'Organizer & Contact Info')
-				),
-				el(TextControl, {
-					label: 'Organizer Name',
-					value: form.organizer || '',
-					onChange: function (v) {
-						upd('organizer', v);
-					},
-				}),
-				el(
-					'div',
-					{ style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
-					el(TextControl, {
-						label: 'Contact Email',
-						type: 'email',
-						value: form.contact_email || '',
-						onChange: function (v) {
-							upd('contact_email', v);
-						},
-					}),
-					el(TextControl, {
-						label: 'Contact Phone',
-						type: 'tel',
-						value: form.contact_phone || '',
-						onChange: function (v) {
-							upd('contact_phone', v);
-						},
-					})
-				),
-				el(TextControl, {
-					label: 'Registration URL',
-					type: 'url',
-					value: form.registration_url || '',
-					onChange: function (v) {
-						upd('registration_url', v);
-					},
-					help: 'URL for event registration or ticket purchase',
-				}),
-				el(
-					'div',
-					{ style: { display: 'flex', gap: '24px', marginTop: '16px' } },
-					el(CheckboxControl, {
-						label: 'Featured Event',
-						checked: form.featured || false,
-						onChange: function (v) {
-							upd('featured', v);
-						},
-						help: 'Highlight on homepage',
-					}),
-					el(CheckboxControl, {
-						label: 'Cemetery Event',
-						checked: form.is_cemetery || false,
-						onChange: function (v) {
-							upd('is_cemetery', v);
-						},
-					})
+		return el('table', { className: 'widefat striped' },
+			el('thead', null,
+				el('tr', null,
+					el('th', null, 'Event'),
+					el('th', { style: { width: '130px' } }, 'Date'),
+					el('th', { style: { width: '80px' } }, 'Time'),
+					el('th', { style: { width: '130px' } }, 'Location'),
+					el('th', { style: { width: '100px' } }, 'Church'),
+					el('th', { style: { width: '120px' } }, 'Category'),
+					el('th', { style: { width: '110px' } }, 'Actions')
 				)
 			),
-			el(
-				'div',
-				{ className: 'modal-actions' },
-				el(
-					Flex,
-					{ justify: 'space-between' },
-					form.id
-						? el(
-								Button,
-								{ isDestructive: true, onClick: handleDelete, disabled: saving },
-								'Delete'
-						  )
-						: el('span'),
-					el(
-						Flex,
-						{ gap: 2 },
-						el(
-							Button,
-							{ isSecondary: true, onClick: onClose, disabled: saving },
-							'Cancel'
+			el('tbody', null,
+				events.map(evt =>
+					el('tr', { key: evt.id },
+						el('td', null,
+							el('span', {
+								onClick: () => onEdit(evt),
+								style: { fontWeight: 500, textDecoration: 'none', cursor: 'pointer', color: '#0073aa' },
+							}, evt.title || '(No title)'),
+							evt.featured && el('span', {
+								style: {
+									marginLeft: '8px',
+									fontSize: '10px',
+									background: '#dba617',
+									color: '#fff',
+									padding: '2px 6px',
+									borderRadius: '3px',
+								},
+							}, 'Featured'),
+							evt.cemetery_id > 0 && el('span', {
+								style: {
+									marginLeft: '4px',
+									fontSize: '10px',
+									background: '#666',
+									color: '#fff',
+									padding: '2px 6px',
+									borderRadius: '3px',
+								},
+							}, 'Cemetery')
 						),
-						el(
-							Button,
-							{
-								isPrimary: true,
-								onClick: handleSave,
-								isBusy: saving,
-								disabled: saving || !form.title || !form.date,
-							},
-							saving ? 'Saving...' : 'Save'
+						el('td', null, formatDate(evt.date)),
+						el('td', null, formatTime(evt.time)),
+						el('td', null, evt.location || '—'),
+						el('td', null, evt.church_name || '—'),
+						el('td', { style: { fontSize: '12px' } }, evt.sacrament || '—'),
+						el('td', null,
+							el(Flex, { gap: 1 },
+								el(Button, {
+									isSmall: true,
+									variant: 'secondary',
+									onClick: () => onEdit(evt),
+								}, 'Edit'),
+								el(Button, {
+									isSmall: true,
+									isDestructive: true,
+									isBusy: deleting === evt.id,
+									onClick: () => onDelete(evt.id),
+								}, 'Delete')
+							)
 						)
 					)
 				)
@@ -403,28 +242,233 @@
 		);
 	}
 
+	// =========================================================================
+	// EVENT MODAL COMPONENT
+	// =========================================================================
+	function EventModal({ event, churches, cemeteries, taxonomies, isNew, onSave, onClose, onDelete, onRefreshTaxonomies }) {
+		const [form, setForm] = useState(event || {});
+		const [saving, setSaving] = useState(false);
+		const [deleting, setDeleting] = useState(false);
+		const [showAddCategory, setShowAddCategory] = useState(false);
+		const [newCategoryName, setNewCategoryName] = useState('');
+		const [addingCategory, setAddingCategory] = useState(false);
+
+		const handleDelete = () => {
+			if (!form.id || isNew) return;
+			if (!confirm('Are you sure you want to delete this event?')) return;
+			setDeleting(true);
+			onDelete(form.id);
+		};
+
+		const upd = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+
+		const churchOptions = [{ label: 'Select Church', value: 0 }].concat(
+			(churches || []).map(c => ({ label: c.title, value: c.id }))
+		);
+
+		const cemeteryOptions = [{ label: 'No Cemetery', value: 0 }].concat(
+			(cemeteries || []).map(c => ({ label: c.title, value: c.id }))
+		);
+
+		const sacramentOptions = [{ label: 'Select Category', value: 0 }].concat(
+			(taxonomies.sacraments || []).map(s => ({ label: s.name, value: s.term_id }))
+		);
+
+		const handleSave = () => {
+			setSaving(true);
+			onSave(form);
+		};
+
+		const handleAddCategory = () => {
+			if (!newCategoryName.trim()) return;
+			setAddingCategory(true);
+			apiFetch({
+				path: '/wp/v2/parish_sacrament',
+				method: 'POST',
+				data: { name: newCategoryName.trim() },
+			})
+				.then(term => {
+					upd('sacrament_id', term.id);
+					setNewCategoryName('');
+					setShowAddCategory(false);
+					setAddingCategory(false);
+					if (onRefreshTaxonomies) onRefreshTaxonomies();
+				})
+				.catch(() => {
+					setAddingCategory(false);
+				});
+		};
+
+		return el(Modal, {
+			title: isNew ? 'Add Event' : 'Edit Event',
+			onRequestClose: onClose,
+			className: 'parish-modal event-modal',
+			style: { maxWidth: '600px' },
+		},
+			el('div', { className: 'modal-form' },
+				el(TextControl, {
+					label: 'Event Title',
+					value: form.title || '',
+					onChange: v => upd('title', v),
+					placeholder: 'Enter event title...',
+				}),
+				el(Flex, { gap: 3 },
+					el(FlexBlock, null,
+						el(TextControl, {
+							label: 'Date',
+							type: 'date',
+							value: form.date || '',
+							onChange: v => upd('date', v),
+						})
+					),
+					el(FlexBlock, null,
+						el(TextControl, {
+							label: 'Time',
+							type: 'time',
+							value: form.time || '',
+							onChange: v => upd('time', v),
+						})
+					)
+				),
+				el(TextControl, {
+					label: 'Location',
+					value: form.location || '',
+					onChange: v => upd('location', v),
+					placeholder: 'Event venue or address...',
+				}),
+				el(TextControl, {
+					label: 'Event URL',
+					type: 'url',
+					value: form.registration_url || '',
+					onChange: v => upd('registration_url', v),
+					placeholder: 'https://...',
+					help: 'Optional link for registration or event details',
+				}),
+				el(SelectControl, {
+					label: 'Church',
+					value: form.church_id || 0,
+					options: churchOptions,
+					onChange: v => upd('church_id', parseInt(v, 10)),
+					__nextHasNoMarginBottom: true,
+				}),
+				el('div', { style: { marginBottom: '16px' } },
+					el('label', { style: { display: 'block', marginBottom: '8px', fontWeight: '500' } }, 'Category'),
+					el(Flex, { gap: 2, align: 'flex-start' },
+						el(FlexBlock, null,
+							!showAddCategory && el(SelectControl, {
+								value: form.sacrament_id || 0,
+								options: sacramentOptions,
+								onChange: v => upd('sacrament_id', parseInt(v, 10)),
+								__nextHasNoMarginBottom: true,
+							}),
+							showAddCategory && el(Flex, { gap: 2 },
+								el(FlexBlock, null,
+									el(TextControl, {
+										value: newCategoryName,
+										onChange: setNewCategoryName,
+										placeholder: 'New category name...',
+									})
+								),
+								el(FlexItem, null,
+									el(Button, {
+										variant: 'primary',
+										isSmall: true,
+										isBusy: addingCategory,
+										onClick: handleAddCategory,
+										disabled: !newCategoryName.trim(),
+									}, 'Add')
+								),
+								el(FlexItem, null,
+									el(Button, {
+										variant: 'secondary',
+										isSmall: true,
+										onClick: () => { setShowAddCategory(false); setNewCategoryName(''); },
+									}, 'Cancel')
+								)
+							)
+						),
+						!showAddCategory && el(FlexItem, null,
+							el(Button, {
+								variant: 'secondary',
+								isSmall: true,
+								onClick: () => setShowAddCategory(true),
+							}, '+ New')
+						)
+					)
+				),
+				el(TextareaControl, {
+					label: 'Description',
+					value: form.description || '',
+					onChange: v => upd('description', v),
+					rows: 3,
+					placeholder: 'Brief description of the event...',
+				}),
+				el(Flex, { gap: 3 },
+					el(FlexBlock, null,
+						el(SelectControl, {
+							label: 'Cemetery',
+							value: form.cemetery_id || 0,
+							options: cemeteryOptions,
+							onChange: v => upd('cemetery_id', parseInt(v, 10)),
+							__nextHasNoMarginBottom: true,
+						})
+					),
+					el(FlexBlock, null,
+						el(ToggleControl, {
+							label: 'Featured Event',
+							checked: form.featured || false,
+							onChange: v => upd('featured', v),
+							__nextHasNoMarginBottom: true,
+						})
+					)
+				)
+			),
+			el('div', { className: 'modal-actions', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid #ddd', marginTop: '16px' } },
+				!isNew && form.id
+					? el(Button, {
+						isDestructive: true,
+						isBusy: deleting,
+						onClick: handleDelete,
+					}, deleting ? 'Deleting...' : 'Delete Event')
+					: el('div'),
+				el('div', { style: { display: 'flex', gap: '8px' } },
+					el(Button, { variant: 'secondary', onClick: onClose }, 'Cancel'),
+					el(Button, { variant: 'primary', isBusy: saving, onClick: handleSave },
+						saving ? 'Saving...' : 'Save Event'
+					)
+				)
+			)
+		);
+	}
+
+	// =========================================================================
+	// MAIN EVENTS CALENDAR COMPONENT
+	// =========================================================================
 	function EventsCalendar() {
 		const [events, setEvents] = useState([]);
 		const [churches, setChurches] = useState([]);
-		const [taxonomies, setTaxonomies] = useState({ sacraments: [], types: [], locations: [], feast_days: [] });
+		const [cemeteries, setCemeteries] = useState([]);
+		const [taxonomies, setTaxonomies] = useState({ sacraments: [], types: [], locations: [] });
 		const [loading, setLoading] = useState(true);
 		const [notice, setNotice] = useState(null);
-		const [viewDate, setViewDate] = useState(new Date());
+		const [view, setView] = useState('calendar'); // 'calendar' or 'list'
+		const [filter, setFilter] = useState('upcoming');
+		const [churchFilter, setChurchFilter] = useState(0);
+		const [sacramentFilter, setSacramentFilter] = useState(0);
+		const [cemeteryFilter, setCemeteryFilter] = useState(false);
+		const [search, setSearch] = useState('');
+		const [deleting, setDeleting] = useState(null);
+		const [monthYear, setMonthYear] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() });
 		const [editing, setEditing] = useState(null);
-		const [needsMigration, setNeedsMigration] = useState(false);
-		const [migrating, setMigrating] = useState(false);
+		const [isNew, setIsNew] = useState(false);
 
-		const loadMonth = function (date) {
-			const year = date.getFullYear();
-			const month = date.getMonth();
-			const start = year + '-' + String(month + 1).padStart(2, '0') + '-01';
-			const lastDay = new Date(year, month + 1, 0).getDate();
-			const end = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
-
+		const loadEvents = useCallback(function () {
 			setLoading(true);
-			apiFetch({
-				path: '/parish/v1/events/calendar?start=' + start + '&end=' + end,
-			})
+			let path = '/parish/v1/events/list?filter=' + filter + '&church=' + churchFilter + '&sacrament=' + sacramentFilter;
+			if (cemeteryFilter) {
+				path += '&cemetery=true';
+			}
+			apiFetch({ path })
 				.then(function (res) {
 					setEvents(res || []);
 					setLoading(false);
@@ -434,311 +478,360 @@
 					setLoading(false);
 					setNotice({ type: 'error', message: 'Failed to load events.' });
 				});
-		};
+		}, [filter, churchFilter, sacramentFilter, cemeteryFilter]);
+
+		const loadTaxonomies = useCallback(function () {
+			apiFetch({ path: '/parish/v1/events/taxonomies' })
+				.then(function (res) {
+					var sacraments = Array.isArray(res && res.sacraments) ? res.sacraments : [];
+					var types = Array.isArray(res && res.types) ? res.types : [];
+					var locations = Array.isArray(res && res.locations) ? res.locations : [];
+					setTaxonomies({ sacraments: sacraments, types: types, locations: locations });
+				})
+				.catch(function () {
+					setTaxonomies({ sacraments: [], types: [], locations: [] });
+				});
+		}, []);
 
 		useEffect(function () {
-			// Load churches
+			// Load churches for filter
 			apiFetch({ path: '/parish/v1/churches/list' })
 				.then(function (res) {
 					setChurches(res || []);
 				})
-				.catch(function (err) {
-					console.error('Failed to load churches:', err);
-				});
+				.catch(function () {});
 
-			// Load taxonomies
-			apiFetch({ path: '/parish/v1/events/taxonomies' })
+			// Load cemeteries for event selection
+			apiFetch({ path: '/wp/v2/parish_cemetery?per_page=100' })
 				.then(function (res) {
-					setTaxonomies(res || { sacraments: [], types: [], locations: [], feast_days: [] });
-				})
-				.catch(function (err) {
-					console.error('Failed to load taxonomies:', err);
-				});
-
-			// Check if migration is needed
-			apiFetch({ path: '/parish/v1/events' })
-				.then(function (res) {
-					if (res.events && res.events.length > 0) {
-						setNeedsMigration(true);
-					}
+					// Convert WP REST API format to simple format
+					setCemeteries(Array.isArray(res) ? res.map(function(c) {
+						return { id: c.id, title: c.title.rendered || c.title };
+					}) : []);
 				})
 				.catch(function () {
-					// Ignore error
+					setCemeteries([]);
 				});
 
-			loadMonth(viewDate);
+			// Load taxonomies for filters
+			loadTaxonomies();
+
+			loadEvents();
 		}, []);
 
-		useEffect(
-			function () {
-				loadMonth(viewDate);
-			},
-			[viewDate]
-		);
+		useEffect(function () {
+			loadEvents();
+		}, [loadEvents]);
 
-		const runMigration = function () {
-			if (!confirm('This will migrate all events from JSON storage to the database. Continue?')) {
+		const deleteEvent = function (id, fromModal) {
+			if (!fromModal && !confirm('Are you sure you want to delete this event?')) {
 				return;
 			}
-
-			setMigrating(true);
+			setDeleting(id);
 			apiFetch({
-				path: '/parish/v1/events/migrate',
+				path: '/wp/v2/events/' + id,
+				method: 'DELETE',
+			})
+				.then(function () {
+					setNotice({ type: 'success', message: 'Event deleted.' });
+					setDeleting(null);
+					setEditing(null);
+					loadEvents();
+				})
+				.catch(function (err) {
+					setNotice({ type: 'error', message: err.message || 'Failed to delete.' });
+					setDeleting(null);
+				});
+		};
+
+		const deleteAllPast = function () {
+			if (!confirm('Delete ALL past events? This cannot be undone.')) {
+				return;
+			}
+			setLoading(true);
+			apiFetch({
+				path: '/parish/v1/events/delete-past',
 				method: 'POST',
 			})
 				.then(function (res) {
-					setMigrating(false);
-					setNeedsMigration(false);
-					setNotice({
-						type: res.success ? 'success' : 'error',
-						message: res.message || 'Migration completed.',
-					});
-					loadMonth(viewDate);
+					setNotice({ type: 'success', message: res.message || 'Past events deleted.' });
+					loadEvents();
 				})
 				.catch(function (err) {
-					setMigrating(false);
-					setNotice({ type: 'error', message: err.message || 'Migration failed.' });
+					setNotice({ type: 'error', message: err.message || 'Failed to delete past events.' });
+					setLoading(false);
 				});
 		};
 
-		const add = function (date) {
-			setEditing({
-				id: null,
-				title: '',
-				date: date || new Date().toISOString().split('T')[0],
-				time: '',
-				end_time: '',
-				location: '',
-				description: '',
-				church_id: 0,
-				sacrament: '',
-				type: '',
-				organizer: '',
-				contact_email: '',
-				contact_phone: '',
-				registration_url: '',
-				featured: false,
-				is_cemetery: false,
-				color: '#609fae',
+		// Options for filters
+		const churchOptions = [{ label: 'All Churches', value: 0 }].concat(
+			(churches || []).map(function (c) {
+				return { label: c.title, value: c.id };
+			})
+		);
+
+		const sacramentOptions = [{ label: 'All Categories', value: 0 }].concat(
+			(taxonomies.sacraments || []).map(function (s) {
+				return { label: s.name, value: s.term_id };
+			})
+		);
+
+		const filterOptions = [
+			{ label: 'Upcoming Events', value: 'upcoming' },
+			{ label: 'Past Events', value: 'past' },
+			{ label: 'All Events', value: 'all' },
+		];
+
+		// Filter by search term
+		var filteredEvents = events;
+		if (search) {
+			var term = search.toLowerCase();
+			filteredEvents = events.filter(function (e) {
+				return (e.title || '').toLowerCase().indexOf(term) !== -1 ||
+					(e.location || '').toLowerCase().indexOf(term) !== -1 ||
+					(e.sacrament || '').toLowerCase().indexOf(term) !== -1;
+			});
+		}
+
+		// Get edit/add URLs
+		const getEditUrl = function (id) {
+			return window.parishCoreAdmin && window.parishCoreAdmin.adminUrl
+				? window.parishCoreAdmin.adminUrl + 'post.php?post=' + id + '&action=edit'
+				: '/wp-admin/post.php?post=' + id + '&action=edit';
+		};
+
+		const getAddUrl = function () {
+			return window.parishCoreAdmin && window.parishCoreAdmin.adminUrl
+				? window.parishCoreAdmin.adminUrl + 'post-new.php?post_type=parish_event'
+				: '/wp-admin/post-new.php?post_type=parish_event';
+		};
+
+		// Calendar navigation
+		const monthName = useMemo(() => {
+			const d = new Date(monthYear.year, monthYear.month, 1);
+			return d.toLocaleDateString('en-IE', { month: 'long', year: 'numeric' });
+		}, [monthYear]);
+
+		const prevMonth = () => {
+			setMonthYear(prev => {
+				const newMonth = prev.month === 0 ? 11 : prev.month - 1;
+				const newYear = prev.month === 0 ? prev.year - 1 : prev.year;
+				return { year: newYear, month: newMonth };
 			});
 		};
 
-		const saveEvent = function (evt) {
-			return new Promise(function (resolve, reject) {
-				const isNew = !evt.id;
-				const endpoint = isNew ? '/wp/v2/parish_event' : '/wp/v2/parish_event/' + evt.id;
-				const method = isNew ? 'POST' : 'PUT';
-
-				const data = {
-					title: evt.title,
-					content: evt.description || '',
-					status: 'publish',
-					meta: {
-						parish_event_date: evt.date,
-						parish_event_time: evt.time || '',
-						parish_event_end_time: evt.end_time || '',
-						parish_event_location: evt.location || '',
-						parish_event_church_id: evt.church_id || 0,
-						parish_event_is_cemetery: evt.is_cemetery || false,
-						parish_event_organizer: evt.organizer || '',
-						parish_event_contact_email: evt.contact_email || '',
-						parish_event_contact_phone: evt.contact_phone || '',
-						parish_event_registration_url: evt.registration_url || '',
-						parish_event_featured: evt.featured || false,
-						parish_event_color: evt.color || '#609fae',
-					},
-				};
-
-				// Add taxonomies
-				if (evt.sacrament) {
-					apiFetch({ path: '/wp/v2/parish_sacrament?slug=' + evt.sacrament })
-						.then(function (terms) {
-							if (terms && terms.length > 0) {
-								data.parish_sacrament = [terms[0].id];
-							}
-						})
-						.catch(function () {});
-				}
-
-				if (evt.type) {
-					apiFetch({ path: '/wp/v2/parish_event_type?slug=' + evt.type })
-						.then(function (terms) {
-							if (terms && terms.length > 0) {
-								data.parish_event_type = [terms[0].id];
-							}
-						})
-						.catch(function () {});
-				}
-
-				apiFetch({
-					path: endpoint,
-					method: method,
-					data: data,
-				})
-					.then(function (res) {
-						setNotice({ type: 'success', message: isNew ? 'Event created!' : 'Event updated!' });
-						setEditing(null);
-						loadMonth(viewDate);
-						resolve(res);
-					})
-					.catch(function (err) {
-						setNotice({ type: 'error', message: err.message || 'Failed to save event.' });
-						reject(err);
-					});
+		const nextMonth = () => {
+			setMonthYear(prev => {
+				const newMonth = prev.month === 11 ? 0 : prev.month + 1;
+				const newYear = prev.month === 11 ? prev.year + 1 : prev.year;
+				return { year: newYear, month: newMonth };
 			});
 		};
 
-		const deleteEvent = function (id) {
-			return new Promise(function (resolve, reject) {
-				apiFetch({
-					path: '/wp/v2/parish_event/' + id,
-					method: 'DELETE',
-				})
-					.then(function () {
-						setNotice({ type: 'success', message: 'Event deleted.' });
-						setEditing(null);
-						loadMonth(viewDate);
-						resolve();
-					})
-					.catch(function (err) {
-						setNotice({ type: 'error', message: err.message || 'Failed to delete event.' });
-						reject(err);
-					});
-			});
+		const goToday = () => {
+			setMonthYear({ year: new Date().getFullYear(), month: new Date().getMonth() });
 		};
 
-		const editEvent = function (evt) {
+		const handleEventClick = (evt) => {
+			setIsNew(false);
 			setEditing({
 				id: evt.id,
 				title: evt.title,
 				date: evt.date,
-				time: evt.time || '',
-				end_time: evt.end_time || '',
-				location: evt.location || '',
-				description: evt.description || '',
-				church_id: evt.church_id || 0,
-				sacrament: evt.sacraments && evt.sacraments.length > 0 ? evt.sacraments[0] : '',
-				type: evt.types && evt.types.length > 0 ? evt.types[0] : '',
-				organizer: evt.organizer || '',
-				contact_email: evt.contact_email || '',
-				contact_phone: evt.contact_phone || '',
+				time: evt.time,
+				location: evt.location,
 				registration_url: evt.registration_url || '',
+				church_id: evt.church_id || 0,
+				cemetery_id: evt.cemetery_id || 0,
+				sacrament_id: evt.sacrament_id || 0,
+				description: evt.description || '',
 				featured: evt.featured || false,
-				is_cemetery: evt.is_cemetery || false,
-				color: evt.color || '#609fae',
 			});
 		};
 
-		if (loading) return el(LoadingSpinner, { text: 'Loading...' });
+		const handleDateClick = (date) => {
+			setIsNew(true);
+			setEditing({
+				title: '',
+				date: date,
+				time: '10:00',
+				location: '',
+				registration_url: '',
+				church_id: churchFilter || 0,
+				cemetery_id: 0,
+				sacrament_id: sacramentFilter || 0,
+				description: '',
+				featured: false,
+			});
+		};
 
-		const year = viewDate.getFullYear();
-		const month = viewDate.getMonth();
+		const handleAdd = () => {
+			const today = new Date().toISOString().split('T')[0];
+			handleDateClick(today);
+		};
 
-		return el(
-			'div',
-			{ className: 'parish-events-page' },
-			notice &&
-				el(
-					Notice,
-					{
-						status: notice.type,
-						isDismissible: true,
-						onRemove: function () {
-							setNotice(null);
-						},
-					},
-					notice.message
-				),
-			needsMigration &&
-				el(
-					Notice,
-					{ status: 'warning', isDismissible: false },
-					el('p', null, 'Events need to be migrated from JSON to the new database structure.'),
-					el(
-						Button,
-						{ isPrimary: true, isBusy: migrating, onClick: runMigration },
-						migrating ? 'Migrating...' : 'Migrate Events Now'
-					)
-				),
-			el(
-				'div',
-				{ className: 'page-header' },
-				el(
-					'div',
-					{ className: 'calendar-nav' },
-					el(
-						Button,
-						{
-							isSmall: true,
-							onClick: function () {
-								var d = new Date(viewDate);
-								d.setMonth(d.getMonth() - 1);
-								setViewDate(d);
-							},
-						},
-						'←'
-					),
-					el(
-						'span',
-						{ className: 'current-month' },
-						viewDate.toLocaleDateString('en-IE', {
-							month: 'long',
-							year: 'numeric',
-						})
-					),
-					el(
-						Button,
-						{
-							isSmall: true,
-							onClick: function () {
-								var d = new Date(viewDate);
-								d.setMonth(d.getMonth() + 1);
-								setViewDate(d);
-							},
-						},
-						'→'
-					),
-					el(
-						Button,
-						{
-							isSmall: true,
-							isSecondary: true,
-							onClick: function () {
-								setViewDate(new Date());
-							},
-						},
-						'Today'
-					)
-				),
-				el(
-					Button,
-					{
-						isPrimary: true,
-						onClick: function () {
-							add();
-						},
-					},
-					'+ Add Event'
-				)
-			),
-			el(MonthView, {
-				year: year,
-				month: month,
-				events: events,
-				onDayClick: add,
-				onEventClick: editEvent,
-			}),
-			editing &&
-				el(EventModal, {
-					event: editing,
-					churches: churches,
-					taxonomies: taxonomies,
-					onSave: saveEvent,
-					onDelete: deleteEvent,
-					onClose: function () {
-						setEditing(null);
-					},
+		const handleSaveEvent = (data) => {
+			const path = isNew ? '/wp/v2/events' : '/wp/v2/events/' + data.id;
+			const method = 'POST';
+
+			// Format data for WordPress REST API
+			const postData = {
+				title: data.title || '',
+				content: data.description || '',
+				status: 'publish',
+				meta: {
+					parish_event_date: data.date || '',
+					parish_event_time: data.time || '',
+					parish_event_location: data.location || '',
+					parish_event_registration_url: data.registration_url || '',
+					parish_event_church_id: data.church_id || 0,
+					parish_event_cemetery_id: data.cemetery_id || 0,
+					parish_event_featured: !!data.featured,
+				},
+			};
+
+			// Add taxonomy if set
+			if (data.sacrament_id) {
+				postData.parish_sacrament = [data.sacrament_id];
+			}
+
+			apiFetch({ path, method, data: postData })
+				.then(() => {
+					setEditing(null);
+					setNotice({
+						type: 'success',
+						message: isNew ? 'Event created!' : 'Event updated!',
+					});
+					loadEvents();
 				})
+				.catch(err => {
+					setNotice({ type: 'error', message: err.message });
+				});
+		};
+
+		return el('div', { className: 'parish-events-page' },
+			notice && el(Notice, {
+				status: notice.type,
+				isDismissible: true,
+				onRemove: () => setNotice(null),
+			}, notice.message),
+
+			// Toolbar
+			el('div', { className: 'events-toolbar', style: {
+				display: 'flex',
+				flexWrap: 'wrap',
+				gap: '12px',
+				alignItems: 'center',
+				padding: '12px 16px',
+				background: '#f6f7f7',
+				borderRadius: '6px',
+				marginBottom: '20px',
+			}},
+				// View switcher
+				el('div', { style: { display: 'flex', gap: '4px' } },
+					el(Button, {
+						isSmall: true,
+						variant: view === 'list' ? 'primary' : 'secondary',
+						onClick: () => setView('list'),
+					}, 'List'),
+					el(Button, {
+						isSmall: true,
+						variant: view === 'calendar' ? 'primary' : 'secondary',
+						onClick: () => setView('calendar'),
+					}, 'Calendar')
+				),
+
+				// Calendar navigation (only for calendar view)
+				view === 'calendar' && el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+					el(Button, { isSmall: true, onClick: prevMonth }, '←'),
+					el('span', { style: { fontWeight: '500', minWidth: '150px', textAlign: 'center' } }, monthName),
+					el(Button, { isSmall: true, onClick: nextMonth }, '→'),
+					el(Button, { isSmall: true, variant: 'tertiary', onClick: goToday }, 'Today')
+				),
+
+				// Filters
+				el(SelectControl, {
+					value: filter,
+					options: filterOptions,
+					onChange: setFilter,
+					__nextHasNoMarginBottom: true,
+				}),
+				el(SelectControl, {
+					value: churchFilter,
+					options: churchOptions,
+					onChange: v => setChurchFilter(parseInt(v, 10)),
+					__nextHasNoMarginBottom: true,
+				}),
+				el(SelectControl, {
+					value: sacramentFilter,
+					options: sacramentOptions,
+					onChange: v => setSacramentFilter(parseInt(v, 10)),
+					__nextHasNoMarginBottom: true,
+				}),
+				el(ToggleControl, {
+					label: 'Cemetery',
+					checked: cemeteryFilter,
+					onChange: setCemeteryFilter,
+					__nextHasNoMarginBottom: true,
+				}),
+				el(TextControl, {
+					value: search,
+					onChange: setSearch,
+					placeholder: 'Search...',
+					__nextHasNoMarginBottom: true,
+					style: { maxWidth: '180px' },
+				}),
+
+				// Spacer
+				el('div', { style: { flex: 1 } }),
+
+				// Actions
+				filter === 'past' && events.length > 0 && el(Button, {
+					isDestructive: true,
+					isSmall: true,
+					onClick: deleteAllPast,
+				}, 'Delete All Past'),
+				el(Button, {
+					variant: 'primary',
+					onClick: handleAdd,
+				}, '+ Add Event')
+			),
+
+			// Content
+			loading
+				? el(LoadingSpinner, { text: 'Loading events...' })
+				: view === 'calendar'
+				? el(CalendarView, {
+					events: filteredEvents,
+					year: monthYear.year,
+					month: monthYear.month,
+					onDateClick: handleDateClick,
+					onEventClick: handleEventClick,
+				})
+				: el(ListView, {
+					events: filteredEvents,
+					onEdit: handleEventClick,
+					onDelete: deleteEvent,
+					deleting,
+				}),
+
+			// Footer
+			!loading && el('p', { style: { marginTop: '16px', color: '#666', fontSize: '13px' } },
+				'Showing ' + filteredEvents.length + ' event' + (filteredEvents.length !== 1 ? 's' : '') + '.'
+			),
+
+			// Event Modal
+			editing && el(EventModal, {
+				event: editing,
+				churches: churches,
+				cemeteries: cemeteries,
+				taxonomies: taxonomies,
+				isNew: isNew,
+				onSave: handleSaveEvent,
+				onClose: () => setEditing(null),
+				onDelete: (id) => deleteEvent(id, true),
+				onRefreshTaxonomies: loadTaxonomies,
+			})
 		);
 	}
 

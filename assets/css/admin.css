@@ -790,6 +790,56 @@
 	align-items: center;
 }
 
+.endpoints-header-5col,
+.endpoint-row-5col {
+	grid-template-columns: 1.5fr 1.2fr 1fr 1fr 80px;
+}
+
+.ep-schedule {
+	min-width: 0;
+}
+
+.ep-schedule .components-base-control {
+	margin-bottom: 0;
+}
+
+.ep-schedule .components-select-control__input {
+	min-height: 32px;
+	font-size: 12px;
+}
+
+.no-key-badge {
+	display: inline-block;
+	font-size: 10px;
+	background: #d4edda;
+	color: #155724;
+	padding: 2px 6px;
+	border-radius: 3px;
+	margin-left: 6px;
+	font-weight: normal;
+}
+
+.computed-item {
+	padding: 8px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.computed-item:last-child {
+	border-bottom: none;
+}
+
+.computed-item code {
+	background: #f0f0f1;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-size: 12px;
+}
+
+.computed-item span {
+	color: #666;
+	font-size: 13px;
+}
+
 .endpoints-header {
 	background: #f6f7f7;
 	font-weight: 600;
@@ -3151,4 +3201,257 @@
 
 .mass-time-modal .exception-list {
 	margin-bottom: 12px;
+}
+
+/* ==========================================================================
+   READINGS API - SCHEDULE CONFIGURATION
+   ========================================================================== */
+.schedule-config {
+	margin-top: 12px;
+}
+
+.schedule-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.schedule-row {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+	gap: 16px;
+	align-items: start;
+	padding: 16px;
+	background: #f9f9f9;
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+}
+
+.schedule-endpoint {
+	padding-top: 6px;
+}
+
+.schedule-endpoint strong {
+	font-size: 14px;
+	color: #1d2327;
+}
+
+.schedule-controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	align-items: flex-start;
+}
+
+.schedule-controls .components-select-control {
+	min-width: 160px;
+}
+
+.schedule-controls .components-text-control {
+	min-width: 120px;
+}
+
+.schedule-controls .components-base-control {
+	margin-bottom: 0;
+}
+
+.schedule-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+}
+
+@media (max-width: 782px) {
+	.schedule-row {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	.schedule-controls {
+		flex-direction: column;
+	}
+
+	.schedule-controls .components-select-control,
+	.schedule-controls .components-text-control {
+		width: 100%;
+	}
+}
+
+/* ==========================================================================
+   READINGS API - CARD LAYOUT
+   ========================================================================== */
+.readings-endpoint-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 16px;
+}
+
+.readings-endpoint-card {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden;
+	transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.readings-endpoint-card:hover {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.readings-endpoint-card.disabled {
+	opacity: 0.7;
+	background: #f9f9f9;
+}
+
+.endpoint-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	background: #f6f7f7;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.endpoint-card-status {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.endpoint-card-status strong {
+	font-size: 14px;
+	color: #1d2327;
+}
+
+.status-dot {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.status-dot.active {
+	background-color: #00a32a;
+}
+
+.status-dot.inactive {
+	background-color: #d63638;
+}
+
+.free-badge {
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 500;
+	background: #d4edda;
+	color: #155724;
+	padding: 2px 8px;
+	border-radius: 10px;
+}
+
+.endpoint-card-body {
+	padding: 16px;
+}
+
+.endpoint-card-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.endpoint-card-row:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.endpoint-label {
+	font-size: 12px;
+	color: #666;
+	font-weight: 500;
+	text-transform: uppercase;
+}
+
+.endpoint-shortcode {
+	font-size: 12px;
+	background: #f0f0f1;
+	padding: 4px 10px;
+	border-radius: 4px;
+	font-family: monospace;
+}
+
+.endpoint-schedule-select {
+	min-width: 140px;
+}
+
+.endpoint-schedule-select .components-base-control {
+	margin-bottom: 0;
+}
+
+.endpoint-schedule-select .components-select-control__input {
+	min-height: 32px;
+	font-size: 13px;
+}
+
+.endpoint-date {
+	font-size: 13px;
+	color: #666;
+}
+
+.computed-shortcodes-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 12px;
+}
+
+.computed-shortcode-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	background: #f9f9f9;
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+}
+
+.computed-shortcode-item code {
+	font-size: 12px;
+	background: #fff;
+	padding: 4px 10px;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+}
+
+.computed-shortcode-item span {
+	font-size: 13px;
+	color: #666;
+}
+
+@media (max-width: 782px) {
+	.readings-endpoint-cards {
+		grid-template-columns: 1fr;
+	}
+
+	.endpoint-card-header {
+		flex-direction: column;
+		gap: 12px;
+		align-items: flex-start;
+	}
+
+	.endpoint-card-row {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+
+	.endpoint-schedule-select {
+		width: 100%;
+	}
+
+	.computed-shortcodes-list {
+		grid-template-columns: 1fr;
+	}
 }

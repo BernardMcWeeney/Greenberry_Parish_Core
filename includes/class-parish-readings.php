@@ -277,6 +277,7 @@ class Parish_Readings {
 
 	/**
 	 * Register shortcodes for all endpoints.
+	 * Note: [rosary_today] and [rosary_full] are registered by Parish_Rosary_Shortcodes class.
 	 */
 	public function register_shortcodes(): void {
 		// Register API-based shortcodes.
@@ -285,10 +286,17 @@ class Parish_Readings {
 		}
 
 		// Register additional rosary shortcodes.
-		add_shortcode( 'rosary_today', array( $this, 'render_rosary_today' ) );
-		add_shortcode( 'rosary_week', array( $this, 'render_rosary_week' ) );
-		add_shortcode( 'rosary_series', array( $this, 'render_rosary_series' ) );
-		add_shortcode( 'rosary_mysteries', array( $this, 'render_rosary_mysteries' ) );
+		// Note: [rosary_today] is handled by Parish_Rosary_Shortcodes (uses dedicated data/schedule classes).
+		// Only register these supplementary rosary shortcodes if not already registered.
+		if ( ! shortcode_exists( 'rosary_week' ) ) {
+			add_shortcode( 'rosary_week', array( $this, 'render_rosary_week' ) );
+		}
+		if ( ! shortcode_exists( 'rosary_series' ) ) {
+			add_shortcode( 'rosary_series', array( $this, 'render_rosary_series' ) );
+		}
+		if ( ! shortcode_exists( 'rosary_mysteries' ) ) {
+			add_shortcode( 'rosary_mysteries', array( $this, 'render_rosary_mysteries' ) );
+		}
 	}
 
 	/**
@@ -299,32 +307,78 @@ class Parish_Readings {
 		// Get per-endpoint schedules from settings.
 		$schedules = json_decode( Parish_Core::get_setting( 'readings_schedules', '{}' ), true ) ?: array();
 
-		// Schedule each endpoint with its specific configuration.
+		// Always register action callbacks (they don't persist between requests).
+		$this->register_endpoint_actions( $schedules );
+
+		// Create a hash of current schedule configuration to detect changes.
+		$current_config_hash = md5( wp_json_encode( $schedules ) );
+		$stored_config_hash  = get_option( 'parish_readings_schedule_hash', '' );
+
+		// Only reschedule cron events if configuration has changed.
+		if ( $current_config_hash !== $stored_config_hash ) {
+			// Schedule each endpoint with its specific configuration.
+			foreach ( array_keys( $this->endpoints ) as $endpoint ) {
+				$schedule_config = $schedules[ $endpoint ] ?? array(
+					'schedule' => 'daily_once',
+					'time'     => '05:00',
+				);
+
+				$this->schedule_endpoint( $endpoint, $schedule_config );
+			}
+
+			// Update stored hash.
+			update_option( 'parish_readings_schedule_hash', $current_config_hash );
+		}
+
+		// Schedule the legacy global cron hook for fetch_all_readings() - only if not already scheduled.
+		$hook = 'parish_fetch_readings_cron';
+		if ( ! wp_next_scheduled( $hook ) ) {
+			$timezone  = wp_timezone();
+			$now       = new DateTime( 'now', $timezone );
+			$next_run  = new DateTime( 'tomorrow 05:00:00', $timezone );
+			$today_5am = new DateTime( 'today 05:00:00', $timezone );
+			if ( $now < $today_5am ) {
+				$next_run = $today_5am;
+			}
+
+			wp_schedule_event( $next_run->getTimestamp(), 'daily', $hook );
+		}
+	}
+
+	/**
+	 * Register action callbacks for all endpoint cron hooks.
+	 * This must run on every request as callbacks don't persist.
+	 *
+	 * @param array $schedules Per-endpoint schedule configuration.
+	 */
+	private function register_endpoint_actions( array $schedules ): void {
 		foreach ( array_keys( $this->endpoints ) as $endpoint ) {
-			$schedule_config = $schedules[ $endpoint ] ?? array(
-				'schedule' => 'daily_once',
-				'time'     => '05:00',
-			);
+			$schedule_config = $schedules[ $endpoint ] ?? array( 'schedule' => 'daily_once' );
+			$schedule_type   = $schedule_config['schedule'] ?? 'daily_once';
+			$hook            = "parish_fetch_{$endpoint}";
 
-			$this->schedule_endpoint( $endpoint, $schedule_config );
+			if ( 'daily_twice' === $schedule_type ) {
+				// Register actions for each time slot.
+				$times = $schedule_config['times'] ?? array( '05:00', '17:00' );
+				foreach ( array_keys( $times ) as $idx ) {
+					$hook_with_idx = $hook . '_' . $idx;
+					add_action(
+						$hook_with_idx,
+						function () use ( $endpoint ) {
+							$this->fetch_endpoint( $endpoint );
+						}
+					);
+				}
+			} else {
+				// Single action for other schedule types.
+				add_action(
+					$hook,
+					function () use ( $endpoint ) {
+						$this->fetch_endpoint( $endpoint );
+					}
+				);
+			}
 		}
-
-		// Also keep the legacy global cron hook for fetch_all_readings().
-		$hook      = 'parish_fetch_readings_cron';
-		$timestamp = wp_next_scheduled( $hook );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, $hook );
-		}
-
-		$timezone  = wp_timezone();
-		$now       = new DateTime( 'now', $timezone );
-		$next_run  = new DateTime( 'tomorrow 05:00:00', $timezone );
-		$today_5am = new DateTime( 'today 05:00:00', $timezone );
-		if ( $now < $today_5am ) {
-			$next_run = $today_5am;
-		}
-
-		wp_schedule_event( $next_run->getTimestamp(), 'daily', $hook );
 	}
 
 	/**
@@ -349,6 +403,7 @@ class Parish_Readings {
 
 	/**
 	 * Schedule a single endpoint with its specific schedule configuration.
+	 * Note: Action callbacks are registered separately in register_endpoint_actions().
 	 *
 	 * @param string $endpoint Endpoint key.
 	 * @param array  $config   Schedule configuration.
@@ -373,15 +428,9 @@ class Parish_Readings {
 				$times = $config['times'] ?? array( '05:00', '17:00' );
 				foreach ( $times as $idx => $time ) {
 					$hook_with_idx = $hook . '_' . $idx;
-					$next_run      = $this->calculate_next_daily_run( $time, $timezone );
+					wp_clear_scheduled_hook( $hook_with_idx );
+					$next_run = $this->calculate_next_daily_run( $time, $timezone );
 					wp_schedule_event( $next_run->getTimestamp(), 'twicedaily', $hook_with_idx );
-					// Register action for each time.
-					add_action(
-						$hook_with_idx,
-						function () use ( $endpoint ) {
-							$this->fetch_endpoint( $endpoint );
-						}
-					);
 				}
 				break;
 
@@ -391,16 +440,6 @@ class Parish_Readings {
 				$next_run = $this->calculate_next_daily_run( $start, $timezone );
 				wp_schedule_event( $next_run->getTimestamp(), $schedule_type, $hook );
 				break;
-		}
-
-		// Register action for this endpoint (for daily_once and interval schedules).
-		if ( 'daily_twice' !== $schedule_type ) {
-			add_action(
-				$hook,
-				function () use ( $endpoint ) {
-					$this->fetch_endpoint( $endpoint );
-				}
-			);
 		}
 	}
 

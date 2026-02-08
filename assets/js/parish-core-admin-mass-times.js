@@ -326,8 +326,33 @@
 	 * Recurrence Builder Component
 	 */
 	function RecurrenceBuilder({ recurrence, onChange }) {
-		const rec = recurrence || { type: 'weekly', days: [] };
-		const updateField = (field, value) => onChange({ ...rec, [field]: value });
+		// Ensure rec always has proper structure with days as array
+		const rec = useMemo(() => {
+			const base = {
+				type: 'weekly',
+				days: [],
+				day_of_month: null,
+				ordinal: 'first',
+				ordinal_day: 'Friday',
+				month: 1,
+				end_date: '',
+			};
+			if (recurrence && typeof recurrence === 'object') {
+				return {
+					...base,
+					...recurrence,
+					// Ensure days is always an array with valid values
+					days: Array.isArray(recurrence.days)
+						? recurrence.days.filter(d => d && typeof d === 'string' && d.trim() !== '')
+						: [],
+				};
+			}
+			return base;
+		}, [recurrence]);
+
+		const updateField = useCallback((field, value) => {
+			onChange({ ...rec, [field]: value });
+		}, [rec, onChange]);
 
 		const recurrenceTypes = [
 			{ label: 'Daily', value: 'daily' },
@@ -551,13 +576,52 @@
 	}
 
 	/**
+	 * Helper function to ensure recurrence object has proper structure
+	 */
+	function normalizeRecurrence(recurrence, isRecurring) {
+		if (recurrence && typeof recurrence === 'object') {
+			return {
+				type: recurrence.type || 'weekly',
+				days: Array.isArray(recurrence.days) ? [...recurrence.days] : [],
+				day_of_month: recurrence.day_of_month || null,
+				ordinal: recurrence.ordinal || 'first',
+				ordinal_day: recurrence.ordinal_day || 'Friday',
+				month: recurrence.month || 1,
+				end_date: recurrence.end_date || '',
+			};
+		}
+		if (isRecurring) {
+			return { type: 'weekly', days: [] };
+		}
+		return null;
+	}
+
+	/**
+	 * Helper function to normalize mass time data for form state
+	 */
+	function normalizeMassTimeForForm(massTime) {
+		const mt = { ...massTime };
+		mt.recurrence = normalizeRecurrence(mt.recurrence, mt.is_recurring);
+		return mt;
+	}
+
+	/**
 	 * Mass Time Form Modal
 	 */
 	function MassTimeModal({ massTime, churches, eventTypes, isNew, onSave, onDelete, onDeleteSingle, onClose }) {
-		const [form, setForm] = useState(massTime);
+		// Initialize form with proper recurrence structure
+		const [form, setForm] = useState(() => normalizeMassTimeForForm(massTime));
 		const [saving, setSaving] = useState(false);
 		const [activeTab, setActiveTab] = useState('basic');
 		const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+		// Sync form state when massTime prop changes (in case modal doesn't remount)
+		useEffect(() => {
+			setForm(normalizeMassTimeForForm(massTime));
+			setSaving(false);
+			setActiveTab('basic');
+			setShowDeleteConfirm(false);
+		}, [massTime]);
 
 		const upd = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -681,7 +745,39 @@
 						el(ToggleControl, {
 							label: 'Recurring',
 							checked: form.is_recurring || false,
-							onChange: v => upd('is_recurring', v),
+							onChange: v => {
+								// When toggling recurring on, ensure recurrence object exists with proper structure
+								if (v) {
+									const currentRec = form.recurrence || {};
+									let days = Array.isArray(currentRec.days) ? currentRec.days : [];
+
+									// If no days selected yet and we have a start date, pre-select that day
+									if (days.length === 0 && form.start_datetime) {
+										const startDate = new Date(form.start_datetime + ':00');
+										if (!isNaN(startDate.getTime())) {
+											const dayName = WEEKDAYS[startDate.getDay()];
+											days = [dayName];
+										}
+									}
+
+									const newRecurrence = {
+										type: currentRec.type || 'weekly',
+										days: days,
+										day_of_month: currentRec.day_of_month || null,
+										ordinal: currentRec.ordinal || 'first',
+										ordinal_day: currentRec.ordinal_day || 'Friday',
+										month: currentRec.month || 1,
+										end_date: currentRec.end_date || '',
+									};
+									setForm(prev => ({
+										...prev,
+										is_recurring: true,
+										recurrence: newRecurrence,
+									}));
+								} else {
+									upd('is_recurring', false);
+								}
+							},
 						}),
 						form.is_recurring && el(Fragment, null,
 							el(RecurrenceBuilder, {
@@ -771,11 +867,107 @@
 	}
 
 	/**
+	 * Series List Component - for easy management of all mass time series
+	 */
+	function SeriesList({ massTimePosts, churches, eventTypes, onEdit, onDelete, onRefresh }) {
+		const [deleting, setDeleting] = useState(null);
+
+		const handleDelete = (id) => {
+			if (!confirm('Are you sure you want to delete this Mass Time series?')) {
+				return;
+			}
+			setDeleting(id);
+			apiFetch({ path: `/parish/v1/mass-times/${id}`, method: 'DELETE' })
+				.then(() => {
+					setDeleting(null);
+					onRefresh();
+				})
+				.catch(err => {
+					alert(err.message || 'Failed to delete');
+					setDeleting(null);
+				});
+		};
+
+		const getRecurrenceText = (post) => {
+			if (!post.is_recurring) return 'Single';
+			const rec = post.recurrence || {};
+			switch (rec.type) {
+				case 'daily': return 'Daily';
+				case 'weekly': return 'Weekly: ' + (rec.days || []).join(', ');
+				case 'biweekly': return 'Every 2 weeks: ' + (rec.days || []).join(', ');
+				case 'monthly_day': return 'Monthly on day ' + (rec.day_of_month || '?');
+				case 'monthly_ordinal': return `${rec.ordinal || 'First'} ${rec.ordinal_day || 'Friday'} of month`;
+				case 'yearly': return 'Yearly';
+				default: return rec.type || 'Unknown';
+			}
+		};
+
+		return el('div', { className: 'series-list' },
+			el('table', { className: 'widefat striped' },
+				el('thead', null,
+					el('tr', null,
+						el('th', null, 'Title'),
+						el('th', { style: { width: '100px' } }, 'Type'),
+						el('th', { style: { width: '80px' } }, 'Time'),
+						el('th', { style: { width: '140px' } }, 'Church'),
+						el('th', { style: { width: '180px' } }, 'Recurrence'),
+						el('th', { style: { width: '70px' } }, 'Active'),
+						el('th', { style: { width: '100px' } }, 'Actions')
+					)
+				),
+				el('tbody', null,
+					massTimePosts.length === 0
+						? el('tr', null, el('td', { colSpan: 7, style: { textAlign: 'center', padding: '20px' } }, 'No Mass Times configured'))
+						: massTimePosts.map(post => {
+							const time = (post.start_datetime || '').split('T')[1] || '';
+							return el('tr', { key: post.id },
+								el('td', null,
+									el('a', {
+										href: '#',
+										onClick: (e) => { e.preventDefault(); onEdit(post); },
+										style: { fontWeight: 500 },
+									}, post.title || '(No title)')
+								),
+								el('td', null, eventTypes[post.liturgical_type] || post.liturgical_type),
+								el('td', null, formatTime(time)),
+								el('td', null, post.church_name || 'All Churches'),
+								el('td', null, getRecurrenceText(post)),
+								el('td', null,
+									post.is_active
+										? el('span', { style: { color: '#00a32a' } }, '✓ Yes')
+										: el('span', { style: { color: '#d63638' } }, '✗ No')
+								),
+								el('td', null,
+									el(Flex, { gap: 1 },
+										el(Button, {
+											isSmall: true,
+											variant: 'secondary',
+											onClick: () => onEdit(post),
+										}, 'Edit'),
+										el(Button, {
+											isSmall: true,
+											isDestructive: true,
+											isBusy: deleting === post.id,
+											onClick: () => handleDelete(post.id),
+										}, 'Delete')
+									)
+								)
+							);
+						})
+				)
+			),
+			el('p', { style: { marginTop: '16px', color: '#666', fontSize: '13px' } },
+				massTimePosts.length + ' Mass Time series total'
+			)
+		);
+	}
+
+	/**
 	 * Main Mass Times Component
 	 */
 	function MassTimes() {
 		// State
-		const [view, setView] = useState('week'); // 'week' or 'month'
+		const [view, setView] = useState('week'); // 'week', 'month', or 'list'
 		const [occurrences, setOccurrences] = useState([]);
 		const [massTimePosts, setMassTimePosts] = useState([]);
 		const [churches, setChurches] = useState([]);
@@ -904,7 +1096,15 @@
 				is_active: true,
 				is_special_event: false,
 				is_recurring: false,
-				recurrence: { type: 'weekly', days: [] },
+				recurrence: {
+					type: 'weekly',
+					days: [],
+					day_of_month: null,
+					ordinal: 'first',
+					ordinal_day: 'Friday',
+					month: 1,
+					end_date: '',
+				},
 				exception_dates: [],
 				is_livestreamed: false,
 			});
@@ -914,53 +1114,69 @@
 			const post = massTimePosts.find(p => p.id === occ.post_id);
 			if (post) {
 				setIsNew(false);
-				setEditing(post);
+				// Normalize the post data to ensure recurrence structure is correct
+				const normalizedPost = {
+					...post,
+					recurrence: normalizeRecurrence(post.recurrence, post.is_recurring),
+				};
+				setEditing(normalizedPost);
 				setEditingOccurrenceDate(occ.date); // Track which occurrence date we clicked on
 			} else {
 				setNotice({ type: 'error', message: 'Could not find the Mass Time post. Try refreshing the page.' });
 			}
 		};
 
-		const handleSave = (data) => {
+		const handleSave = async (data) => {
 			const method = isNew ? 'POST' : 'PUT';
 			const path = isNew ? '/parish/v1/mass-times' : `/parish/v1/mass-times/${data.id}`;
 
-			apiFetch({ path, method, data })
-				.then(() => {
-					setEditing(null);
-					setEditingOccurrenceDate(null);
-					setNotice({
-						type: 'success',
-						message: isNew ? 'Mass Time created!' : 'Mass Time updated!',
-					});
-					// Small delay to ensure server cache is cleared before refetching
-					setTimeout(() => loadData(), 200);
-				})
-				.catch(err => {
-					setNotice({ type: 'error', message: err.message });
+			// Prepare data for API - ensure recurrence structure is correct
+			const preparedData = { ...data };
+			if (preparedData.is_recurring && preparedData.recurrence) {
+				// Ensure days array is properly formatted with valid string values only
+				preparedData.recurrence = {
+					...preparedData.recurrence,
+					days: Array.isArray(preparedData.recurrence.days)
+						? preparedData.recurrence.days.filter(d => d && typeof d === 'string' && d.trim() !== '')
+						: [],
+				};
+			} else if (!preparedData.is_recurring) {
+				// If not recurring, still send recurrence object with empty structure
+				preparedData.recurrence = { type: 'weekly', days: [] };
+			}
+
+			try {
+				await apiFetch({ path, method, data: preparedData });
+				setEditing(null);
+				setEditingOccurrenceDate(null);
+				setNotice({
+					type: 'success',
+					message: isNew ? 'Mass Time created!' : 'Mass Time updated!',
 				});
+				loadData();
+			} catch (err) {
+				setNotice({ type: 'error', message: err.message });
+			}
 		};
 
-		const handleDelete = (id) => {
+		const handleDelete = async (id) => {
 			if (!id) {
 				setNotice({ type: 'error', message: 'Cannot delete: Invalid ID.' });
 				return;
 			}
-			apiFetch({ path: `/parish/v1/mass-times/${id}`, method: 'DELETE' })
-				.then(() => {
-					setEditing(null);
-					setEditingOccurrenceDate(null);
-					setNotice({ type: 'success', message: 'Mass Time deleted.' });
-					// Small delay to ensure server cache is cleared before refetching
-					setTimeout(() => loadData(), 200);
-				})
-				.catch(err => {
-					setNotice({ type: 'error', message: err.message });
-				});
+			try {
+				await apiFetch({ path: `/parish/v1/mass-times/${id}`, method: 'DELETE' });
+				setEditing(null);
+				setEditingOccurrenceDate(null);
+				setNotice({ type: 'success', message: 'Mass Time deleted.' });
+				loadData();
+			} catch (err) {
+				setNotice({ type: 'error', message: err.message });
+			}
 		};
 
 		// Delete single occurrence by adding an exception date
-		const handleDeleteSingle = (id, occurrenceDate) => {
+		const handleDeleteSingle = async (id, occurrenceDate) => {
 			if (!id) {
 				setNotice({ type: 'error', message: 'Cannot delete occurrence: Invalid ID.' });
 				return;
@@ -987,21 +1203,19 @@
 
 			const updatedExceptions = [...currentExceptions, dateToExclude];
 
-			apiFetch({
-				path: `/parish/v1/mass-times/${id}`,
-				method: 'PUT',
-				data: { ...post, exception_dates: updatedExceptions },
-			})
-				.then(() => {
-					setEditing(null);
-					setEditingOccurrenceDate(null);
-					setNotice({ type: 'success', message: `Occurrence on ${dateToExclude} has been removed from the series.` });
-					// Small delay to ensure server cache is cleared before refetching
-					setTimeout(() => loadData(), 200);
-				})
-				.catch(err => {
-					setNotice({ type: 'error', message: err.message });
+			try {
+				await apiFetch({
+					path: `/parish/v1/mass-times/${id}`,
+					method: 'PUT',
+					data: { ...post, exception_dates: updatedExceptions },
 				});
+				setEditing(null);
+				setEditingOccurrenceDate(null);
+				setNotice({ type: 'success', message: `Occurrence on ${dateToExclude} has been removed from the series.` });
+				loadData();
+			} catch (err) {
+				setNotice({ type: 'error', message: err.message });
+			}
 		};
 
 		// Options
@@ -1029,10 +1243,7 @@
 			// Header
 			el('div', { className: 'page-header' },
 				el('div', null,
-					el('h2', { style: { margin: 0 } }, 'Mass Times'),
-					el('p', { style: { margin: '4px 0 0', color: '#666' } },
-						`Configure the weekly mass and service schedule. Use [parish_today_widget] for today's times or [parish_church_schedule] for weekly schedules.`
-					)
+					el('h2', { style: { margin: 0 } }, 'Mass Times')
 				),
 				el('div', { style: { fontSize: '13px', color: '#2271b1' } },
 					`${churches.length} church${churches.length !== 1 ? 'es' : ''} available`
@@ -1050,7 +1261,7 @@
 				borderRadius: '6px',
 				marginBottom: '20px',
 			}},
-				// View switcher
+				// View switcher (only 7-Day and All Series views)
 				el('div', { className: 'view-switcher', style: { display: 'flex', gap: '4px' } },
 					el(Button, {
 						isSmall: true,
@@ -1059,21 +1270,14 @@
 					}, '7-Day'),
 					el(Button, {
 						isSmall: true,
-						variant: view === 'month' ? 'primary' : 'secondary',
-						onClick: () => setView('month'),
-					}, 'Month')
+						variant: view === 'list' ? 'primary' : 'secondary',
+						onClick: () => setView('list'),
+					}, 'All Series')
 				),
 
-				// Navigation
-				el('div', { className: 'nav-controls', style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-					el(Button, { isSmall: true, onClick: view === 'week' ? prevWeek : prevMonth }, '←'),
-					el('span', { style: { fontWeight: '500', minWidth: '200px', textAlign: 'center' } },
-						view === 'week'
-							? `${formatDateShort(weekStart)} — ${formatDateShort(weekEndDate)}`
-							: monthName
-					),
-					el(Button, { isSmall: true, onClick: view === 'week' ? nextWeek : nextMonth }, '→'),
-					el(Button, { isSmall: true, variant: 'tertiary', onClick: goToday }, 'Today')
+				// Date range display (no navigation - static 7 days from today)
+				view === 'week' && el('span', { style: { fontWeight: '500', color: '#666' } },
+					`${formatDateShort(weekStart)} — ${formatDateShort(weekEndDate)}`
 				),
 
 				// Spacer
@@ -1108,23 +1312,33 @@
 				}, '+ Add Mass Time')
 			),
 
-			// View
+			// View (7-Day or All Series list)
 			view === 'week'
 				? el(SevenDayGrid, {
 					days: occurrences,
 					onAddClick: handleAdd,
 					onOccurrenceClick: handleEdit,
 				})
-				: el(MonthlyCalendarView, {
-					year: monthYear.year,
-					month: monthYear.month,
-					occurrencesByDate,
-					onDateClick: handleAdd,
-					onOccurrenceClick: handleEdit,
+				: el(SeriesList, {
+					massTimePosts: massTimePosts,
+					churches: churches,
+					eventTypes: eventTypes,
+					onEdit: (post) => {
+						setIsNew(false);
+						// Normalize the post data to ensure recurrence structure is correct
+						const normalizedPost = {
+							...post,
+							recurrence: normalizeRecurrence(post.recurrence, post.is_recurring),
+						};
+						setEditing(normalizedPost);
+					},
+					onDelete: handleDelete,
+					onRefresh: loadData,
 				}),
 
-			// Modal
+			// Modal - use key to force remount when editing different items
 			editing && el(MassTimeModal, {
+				key: isNew ? 'new-mass-time' : `edit-mass-time-${editing.id}`,
 				massTime: editing,
 				churches,
 				eventTypes,

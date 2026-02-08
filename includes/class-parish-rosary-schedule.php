@@ -159,4 +159,33 @@ class Parish_Rosary_Schedule {
 
 		return self::STANDARD_SCHEDULE[ $day_of_week ] ?? 'joyful';
 	}
+
+	/**
+	 * Get mystery set for a specific day of week (for testing/preview).
+	 *
+	 * @param string $day Day name (mon, tue, wed, thu, fri, sat, sun or full names).
+	 * @return string The mystery set key.
+	 */
+	public static function get_mystery_set_for_day( string $day ): string {
+		// Normalize day name.
+		$day_map = array(
+			'mon' => 'monday',
+			'tue' => 'tuesday',
+			'wed' => 'wednesday',
+			'thu' => 'thursday',
+			'fri' => 'friday',
+			'sat' => 'saturday',
+			'sun' => 'sunday',
+		);
+
+		$day = strtolower( $day );
+		$day = $day_map[ $day ] ?? $day;
+
+		// Check if Sunday and currently in Lent.
+		if ( 'sunday' === $day && self::is_lent() ) {
+			return 'sorrowful';
+		}
+
+		return self::STANDARD_SCHEDULE[ $day ] ?? 'joyful';
+	}
 }

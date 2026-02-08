@@ -35,7 +35,7 @@ class Parish_Rosary_Blocks {
 					),
 					'showSeason' => array(
 						'type'    => 'boolean',
-						'default' => true,
+						'default' => false,
 					),
 				),
 				'supports'        => array(

@@ -78,8 +78,9 @@ return array(
 
 		// Recurrence rules (JSON object)
 		'mass_time_recurrence'       => array(
-			'type'         => 'object',
-			'show_in_rest' => array(
+			'type'              => 'object',
+			'sanitize_callback' => 'parish_sanitize_recurrence',
+			'show_in_rest'      => array(
 				'schema' => array(
 					'type'       => 'object',
 					'properties' => array(
@@ -110,21 +111,22 @@ return array(
 					),
 				),
 			),
-			'default'      => array(),
-			'label'        => __( 'Recurrence Rules', 'parish-core' ),
+			'default'           => array( 'type' => 'weekly', 'days' => array() ),
+			'label'             => __( 'Recurrence Rules', 'parish-core' ),
 		),
 
 		// Exception dates (dates to skip)
 		'mass_time_exception_dates'  => array(
-			'type'         => 'array',
-			'show_in_rest' => array(
+			'type'              => 'array',
+			'sanitize_callback' => 'parish_sanitize_exception_dates',
+			'show_in_rest'      => array(
 				'schema' => array(
 					'type'  => 'array',
 					'items' => array( 'type' => 'string' ),
 				),
 			),
-			'default'      => array(),
-			'label'        => __( 'Exception Dates', 'parish-core' ),
+			'default'           => array(),
+			'label'             => __( 'Exception Dates', 'parish-core' ),
 		),
 
 		// Livestream enabled
@@ -141,7 +143,7 @@ return array(
 			'type'              => 'string',
 			'sanitize_callback' => 'esc_url_raw',
 			'show_in_rest'      => true,
-			'default'           => '',
+			'default'           => 'https://bohermeenparish.ie/online-live-mass/',
 			'label'             => __( 'Livestream URL', 'parish-core' ),
 		),
 

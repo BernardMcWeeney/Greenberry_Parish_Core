@@ -3,7 +3,7 @@
  * Plugin Name: Parish Core
  * Plugin URI: https://github.com/greenberry/parish-core
  * Description: A comprehensive parish management system for Catholic parishes.
- * Version: 5.2.0
+ * Version: 8.0.0
  * Author: Greenberry
  * Author URI: https://greenberry.ie
  * License: GPL v2 or later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PARISH_CORE_VERSION', '4.5.0' );
+define( 'PARISH_CORE_VERSION', '7.12.0' );
 define( 'PARISH_CORE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PARISH_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'PARISH_CORE_BASENAME', plugin_basename( __FILE__ ) );
@@ -204,6 +204,117 @@ function parish_sanitize_embed_html( string $html ): string {
 }
 
 /**
+ * Valid weekday names for recurrence.
+ */
+define( 'PARISH_VALID_WEEKDAYS', array( 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ) );
+
+/**
+ * Sanitize recurrence object for mass times.
+ *
+ * @param mixed $value The recurrence value to sanitize.
+ * @return array Sanitized recurrence array.
+ */
+function parish_sanitize_recurrence( $value ): array {
+	// Default structure
+	$default = array(
+		'type'         => 'weekly',
+		'days'         => array(),
+		'day_of_month' => null,
+		'ordinal'      => 'first',
+		'ordinal_day'  => 'Friday',
+		'month'        => 1,
+		'end_date'     => '',
+	);
+
+	// If not an array, return default
+	if ( ! is_array( $value ) ) {
+		return $default;
+	}
+
+	$sanitized = array();
+
+	// Sanitize type
+	$valid_types = array( 'daily', 'weekly', 'biweekly', 'monthly_day', 'monthly_ordinal', 'yearly' );
+	$sanitized['type'] = isset( $value['type'] ) && in_array( $value['type'], $valid_types, true )
+		? $value['type']
+		: 'weekly';
+
+	// Sanitize days array - CRITICAL: validate against actual weekday names
+	$sanitized['days'] = array();
+	if ( isset( $value['days'] ) && is_array( $value['days'] ) ) {
+		foreach ( $value['days'] as $day ) {
+			if ( is_string( $day ) ) {
+				// Normalize: trim and capitalize first letter
+				$normalized = ucfirst( strtolower( trim( $day ) ) );
+				// Only include if it's a valid weekday name
+				if ( in_array( $normalized, PARISH_VALID_WEEKDAYS, true ) ) {
+					$sanitized['days'][] = $normalized;
+				}
+			}
+		}
+		// Remove duplicates and re-index
+		$sanitized['days'] = array_values( array_unique( $sanitized['days'] ) );
+	}
+
+	// Sanitize day_of_month
+	$sanitized['day_of_month'] = isset( $value['day_of_month'] ) ? absint( $value['day_of_month'] ) : null;
+	if ( $sanitized['day_of_month'] < 1 || $sanitized['day_of_month'] > 31 ) {
+		$sanitized['day_of_month'] = null;
+	}
+
+	// Sanitize ordinal
+	$valid_ordinals = array( 'first', 'second', 'third', 'fourth', 'last' );
+	$sanitized['ordinal'] = isset( $value['ordinal'] ) && in_array( $value['ordinal'], $valid_ordinals, true )
+		? $value['ordinal']
+		: 'first';
+
+	// Sanitize ordinal_day
+	$sanitized['ordinal_day'] = isset( $value['ordinal_day'] ) ? ucfirst( strtolower( trim( $value['ordinal_day'] ) ) ) : 'Friday';
+	if ( ! in_array( $sanitized['ordinal_day'], PARISH_VALID_WEEKDAYS, true ) ) {
+		$sanitized['ordinal_day'] = 'Friday';
+	}
+
+	// Sanitize month
+	$sanitized['month'] = isset( $value['month'] ) ? absint( $value['month'] ) : 1;
+	if ( $sanitized['month'] < 1 || $sanitized['month'] > 12 ) {
+		$sanitized['month'] = 1;
+	}
+
+	// Sanitize end_date
+	$sanitized['end_date'] = '';
+	if ( isset( $value['end_date'] ) && is_string( $value['end_date'] ) && ! empty( $value['end_date'] ) ) {
+		// Validate date format Y-m-d
+		if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value['end_date'] ) ) {
+			$sanitized['end_date'] = sanitize_text_field( $value['end_date'] );
+		}
+	}
+
+	return $sanitized;
+}
+
+/**
+ * Sanitize exception dates array for mass times.
+ *
+ * @param mixed $value The exception dates value to sanitize.
+ * @return array Sanitized array of date strings.
+ */
+function parish_sanitize_exception_dates( $value ): array {
+	if ( ! is_array( $value ) ) {
+		return array();
+	}
+
+	$sanitized = array();
+	foreach ( $value as $date ) {
+		if ( is_string( $date ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			$sanitized[] = sanitize_text_field( $date );
+		}
+	}
+
+	// Remove duplicates and re-index
+	return array_values( array_unique( $sanitized ) );
+}
+
+/**
  * Schedule cleanup cron jobs for intentions and overrides.
  */
 function parish_core_schedule_cleanup_crons(): void {
@@ -261,6 +372,67 @@ function parish_core_cleanup_overrides(): void {
 }
 
 add_action( 'parish_cleanup_overrides', 'parish_core_cleanup_overrides' );
+
+/**
+ * Run database migrations on version upgrade.
+ */
+function parish_core_maybe_migrate(): void {
+	$db_version      = get_option( 'parish_core_db_version', '0' );
+	$current_version = PARISH_CORE_VERSION;
+
+	// Run migration 6.3.0: Update existing mass times with default livestream URL.
+	if ( version_compare( $db_version, '6.3.0', '<' ) ) {
+		parish_core_migrate_livestream_urls();
+	}
+
+	// Update version if changed.
+	if ( $db_version !== $current_version ) {
+		update_option( 'parish_core_db_version', $current_version );
+	}
+}
+
+add_action( 'admin_init', 'parish_core_maybe_migrate' );
+
+/**
+ * Migration: Update existing mass times with empty livestream URLs to use the default.
+ */
+function parish_core_migrate_livestream_urls(): void {
+	$default_url = Parish_Core::get_setting( 'default_livestream_url', 'https://bohermeenparish.ie/online-live-mass/' );
+
+	if ( empty( $default_url ) ) {
+		return;
+	}
+
+	$args = array(
+		'post_type'      => 'parish_mass_time',
+		'posts_per_page' => -1,
+		'post_status'    => 'any',
+		'meta_query'     => array(
+			'relation' => 'OR',
+			array(
+				'key'     => 'parish_mass_time_livestream_url',
+				'compare' => 'NOT EXISTS',
+			),
+			array(
+				'key'     => 'parish_mass_time_livestream_url',
+				'value'   => '',
+				'compare' => '=',
+			),
+		),
+		'fields'         => 'ids',
+	);
+
+	$mass_times = get_posts( $args );
+
+	foreach ( $mass_times as $mass_time_id ) {
+		update_post_meta( $mass_time_id, 'parish_mass_time_livestream_url', $default_url );
+	}
+
+	// Log migration.
+	if ( ! empty( $mass_times ) ) {
+		error_log( sprintf( 'Parish Core: Migrated %d mass times with default livestream URL.', count( $mass_times ) ) );
+	}
+}
 
 /**
  * Keep your existing default settings function unchanged
@@ -344,310 +516,516 @@ function parish_core_get_default_settings(): array {
 }
 
 /**
- * Get all available shortcodes with their documentation.
+ * Get all available shortcodes and blocks with their documentation.
  * This is used by the Shortcode Reference tab.
  */
 function parish_core_get_shortcode_reference(): array {
 	return array(
-		// Events
+		// =========================================================================
+		// PARISH CONTENT SHORTCODES
+		// =========================================================================
 		array(
 			'shortcode'   => '[parish_events]',
-			'name'        => __( 'Events', 'parish-core' ),
-			'description' => __( 'Display upcoming parish events', 'parish-core' ),
+			'name'        => __( 'Events List', 'parish-core' ),
+			'description' => __( 'Display upcoming parish events with filtering options', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
 				'limit' => __( 'Number of events to show (default: 10)', 'parish-core' ),
 				'type'  => __( 'Filter by type: "parish", "sacrament", "feast"', 'parish-core' ),
-				'month' => __( 'Filter by month (1-12)', 'parish-core' ),
-				'year'  => __( 'Filter by year (e.g., "2024")', 'parish-core' ),
-				'past'  => __( '"yes" to show past events', 'parish-core' ),
+				'month' => __( 'Filter by month number (1-12)', 'parish-core' ),
+				'year'  => __( 'Filter by year (e.g., "2026")', 'parish-core' ),
+				'past'  => __( '"yes" to show past events instead of upcoming', 'parish-core' ),
 			),
 			'example'     => '[parish_events limit="5" type="sacrament"]',
 			'feature'     => 'events',
 		),
-		// Reflection
 		array(
 			'shortcode'   => '[parish_reflection]',
 			'name'        => __( 'Latest Reflection', 'parish-core' ),
-			'description' => __( 'Display the most recent reflection', 'parish-core' ),
+			'description' => __( 'Display the most recent published reflection', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(),
 			'example'     => '[parish_reflection]',
 			'feature'     => 'reflections',
 		),
-		// Churches
 		array(
 			'shortcode'   => '[parish_churches]',
 			'name'        => __( 'Churches List', 'parish-core' ),
-			'description' => __( 'Display all parish churches', 'parish-core' ),
+			'description' => __( 'Display all parish churches with their addresses', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(),
 			'example'     => '[parish_churches]',
 			'feature'     => 'churches',
 		),
-		// Clergy
 		array(
 			'shortcode'   => '[parish_clergy]',
 			'name'        => __( 'Clergy & Staff', 'parish-core' ),
-			'description' => __( 'Display clergy and staff list', 'parish-core' ),
+			'description' => __( 'Display clergy and staff list from settings', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(),
 			'example'     => '[parish_clergy]',
 			'feature'     => null,
 		),
-		// Contact
 		array(
 			'shortcode'   => '[parish_contact]',
 			'name'        => __( 'Contact Information', 'parish-core' ),
-			'description' => __( 'Display parish contact details', 'parish-core' ),
+			'description' => __( 'Display parish contact details (address, phone, email, office hours)', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(),
 			'example'     => '[parish_contact]',
 			'feature'     => null,
 		),
-		// Prayers
 		array(
 			'shortcode'   => '[parish_prayers]',
 			'name'        => __( 'Prayer Directory', 'parish-core' ),
-			'description' => __( 'Display parish prayers', 'parish-core' ),
+			'description' => __( 'Display published prayers with titles and content', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
-				'limit'   => __( 'Number of prayers (-1 for all)', 'parish-core' ),
-				'orderby' => __( 'Order by: "title", "date", "rand"', 'parish-core' ),
+				'limit'   => __( 'Number of prayers to show (-1 for all)', 'parish-core' ),
+				'orderby' => __( 'Order by: "title", "date", or "rand"', 'parish-core' ),
 			),
-			'example'     => '[parish_prayers limit="5"]',
+			'example'     => '[parish_prayers limit="5" orderby="title"]',
 			'feature'     => 'prayers',
 		),
-		// Daily Readings
-		array(
-			'shortcode'   => '[daily_readings]',
-			'name'        => __( 'Daily Readings', 'parish-core' ),
-			'description' => __( 'Display today\'s mass readings', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[daily_readings]',
-			'feature'     => 'liturgical',
-		),
-		// Mass Reading Details
-		array(
-			'shortcode'   => '[mass_reading_details]',
-			'name'        => __( 'Mass Reading Details', 'parish-core' ),
-			'description' => __( 'Display detailed mass readings with structure', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[mass_reading_details]',
-			'feature'     => 'liturgical',
-		),
-		// Sunday Homily
-		array(
-			'shortcode'   => '[sunday_homily]',
-			'name'        => __( 'Sunday Homily', 'parish-core' ),
-			'description' => __( 'Display Sunday homily notes', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[sunday_homily]',
-			'feature'     => 'liturgical',
-		),
-		// Saint of the Day
-		array(
-			'shortcode'   => '[saint_of_the_day]',
-			'name'        => __( 'Saint of the Day', 'parish-core' ),
-			'description' => __( 'Display today\'s saint information', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[saint_of_the_day]',
-			'feature'     => 'liturgical',
-		),
-		// Next Sunday Reading
-		array(
-			'shortcode'   => '[next_sunday_reading]',
-			'name'        => __( 'Next Sunday Reading', 'parish-core' ),
-			'description' => __( 'Display next Sunday\'s readings', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[next_sunday_reading]',
-			'feature'     => 'liturgical',
-		),
-		// Next Sunday Reading Irish
-		array(
-			'shortcode'   => '[next_sunday_reading_irish]',
-			'name'        => __( 'Next Sunday Reading (Irish)', 'parish-core' ),
-			'description' => __( 'Display next Sunday\'s readings in Irish', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[next_sunday_reading_irish]',
-			'feature'     => 'liturgical',
-		),
-		// Daily Readings Irish
-		array(
-			'shortcode'   => '[daily_readings_irish]',
-			'name'        => __( 'Daily Readings (Irish)', 'parish-core' ),
-			'description' => __( 'Display today\'s readings in Irish', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[daily_readings_irish]',
-			'feature'     => 'liturgical',
-		),
-		// Feast Day Details
-		array(
-			'shortcode'   => '[feast_day_details]',
-			'name'        => __( 'Feast Day Details', 'parish-core' ),
-			'description' => __( 'Display today\'s liturgical feast with colored indicator', 'parish-core' ),
-			'attributes'  => array(),
-			'example'     => '[feast_day_details]',
-			'feature'     => 'liturgical',
-		),
-		// Liturgical Day
-		array(
-			'shortcode'   => '[liturgical_day]',
-			'name'        => __( 'Liturgical Day', 'parish-core' ),
-			'description' => __( 'Display liturgical information for today (season, cycles, rosary)', 'parish-core' ),
-			'attributes'  => array(
-				'link_rosary' => __( 'URL to rosary page for linking (e.g., "/rosary")', 'parish-core' ),
-			),
-			'example'     => '[liturgical_day link_rosary="/rosary"]',
-			'feature'     => 'liturgical',
-		),
-		// Liturgical Week
-		array(
-			'shortcode'   => '[liturgical_week]',
-			'name'        => __( 'Liturgical Week', 'parish-core' ),
-			'description' => __( 'Display liturgical information for the week with rosary schedule', 'parish-core' ),
-			'attributes'  => array(
-				'link_rosary' => __( 'URL to rosary page for linking', 'parish-core' ),
-			),
-			'example'     => '[liturgical_week link_rosary="/rosary"]',
-			'feature'     => 'liturgical',
-		),
-		// Rosary Days
-		array(
-			'shortcode'   => '[rosary_days]',
-			'name'        => __( 'Rosary Days', 'parish-core' ),
-			'description' => __( 'Display which days of the week each rosary series is prayed', 'parish-core' ),
-			'attributes'  => array(
-				'link_rosary' => __( 'URL to rosary page for linking', 'parish-core' ),
-			),
-			'example'     => '[rosary_days link_rosary="/rosary"]',
-			'feature'     => 'liturgical',
-		),
-		// Rosary Today
-		array(
-			'shortcode'   => '[rosary_today]',
-			'name'        => __( 'Today\'s Rosary', 'parish-core' ),
-			'description' => __( 'Display which rosary mysteries to pray today with optional link', 'parish-core' ),
-			'attributes'  => array(
-				'link'           => __( 'URL to rosary page (adds #joyful, #sorrowful, etc.)', 'parish-core' ),
-				'show_link'      => __( '"yes" or "no" to show/hide link (default: yes)', 'parish-core' ),
-				'format'         => __( '"full", "simple", or "link-only"', 'parish-core' ),
-				'show_mysteries' => __( '"yes" to list all 5 mysteries (default: no)', 'parish-core' ),
-			),
-			'example'     => '[rosary_today link="/rosary" format="full" show_mysteries="yes"]',
-			'feature'     => 'liturgical',
-		),
-		// Rosary Week
-		array(
-			'shortcode'   => '[rosary_week]',
-			'name'        => __( 'Weekly Rosary Schedule', 'parish-core' ),
-			'description' => __( 'Display rosary mysteries for each day of the week', 'parish-core' ),
-			'attributes'  => array(
-				'link'       => __( 'URL to rosary page for linking', 'parish-core' ),
-				'show_today' => __( '"yes" or "no" to highlight today (default: yes)', 'parish-core' ),
-				'format'     => __( '"table" or "list" (default: table)', 'parish-core' ),
-			),
-			'example'     => '[rosary_week link="/rosary" format="table"]',
-			'feature'     => 'liturgical',
-		),
-		// Rosary Series
-		array(
-			'shortcode'   => '[rosary_series]',
-			'name'        => __( 'Rosary Series Overview', 'parish-core' ),
-			'description' => __( 'Display all four rosary series with days prayed during current season', 'parish-core' ),
-			'attributes'  => array(
-				'link'   => __( 'URL to rosary page for linking', 'parish-core' ),
-				'series' => __( 'Specific series: "joyful", "sorrowful", "glorious", "luminous"', 'parish-core' ),
-			),
-			'example'     => '[rosary_series link="/rosary"]',
-			'feature'     => 'liturgical',
-		),
-		// Rosary Mysteries
-		array(
-			'shortcode'   => '[rosary_mysteries]',
-			'name'        => __( 'Rosary Mysteries List', 'parish-core' ),
-			'description' => __( 'Display the five mysteries of each rosary series (great for rosary pages)', 'parish-core' ),
-			'attributes'  => array(
-				'series' => __( 'Specific series or leave empty for all four', 'parish-core' ),
-			),
-			'example'     => '[rosary_mysteries series="joyful"]',
-			'feature'     => 'liturgical',
-		),
-		// Hero Slider
 		array(
 			'shortcode'   => '[parish_slider]',
 			'name'        => __( 'Hero Slider', 'parish-core' ),
 			'description' => __( 'Display the homepage hero slider with manual and dynamic slides', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
-				'class' => __( 'Additional CSS class for styling', 'parish-core' ),
+				'class' => __( 'Additional CSS class for custom styling', 'parish-core' ),
 			),
-			'example'     => '[parish_slider]',
+			'example'     => '[parish_slider class="my-custom-slider"]',
 			'feature'     => 'slider',
 		),
-		// Mass Times - Today Widget
+
+		// =========================================================================
+		// MASS TIMES & SCHEDULE SHORTCODES
+		// =========================================================================
 		array(
 			'shortcode'   => '[parish_today_widget]',
 			'name'        => __( 'Today\'s Schedule Widget', 'parish-core' ),
 			'description' => __( 'Compact widget showing Mass Times grouped by church for a single day', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
 				'date'       => __( 'Date in YYYY-MM-DD format (default: today)', 'parish-core' ),
 				'church_id'  => __( 'Filter by specific church ID', 'parish-core' ),
 				'type'       => __( 'Filter by type: "mass", "confession", "adoration", "rosary"', 'parish-core' ),
 				'show_notes' => __( '"yes" to show notes (default: no)', 'parish-core' ),
 			),
-			'example'     => '[parish_today_widget church_id="123" show_notes="yes"]',
+			'example'     => '[parish_today_widget type="mass" show_notes="yes"]',
 			'feature'     => 'mass_times',
 		),
-		// Mass Times - Church Schedule
 		array(
 			'shortcode'   => '[parish_church_schedule]',
 			'name'        => __( 'Church Weekly Schedule', 'parish-core' ),
-			'description' => __( 'Weekly schedule view for a specific church with special events section', 'parish-core' ),
+			'description' => __( 'Weekly schedule for a specific church grouped by day with special events section', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
-				'church_id'       => __( 'Church ID (auto-detects on church pages)', 'parish-core' ),
+				'church_id'       => __( 'Church ID (auto-detects on church single pages and query loops)', 'parish-core' ),
+				'type'            => __( 'Filter by type: "mass", "confession", "adoration"', 'parish-core' ),
 				'show_special'    => __( '"yes" or "no" to show special events (default: yes)', 'parish-core' ),
 				'show_livestream' => __( '"yes" or "no" to show livestream icons (default: yes)', 'parish-core' ),
 			),
-			'example'     => '[parish_church_schedule church_id="123"]',
+			'example'     => '[parish_church_schedule]',
 			'feature'     => 'mass_times',
 		),
-		// Mass Times - General Schedule
 		array(
 			'shortcode'   => '[parish_schedule]',
 			'name'        => __( 'Schedule View', 'parish-core' ),
-			'description' => __( 'Display Mass Times schedule for multiple days', 'parish-core' ),
+			'description' => __( 'Display Mass Times schedule for multiple days in various formats', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
 				'days'            => __( 'Number of days to show (default: 7)', 'parish-core' ),
-				'church_id'       => __( 'Filter by specific church', 'parish-core' ),
-				'event_type'      => __( 'Filter by type', 'parish-core' ),
-				'format'          => __( '"list", "table", "cards", "simple"', 'parish-core' ),
-				'show_feast_day'  => __( '"yes" or "no" (default: yes)', 'parish-core' ),
-				'show_livestream' => __( '"yes" or "no" (default: yes)', 'parish-core' ),
+				'church_id'       => __( 'Filter by specific church ID', 'parish-core' ),
+				'event_type'      => __( 'Filter by event type', 'parish-core' ),
+				'format'          => __( 'Display format: "list", "table", "cards", or "simple"', 'parish-core' ),
+				'show_feast_day'  => __( '"yes" or "no" to show feast day info (default: yes)', 'parish-core' ),
+				'show_livestream' => __( '"yes" or "no" to show livestream badges (default: yes)', 'parish-core' ),
 			),
 			'example'     => '[parish_schedule days="7" format="cards"]',
 			'feature'     => 'mass_times',
 		),
-		// Mass Times - Weekly Schedule
 		array(
 			'shortcode'   => '[parish_weekly_schedule]',
 			'name'        => __( 'Weekly Schedule', 'parish-core' ),
-			'description' => __( 'Full week schedule grouped by day', 'parish-core' ),
+			'description' => __( 'Full week schedule grouped by day with today highlighted', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
-				'church_id'       => __( 'Filter by specific church', 'parish-core' ),
-				'event_type'      => __( 'Filter by type', 'parish-core' ),
+				'church_id'       => __( 'Filter by specific church ID', 'parish-core' ),
+				'event_type'      => __( 'Filter by event type', 'parish-core' ),
 				'show_feast_day'  => __( '"yes" or "no" (default: yes)', 'parish-core' ),
 				'show_livestream' => __( '"yes" or "no" (default: yes)', 'parish-core' ),
 			),
 			'example'     => '[parish_weekly_schedule church_id="123"]',
 			'feature'     => 'mass_times',
 		),
-		// Mass Times - Today Schedule
 		array(
 			'shortcode'   => '[parish_today_schedule]',
 			'name'        => __( 'Today\'s Schedule', 'parish-core' ),
-			'description' => __( 'Today\'s schedule with feast day header', 'parish-core' ),
+			'description' => __( 'Today\'s schedule with feast day header and all events', 'parish-core' ),
+			'type'        => 'shortcode',
 			'attributes'  => array(
-				'church_id'       => __( 'Filter by specific church', 'parish-core' ),
-				'event_type'      => __( 'Filter by type', 'parish-core' ),
+				'church_id'       => __( 'Filter by specific church ID', 'parish-core' ),
+				'event_type'      => __( 'Filter by event type', 'parish-core' ),
 				'show_feast_day'  => __( '"yes" or "no" (default: yes)', 'parish-core' ),
 				'show_livestream' => __( '"yes" or "no" (default: yes)', 'parish-core' ),
 			),
-			'example'     => '[parish_today_schedule]',
+			'example'     => '[parish_today_schedule show_feast_day="yes"]',
 			'feature'     => 'mass_times',
+		),
+
+		// =========================================================================
+		// LITURGICAL & READINGS SHORTCODES
+		// =========================================================================
+		array(
+			'shortcode'   => '[daily_readings]',
+			'name'        => __( 'Daily Readings', 'parish-core' ),
+			'description' => __( 'Display today\'s Mass readings from the Readings API', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[daily_readings]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[mass_reading_details]',
+			'name'        => __( 'Mass Reading Details', 'parish-core' ),
+			'description' => __( 'Display structured Mass readings (First Reading, Psalm, Second Reading, Gospel)', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[mass_reading_details]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[sunday_homily]',
+			'name'        => __( 'Sunday Homily', 'parish-core' ),
+			'description' => __( 'Display Sunday homily notes from the Readings API', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[sunday_homily]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[saint_of_the_day]',
+			'name'        => __( 'Saint of the Day', 'parish-core' ),
+			'description' => __( 'Display information about today\'s saint', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[saint_of_the_day]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[next_sunday_reading]',
+			'name'        => __( 'Next Sunday Reading', 'parish-core' ),
+			'description' => __( 'Display next Sunday\'s readings in English', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[next_sunday_reading]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[next_sunday_reading_irish]',
+			'name'        => __( 'Next Sunday Reading (Irish)', 'parish-core' ),
+			'description' => __( 'Display next Sunday\'s readings in Irish (Gaeilge)', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[next_sunday_reading_irish]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[daily_readings_irish]',
+			'name'        => __( 'Daily Readings (Irish)', 'parish-core' ),
+			'description' => __( 'Display today\'s readings in Irish (Gaeilge)', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[daily_readings_irish]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[feast_day_details]',
+			'name'        => __( 'Feast Day Details', 'parish-core' ),
+			'description' => __( 'Display today\'s liturgical feast with colored indicator and rank', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(),
+			'example'     => '[feast_day_details]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[liturgical_day]',
+			'name'        => __( 'Liturgical Day', 'parish-core' ),
+			'description' => __( 'Display liturgical information for today (season, cycles, rosary)', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'link_rosary' => __( 'URL to rosary page for linking (e.g., "/rosary")', 'parish-core' ),
+			),
+			'example'     => '[liturgical_day link_rosary="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[liturgical_week]',
+			'name'        => __( 'Liturgical Week', 'parish-core' ),
+			'description' => __( 'Display liturgical information for the week with rosary schedule', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'link_rosary' => __( 'URL to rosary page for linking', 'parish-core' ),
+			),
+			'example'     => '[liturgical_week link_rosary="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+
+		// =========================================================================
+		// ROSARY SHORTCODES
+		// =========================================================================
+		array(
+			'shortcode'   => '[rosary_today]',
+			'name'        => __( 'Today\'s Rosary', 'parish-core' ),
+			'description' => __( 'Display today\'s rosary mystery set with date and list of mysteries', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'show_date'   => __( '"yes" or "no" to show current date (default: yes)', 'parish-core' ),
+				'show_season' => __( '"yes" or "no" to show liturgical season note (default: no)', 'parish-core' ),
+				'force_day'   => __( 'Force a specific day: "mon", "tue", "wed", "thu", "fri", "sat", "sun"', 'parish-core' ),
+				'force_set'   => __( 'Force a specific set: "joyful", "sorrowful", "glorious", "luminous"', 'parish-core' ),
+			),
+			'example'     => '[rosary_today show_date="yes" show_season="no"]',
+			'feature'     => 'rosary',
+		),
+		array(
+			'shortcode'   => '[rosary_full]',
+			'name'        => __( 'Full Rosary', 'parish-core' ),
+			'description' => __( 'Display full rosary mysteries with detailed meditations, scriptures, and fruits', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'set'             => __( 'Specific set: "joyful", "sorrowful", "glorious", "luminous" (default: today\'s)', 'parish-core' ),
+				'show_fruit'      => __( '"yes" or "no" to show spiritual fruit (default: yes)', 'parish-core' ),
+				'show_scripture'  => __( '"yes" or "no" to show scripture references (default: yes)', 'parish-core' ),
+				'show_meditation' => __( '"yes" or "no" to show meditation text (default: yes)', 'parish-core' ),
+				'show_quote'      => __( '"yes" or "no" to show scripture quote (default: yes)', 'parish-core' ),
+				'force_day'       => __( 'Force a specific day for testing', 'parish-core' ),
+				'force_set'       => __( 'Force a specific set (overrides day)', 'parish-core' ),
+			),
+			'example'     => '[rosary_full set="joyful" show_fruit="yes"]',
+			'feature'     => 'rosary',
+		),
+		array(
+			'shortcode'   => '[rosary_days]',
+			'name'        => __( 'Rosary Days', 'parish-core' ),
+			'description' => __( 'Display which days of the week each rosary series is prayed', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'link_rosary' => __( 'URL to rosary page for linking', 'parish-core' ),
+			),
+			'example'     => '[rosary_days link_rosary="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[rosary_week]',
+			'name'        => __( 'Weekly Rosary Schedule', 'parish-core' ),
+			'description' => __( 'Display rosary mysteries for each day of the week in table or list format', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'link'       => __( 'URL to rosary page for linking', 'parish-core' ),
+				'show_today' => __( '"yes" or "no" to highlight today (default: yes)', 'parish-core' ),
+				'format'     => __( 'Display format: "table" or "list" (default: table)', 'parish-core' ),
+			),
+			'example'     => '[rosary_week link="/rosary" format="table"]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[rosary_series]',
+			'name'        => __( 'Rosary Series Overview', 'parish-core' ),
+			'description' => __( 'Display all four rosary series with days prayed during current liturgical season', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'link'   => __( 'URL to rosary page for linking', 'parish-core' ),
+				'series' => __( 'Show specific series: "joyful", "sorrowful", "glorious", "luminous"', 'parish-core' ),
+			),
+			'example'     => '[rosary_series link="/rosary"]',
+			'feature'     => 'liturgical',
+		),
+		array(
+			'shortcode'   => '[rosary_mysteries]',
+			'name'        => __( 'Rosary Mysteries List', 'parish-core' ),
+			'description' => __( 'Display the five mysteries of each rosary series (ideal for dedicated rosary pages)', 'parish-core' ),
+			'type'        => 'shortcode',
+			'attributes'  => array(
+				'series' => __( 'Specific series or leave empty for all four', 'parish-core' ),
+			),
+			'example'     => '[rosary_mysteries series="joyful"]',
+			'feature'     => 'liturgical',
+		),
+
+		// =========================================================================
+		// GUTENBERG BLOCKS
+		// =========================================================================
+		array(
+			'shortcode'   => 'parish/rosary-today',
+			'name'        => __( 'Rosary Today Block', 'parish-core' ),
+			'description' => __( 'Gutenberg block to display today\'s rosary mysteries with configurable options', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'showDate'   => __( 'Show current date (default: true)', 'parish-core' ),
+				'showSeason' => __( 'Show liturgical season note (default: false)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Rosary Today', 'parish-core' ),
+			'feature'     => 'rosary',
+		),
+		array(
+			'shortcode'   => 'parish/rosary-full',
+			'name'        => __( 'Full Rosary Block', 'parish-core' ),
+			'description' => __( 'Gutenberg block for full rosary with meditations, scriptures, and configurable content', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'mysterySet'     => __( 'Specific mystery set or auto-detect from today', 'parish-core' ),
+				'showFruit'      => __( 'Show spiritual fruit (default: true)', 'parish-core' ),
+				'showScripture'  => __( 'Show scripture references (default: true)', 'parish-core' ),
+				'showMeditation' => __( 'Show meditation text (default: true)', 'parish-core' ),
+				'showQuote'      => __( 'Show scripture quote (default: true)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Full Rosary', 'parish-core' ),
+			'feature'     => 'rosary',
+		),
+		array(
+			'shortcode'   => 'parish/events',
+			'name'        => __( 'Events Block', 'parish-core' ),
+			'description' => __( 'Display parish events with auto-detection of church/cemetery context', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'view'       => __( 'View mode: "upcoming", "today", or "week" (default: upcoming)', 'parish-core' ),
+				'limit'      => __( 'Number of events to show (default: 5)', 'parish-core' ),
+				'sacrament'  => __( 'Filter by sacrament slug (e.g., "baptism", "marriage")', 'parish-core' ),
+				'churchId'   => __( 'Filter by church ID (0 = all or auto-detect)', 'parish-core' ),
+				'cemeteryId' => __( 'Filter by cemetery ID (0 = all or auto-detect)', 'parish-core' ),
+				'autoDetect' => __( 'Auto-detect church/cemetery from page context (default: true)', 'parish-core' ),
+				'showIcon'   => __( 'Show calendar icon (default: true)', 'parish-core' ),
+				'iconColor'  => __( 'Custom icon color (hex)', 'parish-core' ),
+				'timeColor'  => __( 'Custom time/date color (hex)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Events', 'parish-core' ),
+			'feature'     => 'events',
+		),
+		array(
+			'shortcode'   => 'parish/events-calendar',
+			'name'        => __( 'Events Calendar Block', 'parish-core' ),
+			'description' => __( 'Full month calendar with iCal subscription and download support', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'sacrament'     => __( 'Filter by sacrament slug', 'parish-core' ),
+				'churchId'      => __( 'Filter by church ID (0 = all or auto-detect)', 'parish-core' ),
+				'cemeteryId'    => __( 'Filter by cemetery ID (0 = all or auto-detect)', 'parish-core' ),
+				'autoDetect'    => __( 'Auto-detect church/cemetery from page context (default: true)', 'parish-core' ),
+				'showSubscribe' => __( 'Show iCal/Google Calendar subscribe buttons (default: true)', 'parish-core' ),
+				'showDownload'  => __( 'Show .ics download button (default: true)', 'parish-core' ),
+				'iconColor'     => __( 'Custom accent color (hex)', 'parish-core' ),
+				'timeColor'     => __( 'Custom time color (hex)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Events Calendar', 'parish-core' ),
+			'feature'     => 'events',
+		),
+		array(
+			'shortcode'   => 'parish/events-list',
+			'name'        => __( 'Events List Block', 'parish-core' ),
+			'description' => __( 'Full events listing with search, filters, list/grid toggle, and pagination', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'showSearch'        => __( 'Show search bar (default: true)', 'parish-core' ),
+				'showFilters'       => __( 'Show filter dropdowns (default: true)', 'parish-core' ),
+				'showLayoutToggle'  => __( 'Show list/grid toggle (default: true)', 'parish-core' ),
+				'filterBySacrament' => __( 'Pre-filter by sacrament slug', 'parish-core' ),
+				'filterByChurch'    => __( 'Pre-filter by church ID', 'parish-core' ),
+				'limit'             => __( 'Events per page (default: 10)', 'parish-core' ),
+				'layout'            => __( 'Default layout: "list" or "grid"', 'parish-core' ),
+				'showPagination'    => __( 'Show pagination (default: true)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Events List', 'parish-core' ),
+			'feature'     => 'events',
+		),
+		array(
+			'shortcode'   => 'parish/sacrament-events',
+			'name'        => __( 'Sacrament Events Block', 'parish-core' ),
+			'description' => __( 'Display upcoming events filtered by a specific sacrament (e.g., Baptisms, Confirmations)', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'sacrament'       => __( 'Sacrament slug to filter by (required)', 'parish-core' ),
+				'churchId'        => __( 'Filter by church ID', 'parish-core' ),
+				'limit'           => __( 'Number of events (default: 5)', 'parish-core' ),
+				'showIcon'        => __( 'Show date icon (default: true)', 'parish-core' ),
+				'showChurch'      => __( 'Show church name (default: true)', 'parish-core' ),
+				'showDescription' => __( 'Show event excerpt (default: false)', 'parish-core' ),
+				'emptyMessage'    => __( 'Custom message when no events', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Sacrament Events', 'parish-core' ),
+			'feature'     => 'events',
+		),
+		array(
+			'shortcode'   => 'parish/mass-schedule',
+			'name'        => __( 'Mass Schedule Block', 'parish-core' ),
+			'description' => __( 'Display weekly Mass schedule for a church. Works in Query Loops and single church pages.', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'showIcon'       => __( 'Show clock icon (default: true)', 'parish-core' ),
+				'showLivestream' => __( 'Show livestream indicators (default: true)', 'parish-core' ),
+				'showSpecial'    => __( 'Show special events section (default: true)', 'parish-core' ),
+				'eventType'      => __( 'Filter by event type (e.g., "mass")', 'parish-core' ),
+				'showAllDays'    => __( 'Show all days even if empty (default: true)', 'parish-core' ),
+				'iconColor'      => __( 'Custom icon color (hex)', 'parish-core' ),
+				'timeColor'      => __( 'Custom time color (hex)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Mass Schedule', 'parish-core' ),
+			'feature'     => 'mass_times',
+		),
+		array(
+			'shortcode'   => 'parish/church-schedule',
+			'name'        => __( 'Church Schedule Block', 'parish-core' ),
+			'description' => __( 'Flexible church schedule block with multiple event types and format options', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'format'         => __( 'Display format (default: list)', 'parish-core' ),
+				'eventTypes'     => __( 'Array of event types to show (default: mass, confession)', 'parish-core' ),
+				'showFeastDay'   => __( 'Show feast day info (default: true)', 'parish-core' ),
+				'days'           => __( 'Number of days to show (default: 7)', 'parish-core' ),
+				'showIcon'       => __( 'Show clock icon (default: true)', 'parish-core' ),
+				'showLivestream' => __( 'Show livestream indicators (default: true)', 'parish-core' ),
+				'groupByDay'     => __( 'Group events by day (default: true)', 'parish-core' ),
+				'showAllDays'    => __( 'Show all days even if empty (default: true)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Church Schedule', 'parish-core' ),
+			'feature'     => 'mass_times',
+		),
+		array(
+			'shortcode'   => 'parish/today-mass',
+			'name'        => __( 'Today\'s Mass Block', 'parish-core' ),
+			'description' => __( 'Display today\'s Mass times grouped by church with livestream indicators', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(
+				'churchId'  => __( 'Filter by church ID (0 for all)', 'parish-core' ),
+				'eventType' => __( 'Filter by type (default: mass)', 'parish-core' ),
+				'showIcon'  => __( 'Show video icon for livestreams (default: true)', 'parish-core' ),
+				'showDate'  => __( 'Show date header (default: true)', 'parish-core' ),
+				'showNotes' => __( 'Show event notes (default: false)', 'parish-core' ),
+				'iconColor' => __( 'Custom icon color (hex)', 'parish-core' ),
+				'timeColor' => __( 'Custom time color (hex)', 'parish-core' ),
+			),
+			'example'     => __( 'Add via Block Editor: Parish > Today\'s Mass', 'parish-core' ),
+			'feature'     => 'mass_times',
+		),
+		array(
+			'shortcode'   => 'parish/church-selector',
+			'name'        => __( 'Church Selector Block', 'parish-core' ),
+			'description' => __( 'Editor block to select and display related church for a post', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(),
+			'example'     => __( 'Add via Block Editor: Parish > Church Selector', 'parish-core' ),
+			'feature'     => 'churches',
+		),
+		array(
+			'shortcode'   => 'parish/slider',
+			'name'        => __( 'Hero Slider Block', 'parish-core' ),
+			'description' => __( 'Gutenberg block for the hero slider with manual and dynamic slides', 'parish-core' ),
+			'type'        => 'block',
+			'attributes'  => array(),
+			'example'     => __( 'Add via Block Editor: Parish > Hero Slider', 'parish-core' ),
+			'feature'     => 'slider',
 		),
 	);
 }

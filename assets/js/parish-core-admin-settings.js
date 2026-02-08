@@ -36,13 +36,23 @@
 
 		if (loading) return el(LoadingSpinner, { text: 'Loading...' });
 
+		// Separate shortcodes and blocks
+		var traditionalShortcodes = shortcodes.filter(function (s) {
+			return s.type !== 'block';
+		});
+		var blocks = shortcodes.filter(function (s) {
+			return s.type === 'block';
+		});
+
 		return el(
 			'div',
 			{ className: 'shortcode-reference' },
+			// Traditional Shortcodes Section
+			el('h3', { style: { marginTop: 0 } }, 'Shortcodes'),
 			el(
 				'p',
 				null,
-				'Copy and paste these shortcodes into your pages and posts:'
+				'Copy and paste these shortcodes into your pages, posts, or widgets:'
 			),
 			el(
 				'table',
@@ -53,54 +63,120 @@
 					el(
 						'tr',
 						null,
-						el('th', null, 'Shortcode'),
-						el('th', null, 'Description'),
+						el('th', { style: { width: '200px' } }, 'Shortcode'),
+						el('th', { style: { width: '180px' } }, 'Description'),
 						el('th', null, 'Attributes')
 					)
 				),
 				el(
 					'tbody',
 					null,
-					shortcodes.map(function (s, i) {
-						var attrs =
-							s.attributes &&
-							Object.keys(s.attributes).length > 0
-								? Object.keys(s.attributes)
-										.map(function (k) {
-											return k + '="..."';
-										})
-										.join(' | ')
-								: 'none';
+					traditionalShortcodes.map(function (s, i) {
+						var hasAttrs = s.attributes && Object.keys(s.attributes).length > 0;
+						var attrList = hasAttrs
+							? Object.keys(s.attributes).map(function (k) {
+									return el(
+										'div',
+										{ key: k, style: { marginBottom: '4px' } },
+										el('code', { style: { background: '#e8e8e8', padding: '2px 4px', borderRadius: '3px', fontSize: '11px' } }, k),
+										el('span', { style: { marginLeft: '6px', fontSize: '12px', color: '#555' } }, s.attributes[k])
+									);
+								})
+							: el('span', { style: { color: '#999', fontStyle: 'italic' } }, 'No attributes');
 						return el(
 							'tr',
-							{ key: i },
+							{ key: 'sc-' + i },
 							el(
 								'td',
 								null,
-								el('code', { className: 'shortcode-code' }, s.shortcode)
+								el('code', { className: 'shortcode-code' }, s.shortcode),
+								s.example && el(
+									'div',
+									{ style: { marginTop: '8px' } },
+									el('span', { style: { fontSize: '11px', color: '#666', display: 'block', marginBottom: '2px' } }, 'Example:'),
+									el('code', { style: { fontSize: '11px', background: '#f0f6fc', padding: '4px 6px', borderRadius: '3px', display: 'block', wordBreak: 'break-all' } }, s.example)
+								)
 							),
-							el('td', null, s.description),
+							el('td', null, el('strong', null, s.name), el('br'), s.description),
 							el(
 								'td',
 								null,
-								el('code', { className: 'attrs' }, attrs)
+								el('div', { className: 'attrs-list' }, attrList)
 							)
 						);
 					})
 				)
 			),
+			// Gutenberg Blocks Section
+			blocks.length > 0 &&
+				el(
+					Fragment,
+					null,
+					el('h3', { style: { marginTop: '2em' } }, 'Gutenberg Blocks'),
+					el(
+						'p',
+						null,
+						'These blocks can be added via the Block Editor. Search for "Parish" in the block inserter:'
+					),
+					el(
+						'table',
+						{ className: 'shortcode-table widefat' },
+						el(
+							'thead',
+							null,
+							el(
+								'tr',
+								null,
+								el('th', { style: { width: '200px' } }, 'Block Name'),
+								el('th', { style: { width: '180px' } }, 'Description'),
+								el('th', null, 'Settings')
+							)
+						),
+						el(
+							'tbody',
+							null,
+							blocks.map(function (s, i) {
+								var hasAttrs = s.attributes && Object.keys(s.attributes).length > 0;
+								var attrList = hasAttrs
+									? Object.keys(s.attributes).map(function (k) {
+											return el(
+												'div',
+												{ key: k, style: { marginBottom: '4px' } },
+												el('code', { style: { background: '#e8e8e8', padding: '2px 4px', borderRadius: '3px', fontSize: '11px' } }, k),
+												el('span', { style: { marginLeft: '6px', fontSize: '12px', color: '#555' } }, s.attributes[k])
+											);
+										})
+									: el('span', { style: { color: '#999', fontStyle: 'italic' } }, 'No settings');
+								return el(
+									'tr',
+									{ key: 'block-' + i },
+									el(
+										'td',
+										null,
+										el('code', { className: 'shortcode-code' }, s.shortcode),
+										s.example && el(
+											'div',
+											{ style: { marginTop: '6px', fontSize: '11px', color: '#666' } },
+											s.example
+										)
+									),
+									el('td', null, el('strong', null, s.name), el('br'), s.description),
+									el(
+										'td',
+										null,
+										el('div', { className: 'attrs-list' }, attrList)
+									)
+								);
+							})
+						)
+					)
+				),
+			// Tip Section
 			el(
 				'div',
-				{ className: 'shortcode-examples' },
-				el('h4', null, 'Examples'),
-				el(
-					'pre',
-					null,
-					'[parish_events limit="5" type="sacrament"]\n' +
-						'[daily_readings]\n' +
-						'[parish_slider]\n' +
-						'[parish_contact]'
-				)
+				{ style: { marginTop: '2em', padding: '1em', background: '#f0f6fc', borderRadius: '6px', borderLeft: '3px solid #2271b1' } },
+				el('strong', null, 'Tip: '),
+				'Copy shortcodes directly from the table above. Each shortcode includes an example showing how to use it with attributes.'
 			)
 		);
 	}
@@ -154,6 +230,8 @@
 		if (loading) return el(LoadingSpinner, { text: 'Loading...' });
 
 		const featureToggles = [
+			{ key: 'enable_mass_times', label: 'Mass Times' },
+			{ key: 'enable_rosary', label: 'Rosary' },
 			{ key: 'enable_death_notices', label: 'Death Notices' },
 			{ key: 'enable_baptism_notices', label: 'Baptism Notices' },
 			{ key: 'enable_wedding_notices', label: 'Wedding Notices' },
@@ -191,7 +269,7 @@
 		const tabs = [
 			{ name: 'features', title: 'Features', className: 'tab-features' },
 			{ name: 'colors', title: 'Admin Colors', className: 'tab-colors' },
-			{ name: 'shortcodes', title: 'Shortcodes', className: 'tab-shortcodes' },
+			{ name: 'shortcodes', title: 'Shortcodes & Blocks', className: 'tab-shortcodes' },
 		];
 
 		return el(
@@ -326,7 +404,7 @@
 							null,
 							el(
 								PanelBody,
-								{ title: 'Shortcode Reference', initialOpen: true },
+								{ title: 'Shortcode & Block Reference', initialOpen: true },
 								el(ShortcodeReference)
 							)
 						);

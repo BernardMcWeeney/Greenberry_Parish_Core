@@ -37,13 +37,23 @@ class Parish_Rosary_Shortcodes {
 		$atts = shortcode_atts(
 			array(
 				'show_date'   => 'yes',
-				'show_season' => 'yes',
+				'show_season' => 'no',
+				'force_day'   => '',  // mon, tue, wed, thu, fri, sat, sun (for testing).
+				'force_set'   => '',  // joyful, sorrowful, glorious, luminous (overrides day).
 			),
 			$atts
 		);
 
-		$mystery_set = Parish_Rosary_Schedule::get_todays_mystery_set();
-		$data        = Parish_Rosary_Data::get_mystery_set( $mystery_set );
+		// Determine mystery set based on force attributes or default to today.
+		if ( ! empty( $atts['force_set'] ) ) {
+			$mystery_set = sanitize_text_field( strtolower( $atts['force_set'] ) );
+		} elseif ( ! empty( $atts['force_day'] ) ) {
+			$mystery_set = Parish_Rosary_Schedule::get_mystery_set_for_day( $atts['force_day'] );
+		} else {
+			$mystery_set = Parish_Rosary_Schedule::get_todays_mystery_set();
+		}
+
+		$data = Parish_Rosary_Data::get_mystery_set( $mystery_set );
 
 		if ( ! $data ) {
 			return '<p>' . esc_html__( 'Rosary data not available.', 'parish-core' ) . '</p>';
@@ -92,13 +102,22 @@ class Parish_Rosary_Shortcodes {
 				'show_scripture'  => 'yes',
 				'show_meditation' => 'yes',
 				'show_quote'      => 'yes',
+				'force_day'       => '',  // mon, tue, wed, thu, fri, sat, sun (for testing).
+				'force_set'       => '',  // joyful, sorrowful, glorious, luminous (overrides day).
 			),
 			$atts
 		);
 
-		$mystery_set = ! empty( $atts['set'] )
-			? sanitize_text_field( $atts['set'] )
-			: Parish_Rosary_Schedule::get_todays_mystery_set();
+		// Determine mystery set: force_set > set > force_day > today.
+		if ( ! empty( $atts['force_set'] ) ) {
+			$mystery_set = sanitize_text_field( strtolower( $atts['force_set'] ) );
+		} elseif ( ! empty( $atts['set'] ) ) {
+			$mystery_set = sanitize_text_field( $atts['set'] );
+		} elseif ( ! empty( $atts['force_day'] ) ) {
+			$mystery_set = Parish_Rosary_Schedule::get_mystery_set_for_day( $atts['force_day'] );
+		} else {
+			$mystery_set = Parish_Rosary_Schedule::get_todays_mystery_set();
+		}
 
 		$data = Parish_Rosary_Data::get_mystery_set( $mystery_set );
 

@@ -177,8 +177,43 @@ class Parish_CPT_Registry {
 		}
 
 		foreach ( $files as $path ) {
-			if ( file_exists( $path ) ) {
-				require $path;
+			if ( ! file_exists( $path ) ) {
+				continue;
+			}
+
+			$definition = require $path;
+
+			if ( ! is_array( $definition ) ) {
+				continue;
+			}
+
+			$post_type  = $definition['post_type'] ?? '';
+			$taxonomies = $definition['taxonomies'] ?? array();
+
+			if ( empty( $post_type ) || empty( $taxonomies ) ) {
+				continue;
+			}
+
+			// Register each taxonomy.
+			foreach ( $taxonomies as $taxonomy => $config ) {
+				$args          = $config['args'] ?? array();
+				$default_terms = $config['default_terms'] ?? array();
+
+				if ( empty( $args ) ) {
+					continue;
+				}
+
+				// Register the taxonomy.
+				register_taxonomy( $taxonomy, $post_type, $args );
+
+				// Insert default terms if they don't exist.
+				if ( ! empty( $default_terms ) ) {
+					foreach ( $default_terms as $term_name ) {
+						if ( ! term_exists( $term_name, $taxonomy ) ) {
+							wp_insert_term( $term_name, $taxonomy );
+						}
+					}
+				}
 			}
 		}
 	}

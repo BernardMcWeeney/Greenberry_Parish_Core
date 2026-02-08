@@ -83,12 +83,12 @@ class Parish_Core {
 		}
 
 		// Rosary shortcodes.
-		if ( class_exists( 'Parish_Rosary_Shortcodes' ) ) {
+		if ( class_exists( 'Parish_Rosary_Shortcodes' ) && self::is_feature_enabled( 'rosary' ) ) {
 			Parish_Rosary_Shortcodes::register();
 		}
 
 		// Rosary blocks.
-		if ( class_exists( 'Parish_Rosary_Blocks' ) ) {
+		if ( class_exists( 'Parish_Rosary_Blocks' ) && self::is_feature_enabled( 'rosary' ) ) {
 			Parish_Rosary_Blocks::register();
 		}
 
@@ -156,6 +156,18 @@ class Parish_Core {
 
 	public static function get_modules(): array {
 		return array(
+			'mass_times' => array(
+				'name'        => __( 'Mass Times', 'parish-core' ),
+				'description' => __( 'Weekly Mass schedule and special celebrations', 'parish-core' ),
+				'icon'        => 'clock',
+				'has_page'    => true,
+			),
+			'rosary' => array(
+				'name'        => __( 'Rosary', 'parish-core' ),
+				'description' => __( 'Daily rosary mysteries and meditations', 'parish-core' ),
+				'icon'        => 'heart',
+				'has_page'    => false,
+			),
 			'events' => array(
 				'name'        => __( 'Events Calendar', 'parish-core' ),
 				'description' => __( 'Parish events and sacraments', 'parish-core' ),
