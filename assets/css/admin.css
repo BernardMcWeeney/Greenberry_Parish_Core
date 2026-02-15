@@ -130,6 +130,11 @@
 	}
 }
 
+.dashboard-main,
+.dashboard-sidebar {
+	min-width: 0;
+}
+
 .dashboard-card {
 	margin-bottom: 16px;
 }
@@ -196,6 +201,66 @@
 .quick-action-item span:last-child {
 	font-size: 13px;
 	font-weight: 500;
+}
+
+/* Secretary priorities */
+.secretary-priority-card .components-card__body {
+	background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%);
+}
+
+.priority-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 10px;
+}
+
+.priority-tile {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	grid-template-rows: auto auto;
+	align-items: center;
+	gap: 2px 8px;
+	padding: 12px;
+	border: 1px solid #d8e6f7;
+	border-radius: 8px;
+	background: #fff;
+	text-decoration: none;
+	color: #1d2327;
+	transition: all 0.18s ease;
+}
+
+.priority-tile .dashicons {
+	grid-column: 1;
+	grid-row: 1 / span 2;
+	color: #2271b1;
+}
+
+.priority-label {
+	grid-column: 2;
+	grid-row: 1;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.priority-count {
+	grid-column: 3;
+	grid-row: 1;
+	font-size: 20px;
+	font-weight: 700;
+	color: #2271b1;
+}
+
+.priority-draft {
+	grid-column: 2 / 4;
+	grid-row: 2;
+	font-size: 11px;
+	color: #666;
+}
+
+.priority-tile:hover {
+	border-color: #2271b1;
+	box-shadow: 0 4px 12px rgba(34, 113, 177, 0.18);
+	transform: translateY(-1px);
 }
 
 /* Stats Grid */
@@ -283,6 +348,94 @@
 .mass-times-list em {
 	color: #666;
 	font-size: 13px;
+}
+
+/* Parish Description */
+.parish-description {
+	margin: 8px 0 4px 0;
+	color: #666;
+	font-size: 14px;
+}
+
+/* Events List */
+.events-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.events-list li {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.events-list li:last-child {
+	border-bottom: none;
+}
+
+.events-list .event-date {
+	font-weight: 600;
+	color: #2271b1;
+	min-width: 80px;
+	font-size: 13px;
+}
+
+.events-list .event-title {
+	flex: 1;
+}
+
+.events-list .event-time {
+	color: #666;
+	font-size: 13px;
+}
+
+/* Newsletters List */
+.newsletters-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.newsletters-list li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.newsletters-list li:last-child {
+	border-bottom: none;
+}
+
+.newsletters-list li a {
+	color: #2271b1;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.newsletters-list li a:hover {
+	text-decoration: underline;
+}
+
+.newsletter-date {
+	color: #666;
+	font-size: 12px;
+}
+
+/* Livestream Badge */
+.livestream-badge {
+	background: #c62828;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 6px;
+	border-radius: 3px;
+	text-transform: uppercase;
+	margin-left: 8px;
 }
 
 /* Week Schedule */
@@ -462,6 +615,36 @@
 	font-size: 12px;
 	color: #999;
 	white-space: nowrap;
+}
+
+.dashboard-item-main {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	flex: 1;
+	min-width: 0;
+}
+
+.dashboard-item-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	font-size: 12px;
+	color: #666;
+}
+
+.dashboard-item-meta span {
+	display: inline-flex;
+	align-items: center;
+}
+
+.dashboard-pill {
+	background: #e8f4fc;
+	color: #2271b1;
+	border-radius: 999px;
+	padding: 2px 8px;
+	font-size: 11px;
+	font-weight: 500;
 }
 
 /* Resources List */
@@ -915,6 +1098,58 @@
 
 .feature-toggles-grid .components-toggle-control {
 	margin-bottom: 0;
+}
+
+/* Menu Options */
+.menu-options-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 16px;
+	margin-top: 16px;
+}
+
+.menu-role-card {
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 16px;
+	background: #fff;
+}
+
+.menu-role-card h4 {
+	margin: 0 0 12px 0;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.menu-role-card .components-toggle-control:last-child {
+	margin-bottom: 0;
+}
+
+.menu-order-list {
+	display: grid;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.menu-order-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 12px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.menu-order-label {
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.menu-order-actions {
+	display: flex;
+	gap: 6px;
 }
 
 /* Color Fields */
@@ -3454,4 +3689,355 @@
 	.computed-shortcodes-list {
 		grid-template-columns: 1fr;
 	}
+}
+
+/* ==========================================================================
+   DASHBOARD V2 - REDESIGNED FOR PARISH SECRETARY
+   ========================================================================== */
+.parish-dashboard-v2 {
+	max-width: 1200px;
+}
+
+.parish-dashboard-v2 .dashboard-header {
+	background: linear-gradient(135deg, #fff 0%, #f8fbff 100%);
+	border-left: 4px solid #2271b1;
+}
+
+.parish-dashboard-v2 .dashboard-header h1 {
+	font-size: 28px;
+	margin-bottom: 4px;
+}
+
+.parish-dashboard-v2 .dashboard-subtitle {
+	margin: 0;
+	color: #666;
+	font-size: 15px;
+}
+
+.parish-dashboard-v2 .diocese-badge {
+	background: #f0f0f1;
+	padding: 6px 12px;
+	border-radius: 20px;
+	font-size: 12px;
+	color: #666;
+}
+
+.parish-dashboard-v2 .diocese-badge a {
+	color: #2271b1;
+	text-decoration: none;
+}
+
+/* Dashboard Grid V2 */
+.dashboard-grid-v2 {
+	display: grid;
+	grid-template-columns: 1.4fr 1fr;
+	gap: 24px;
+}
+
+@media (max-width: 1000px) {
+	.dashboard-grid-v2 {
+		grid-template-columns: 1fr;
+	}
+}
+
+.dashboard-col-main,
+.dashboard-col-side {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Needs Attention Card */
+.needs-attention-card {
+	border-left: 4px solid #f0b849;
+}
+
+.needs-attention-card .attention-badge {
+	background: #f0b849;
+	color: #fff;
+	font-size: 13px;
+	font-weight: 600;
+	padding: 2px 10px;
+	border-radius: 12px;
+	min-width: 24px;
+	text-align: center;
+}
+
+.needs-attention-card .attention-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.needs-attention-card .attention-list li {
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.needs-attention-card .attention-list li:last-child {
+	border-bottom: none;
+}
+
+.needs-attention-card .attention-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 8px;
+	text-decoration: none;
+	color: #1d2327;
+	transition: background 0.2s;
+	border-radius: 6px;
+}
+
+.needs-attention-card .attention-item:hover {
+	background: #f6f7f7;
+}
+
+.needs-attention-card .attention-item .dashicons {
+	color: #f0b849;
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+.needs-attention-card .attention-item .dashicons-arrow-right-alt2 {
+	color: #ccc;
+	margin-left: auto;
+}
+
+.needs-attention-card .attention-label {
+	flex: 1;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+/* Needs Attention Empty State */
+.needs-attention-empty {
+	border-left-color: #00a32a;
+}
+
+.needs-attention-empty .attention-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 24px;
+	text-align: center;
+}
+
+.needs-attention-empty .attention-empty .dashicons {
+	font-size: 40px;
+	width: 40px;
+	height: 40px;
+	color: #00a32a;
+	margin-bottom: 12px;
+}
+
+.needs-attention-empty .attention-empty p {
+	margin: 0;
+	color: #666;
+	font-size: 14px;
+}
+
+/* Quick Actions Card V2 */
+.quick-actions-card .quick-actions-grid {
+	grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 600px) {
+	.quick-actions-card .quick-actions-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+/* This Week Card */
+.this-week-card .week-section-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px 0;
+	font-size: 13px;
+	font-weight: 600;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.this-week-card .week-section-title:not(:first-child) {
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.this-week-card .week-section-title .dashicons {
+	color: #2271b1;
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.this-week-card .week-items-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.this-week-card .week-items-list li {
+	display: grid;
+	grid-template-columns: 90px 1fr auto;
+	gap: 12px;
+	align-items: center;
+	padding: 10px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.this-week-card .week-items-list li:last-child {
+	border-bottom: none;
+}
+
+.this-week-card .week-item-date {
+	font-size: 12px;
+	font-weight: 600;
+	color: #2271b1;
+	white-space: nowrap;
+}
+
+.this-week-card .week-item-title {
+	font-size: 14px;
+	color: #1d2327;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.this-week-card .week-item-time {
+	font-size: 13px;
+	color: #666;
+	white-space: nowrap;
+}
+
+.this-week-card .week-item-badge {
+	font-size: 10px;
+	background: #d63638;
+	color: #fff;
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-weight: 500;
+}
+
+.this-week-card .week-more-link {
+	display: block;
+	margin-top: 12px;
+	font-size: 13px;
+	color: #2271b1;
+	text-decoration: none;
+}
+
+.this-week-card .week-more-link:hover {
+	text-decoration: underline;
+}
+
+/* Content Stats Card */
+.content-stats-card .content-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+	gap: 8px;
+}
+
+.content-stats-card .content-stat-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 12px 8px;
+	background: #f6f7f7;
+	border-radius: 8px;
+	text-align: center;
+}
+
+.content-stats-card .content-stat-item .dashicons {
+	color: #2271b1;
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	margin-bottom: 4px;
+}
+
+.content-stats-card .content-stat-item .stat-number {
+	font-size: 22px;
+	font-weight: 700;
+	color: #1d2327;
+	line-height: 1;
+}
+
+.content-stats-card .content-stat-item .stat-label {
+	font-size: 10px;
+	color: #666;
+	margin-top: 4px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* Recently Published Card */
+.recently-published-card .recent-items-list li {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+.recently-published-card .item-title {
+	font-size: 14px;
+}
+
+.recently-published-card .item-meta {
+	display: flex;
+	gap: 8px;
+	font-size: 12px;
+}
+
+.recently-published-card .item-type {
+	background: #e8f4fc;
+	color: #2271b1;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-weight: 500;
+}
+
+.recently-published-card .item-date {
+	color: #999;
+}
+
+/* Readings Card Compact */
+.readings-card-compact .readings-compact {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.readings-card-compact .readings-compact p {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.readings-card-compact .readings-compact strong {
+	color: #2271b1;
+}
+
+/* Reflection Card Compact */
+.reflection-card-compact {
+	background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f1 100%);
+}
+
+.reflection-card-compact blockquote {
+	margin: 0;
+	font-style: italic;
+	font-size: 14px;
+	line-height: 1.5;
+	color: #444;
+}
+
+.reflection-card-compact cite {
+	display: block;
+	margin-top: 10px;
+	font-size: 12px;
+	color: #666;
+	font-style: normal;
 }

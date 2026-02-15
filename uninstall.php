@@ -12,6 +12,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 // Delete options.
 delete_option( 'parish_core_settings' );
+delete_option( 'parish_slider_settings' );
+delete_option( 'parish_core_db_version' );
 
 // Delete readings-related options.
 $readings_options = array(

@@ -226,7 +226,14 @@ class Parish_Assets {
 		);
 
 		// Media uploader for About Parish and Slider pages.
-		if ( $hook === 'parish_page_parish-about' || $hook === 'parish_page_parish-slider' ) {
+		$media_hooks = array(
+			'parish_page_parish-about',
+			'parish_page_parish-slider',
+			'toplevel_page_parish-about',
+			'toplevel_page_parish-slider',
+		);
+
+		if ( in_array( $hook, $media_hooks, true ) ) {
 			wp_enqueue_media();
 		}
 	}
@@ -239,6 +246,10 @@ class Parish_Assets {
 	private function is_parish_page( string $hook ): bool {
 		$parish_pages = array(
 			'toplevel_page_parish-core',
+			'toplevel_page_parish-about',
+			'toplevel_page_parish-events',
+			'toplevel_page_parish-slider',
+			'toplevel_page_parish-mass-times',
 			'parish_page_parish-about',
 			'parish_page_parish-events',
 			'parish_page_parish-slider',
@@ -258,6 +269,10 @@ class Parish_Assets {
 	private function get_current_page( string $hook ): string {
 		$map = array(
 			'toplevel_page_parish-core'      => 'dashboard',
+			'toplevel_page_parish-about'     => 'about',
+			'toplevel_page_parish-events'    => 'events',
+			'toplevel_page_parish-slider'    => 'slider',
+			'toplevel_page_parish-mass-times' => 'mass-times',
 			'parish_page_parish-about'       => 'about',
 			'parish_page_parish-events'      => 'events',
 			'parish_page_parish-slider'      => 'slider',

@@ -198,6 +198,7 @@ class Parish_Block_Bindings {
 					'wp-data',
 					'wp-core-data',
 					'wp-rich-text',
+					'wp-dom-ready',
 				),
 				PARISH_CORE_VERSION,
 				true

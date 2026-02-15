@@ -32,6 +32,6 @@ return array(
 		'show_in_menu'  => 'parish-core',
 		'show_in_rest'  => true, // Required for Gutenberg and Block Bindings
 		'template'      => Parish_CPT_Templates::get_church_template(),
-		'template_lock' => 'insert', // Prevent adding/removing blocks, but allow editing
+		'template_lock' => false, // Allow adding, removing, and editing blocks
 	),
 );

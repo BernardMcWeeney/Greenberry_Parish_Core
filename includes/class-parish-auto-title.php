@@ -137,6 +137,9 @@ class Parish_Auto_Title {
 			case 'parish_baptism':
 				return $this->generate_baptism_title( $meta );
 
+			case 'parish_mass_time':
+				return $this->generate_mass_time_title( $meta );
+
 			default:
 				return '';
 		}
@@ -236,6 +239,52 @@ class Parish_Auto_Title {
 		}
 
 		return $child_name;
+	}
+
+	/**
+	 * Generate mass time title: "Church Name, Day Type".
+	 *
+	 * Example: "Boystowne Church, Sunday Mass" or "St Ultan's, Monday Confession"
+	 *
+	 * @param array $meta Meta values.
+	 * @return string Generated title.
+	 */
+	private function generate_mass_time_title( array $meta ): string {
+		$church_id = absint( $meta['parish_mass_time_church_id'] ?? 0 );
+		$type      = $meta['parish_mass_time_liturgical_type'] ?? 'mass';
+		$datetime  = $meta['parish_mass_time_start_datetime'] ?? '';
+
+		// Get church name.
+		$church_name = '';
+		if ( $church_id > 0 ) {
+			$church = get_post( $church_id );
+			if ( $church ) {
+				$church_name = $church->post_title;
+			}
+		} else {
+			$church_name = __( 'All Churches', 'parish-core' );
+		}
+
+		// Get day from datetime.
+		$day = '';
+		if ( ! empty( $datetime ) ) {
+			$timestamp = strtotime( $datetime );
+			if ( false !== $timestamp ) {
+				$day = wp_date( 'l', $timestamp ); // Full day name: Sunday, Monday, etc.
+			}
+		}
+
+		// Format type nicely (capitalize first letter).
+		$type_label = ucfirst( $type );
+
+		// Build title: "Church Name, Day Type".
+		if ( ! empty( $church_name ) && ! empty( $day ) ) {
+			return sprintf( '%s, %s %s', $church_name, $day, $type_label );
+		} elseif ( ! empty( $church_name ) ) {
+			return sprintf( '%s %s', $church_name, $type_label );
+		}
+
+		return '';
 	}
 
 	/**

@@ -170,11 +170,11 @@
 	// =========================================================================
 
 	/**
-	 * Live Badge Component
+	 * Online Badge Component
 	 */
-	function LiveBadge() {
+	function OnlineBadge() {
 		return el('span', {
-			className: 'live-badge',
+			className: 'online-badge',
 			style: {
 				background: '#d63638',
 				color: '#fff',
@@ -184,7 +184,7 @@
 				fontWeight: '600',
 				marginLeft: '4px',
 			}
-		}, 'LIVE');
+		}, 'ONLINE');
 	}
 
 	/**
@@ -205,7 +205,12 @@
 	 * Occurrence Card Component (for grid view)
 	 */
 	function OccurrenceCard({ occurrence, onClick }) {
-		const colors = TYPE_COLORS[occurrence.type] || TYPE_COLORS.mass;
+		// Use church color if available, otherwise fall back to type colors.
+		const typeColors = TYPE_COLORS[occurrence.type] || TYPE_COLORS.mass;
+		const churchColor = occurrence.church_color;
+		const colors = churchColor
+			? { bg: churchColor + '22', border: churchColor, text: '#333' }
+			: typeColors;
 
 		return el('div', {
 			className: 'occurrence-card',
@@ -230,11 +235,22 @@
 		},
 			el('div', { style: { display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' } },
 				el('strong', { style: { fontSize: '14px', color: colors.text } }, formatTime(occurrence.time)),
-				occurrence.is_livestreamed && el(LiveBadge),
+				occurrence.is_livestreamed && el(OnlineBadge),
 				occurrence.is_recurring !== false && el(RecurringIcon)
 			),
 			el('div', { style: { fontSize: '12px', color: '#444', fontWeight: '500' } }, occurrence.type_label || occurrence.type),
-			el('div', { style: { fontSize: '11px', color: '#666', marginTop: '2px' } }, occurrence.church_name)
+			el('div', { style: { fontSize: '11px', color: '#666', marginTop: '2px' } }, occurrence.church_name),
+			occurrence.notes && el('div', {
+				style: {
+					fontSize: '10px',
+					color: '#555',
+					marginTop: '3px',
+					fontStyle: 'italic',
+					overflow: 'hidden',
+					textOverflow: 'ellipsis',
+					whiteSpace: 'nowrap',
+				}
+			}, occurrence.notes)
 		);
 	}
 
@@ -920,7 +936,14 @@
 						? el('tr', null, el('td', { colSpan: 7, style: { textAlign: 'center', padding: '20px' } }, 'No Mass Times configured'))
 						: massTimePosts.map(post => {
 							const time = (post.start_datetime || '').split('T')[1] || '';
-							return el('tr', { key: post.id },
+							const churchColor = post.church_color || '';
+							return el('tr', {
+								key: post.id,
+								style: churchColor ? {
+									borderLeft: `4px solid ${churchColor}`,
+									backgroundColor: `${churchColor}11`,
+								} : {},
+							},
 								el('td', null,
 									el('a', {
 										href: '#',

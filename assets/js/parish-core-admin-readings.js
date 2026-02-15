@@ -30,6 +30,7 @@
 		const [scheduleOptions, setScheduleOptions] = useState([]);
 		const [apiKeyModified, setApiKeyModified] = useState(false);
 		const [newApiKey, setNewApiKey] = useState('');
+		const [savingSchedule, setSavingSchedule] = useState({});
 
 		useEffect(function () {
 			Promise.allSettled([
@@ -187,6 +188,7 @@
 			var updatedSchedule = Object.assign({}, currentSchedule, { schedule: newSchedule });
 
 			setSchedules(Object.assign({}, schedules, { [endpoint]: updatedSchedule }));
+			setSavingSchedule(Object.assign({}, savingSchedule, { [endpoint]: true }));
 
 			apiFetch({
 				path: '/parish/v1/readings/schedules/' + endpoint,
@@ -194,9 +196,11 @@
 				data: { schedule: newSchedule, time: currentSchedule.time || '05:00' },
 			})
 				.then(function () {
-					setNotice({ type: 'success', message: 'Schedule saved.' });
+					setSavingSchedule(Object.assign({}, savingSchedule, { [endpoint]: false }));
+					setNotice({ type: 'success', message: 'Schedule saved automatically.' });
 				})
 				.catch(function (err) {
+					setSavingSchedule(Object.assign({}, savingSchedule, { [endpoint]: false }));
 					setSchedules(Object.assign({}, schedules));
 					setNotice({ type: 'error', message: err.message || 'Failed to save schedule.' });
 				});
@@ -299,7 +303,7 @@
 					el(
 						'p',
 						{ className: 'description' },
-						'Readings are automatically fetched based on the schedule. Click Fetch to manually refresh.'
+						'Readings are automatically fetched based on the schedule. Click Fetch to manually refresh. Schedule changes are saved automatically when you select a new option.'
 					),
 					fetchableEndpoints.length === 0 && el(
 						'p',
@@ -365,15 +369,17 @@
 										el('span', { className: 'endpoint-label' }, 'Schedule'),
 										el(
 											'div',
-											{ className: 'endpoint-schedule-select' },
+											{ className: 'endpoint-schedule-select', style: { display: 'flex', alignItems: 'center', gap: '8px' } },
 											el(SelectControl, {
 												value: scheduleValue,
 												options: selectOptions,
 												onChange: function (val) {
 													updateSchedule(ep.key, val);
 												},
+												disabled: savingSchedule[ep.key],
 												__nextHasNoMarginBottom: true,
-											})
+											}),
+											savingSchedule[ep.key] && el('span', { className: 'schedule-saving-indicator', style: { color: '#007cba', fontSize: '12px' } }, 'Saving...')
 										)
 									),
 									el(

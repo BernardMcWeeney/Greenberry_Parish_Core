@@ -136,6 +136,13 @@ class Parish_CPT_Registry {
 		}
 
 		foreach ( $files as $path ) {
+			$normalized_path = str_replace( '\\', '/', $path );
+
+			// Remove legacy Parish News CPT in favor of default WordPress posts.
+			if ( str_ends_with( $normalized_path, '/news/post-type.php' ) ) {
+				continue;
+			}
+
 			if ( ! file_exists( $path ) ) {
 				continue;
 			}
@@ -177,6 +184,13 @@ class Parish_CPT_Registry {
 		}
 
 		foreach ( $files as $path ) {
+			$normalized_path = str_replace( '\\', '/', $path );
+
+			// Remove legacy Parish News taxonomies in favor of default WordPress taxonomies.
+			if ( str_ends_with( $normalized_path, '/news/tax.php' ) ) {
+				continue;
+			}
+
 			if ( ! file_exists( $path ) ) {
 				continue;
 			}

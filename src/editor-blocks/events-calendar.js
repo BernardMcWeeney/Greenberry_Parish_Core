@@ -1,7 +1,7 @@
 /**
  * Events Calendar Block
  *
- * Full month calendar view with iCal subscription support.
+ * Full month calendar view.
  *
  * @package ParishCore
  */
@@ -51,7 +51,7 @@ const blockIcon = (
 registerBlockType( 'parish/events-calendar', {
 	title: __( 'Events Calendar', 'parish-core' ),
 	description: __(
-		'Display a full month calendar of parish events with iCal subscription and download options.',
+		'Display a full month calendar of parish events.',
 		'parish-core'
 	),
 	icon: blockIcon,
@@ -60,9 +60,6 @@ registerBlockType( 'parish/events-calendar', {
 		__( 'calendar', 'parish-core' ),
 		__( 'events', 'parish-core' ),
 		__( 'month', 'parish-core' ),
-		__( 'ical', 'parish-core' ),
-		__( 'subscribe', 'parish-core' ),
-		__( 'google calendar', 'parish-core' ),
 	],
 
 	edit: function EventsCalendarEdit( { attributes, setAttributes } ) {
@@ -72,8 +69,7 @@ registerBlockType( 'parish/events-calendar', {
 			churchId,
 			cemeteryId,
 			autoDetect,
-			showSubscribe,
-			showDownload,
+			includeFeastDays,
 			iconColor,
 			timeColor,
 		} = attributes;
@@ -174,37 +170,6 @@ registerBlockType( 'parish/events-calendar', {
 			<div { ...blockProps }>
 				<InspectorControls>
 					<PanelBody
-						title={ __( 'Display Settings', 'parish-core' ) }
-						initialOpen={ true }
-					>
-						<ToggleControl
-							label={ __( 'Show Subscribe Buttons', 'parish-core' ) }
-							help={ __(
-								'Show iCal and Google Calendar subscribe buttons.',
-								'parish-core'
-							) }
-							checked={ showSubscribe !== false }
-							onChange={ ( value ) =>
-								setAttributes( { showSubscribe: value } )
-							}
-							__nextHasNoMarginBottom
-						/>
-
-						<ToggleControl
-							label={ __( 'Show Download Button', 'parish-core' ) }
-							help={ __(
-								'Show button to download .ics file.',
-								'parish-core'
-							) }
-							checked={ showDownload !== false }
-							onChange={ ( value ) =>
-								setAttributes( { showDownload: value } )
-							}
-							__nextHasNoMarginBottom
-						/>
-					</PanelBody>
-
-					<PanelBody
 						title={ __( 'Filters', 'parish-core' ) }
 						initialOpen={ true }
 					>
@@ -217,6 +182,19 @@ registerBlockType( 'parish/events-calendar', {
 							checked={ autoDetect !== false }
 							onChange={ ( value ) =>
 								setAttributes( { autoDetect: value } )
+							}
+							__nextHasNoMarginBottom
+						/>
+
+						<ToggleControl
+							label={ __( 'Include Feast Days', 'parish-core' ) }
+							help={ __(
+								'Include liturgical feast days synced from calendar API.',
+								'parish-core'
+							) }
+							checked={ includeFeastDays !== false }
+							onChange={ ( value ) =>
+								setAttributes( { includeFeastDays: value } )
 							}
 							__nextHasNoMarginBottom
 						/>
@@ -319,7 +297,7 @@ registerBlockType( 'parish/events-calendar', {
 						<div className="parish-events-calendar-placeholder">
 							<p>
 								{ __(
-									'Events Calendar — Displays a full month calendar with subscription options.',
+									'Events Calendar — Displays a full month calendar.',
 									'parish-core'
 								) }
 							</p>

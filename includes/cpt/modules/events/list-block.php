@@ -66,6 +66,10 @@ class Parish_Events_List_Block {
 						'type'    => 'boolean',
 						'default' => true,
 					),
+					'includeFeastDays'  => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
 				),
 				'supports'        => array(
 					'html'     => false,
@@ -91,15 +95,16 @@ class Parish_Events_List_Block {
 			return '';
 		}
 
-		$show_search        = (bool) ( $attributes['showSearch'] ?? true );
-		$show_filters       = (bool) ( $attributes['showFilters'] ?? true );
-		$show_layout_toggle = (bool) ( $attributes['showLayoutToggle'] ?? true );
-		$filter_sacrament   = sanitize_text_field( $attributes['filterBySacrament'] ?? '' );
-		$filter_church      = absint( $attributes['filterByChurch'] ?? 0 );
-		$filter_cemetery    = (bool) ( $attributes['filterByCemetery'] ?? false );
-		$limit              = absint( $attributes['limit'] ?? 10 );
-		$layout             = sanitize_text_field( $attributes['layout'] ?? 'list' );
-		$show_pagination    = (bool) ( $attributes['showPagination'] ?? true );
+		$show_search         = (bool) ( $attributes['showSearch'] ?? true );
+		$show_filters        = (bool) ( $attributes['showFilters'] ?? true );
+		$show_layout_toggle  = (bool) ( $attributes['showLayoutToggle'] ?? true );
+		$filter_sacrament    = sanitize_text_field( $attributes['filterBySacrament'] ?? '' );
+		$filter_church       = absint( $attributes['filterByChurch'] ?? 0 );
+		$filter_cemetery     = (bool) ( $attributes['filterByCemetery'] ?? false );
+		$limit               = absint( $attributes['limit'] ?? 10 );
+		$layout              = sanitize_text_field( $attributes['layout'] ?? 'list' );
+		$show_pagination     = (bool) ( $attributes['showPagination'] ?? true );
+		$include_feast_days  = (bool) ( $attributes['includeFeastDays'] ?? true );
 
 		// Get URL parameters for filtering.
 		$search_query       = isset( $_GET['event_search'] ) ? sanitize_text_field( wp_unslash( $_GET['event_search'] ) ) : '';
@@ -177,8 +182,51 @@ class Parish_Events_List_Block {
 			);
 		}
 
+		// Exclude feast day events if option is disabled.
+		if ( ! $include_feast_days ) {
+			$args['meta_query'][] = array(
+				'relation' => 'OR',
+				array(
+					'key'     => 'parish_event_is_feast_day',
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'   => 'parish_event_is_feast_day',
+					'value' => '0',
+				),
+				array(
+					'key'   => 'parish_event_is_feast_day',
+					'value' => '',
+				),
+			);
+		}
+
 		$query  = new WP_Query( $args );
 		$events = $query->posts;
+
+		// Sort events by date, priority (manual events first), then time.
+		usort( $events, function ( $a, $b ) {
+			$date_a     = get_post_meta( $a->ID, 'parish_event_date', true );
+			$date_b     = get_post_meta( $b->ID, 'parish_event_date', true );
+			$priority_a = (int) get_post_meta( $a->ID, 'parish_event_priority', true );
+			$priority_b = (int) get_post_meta( $b->ID, 'parish_event_priority', true );
+			$time_a     = get_post_meta( $a->ID, 'parish_event_time', true );
+			$time_b     = get_post_meta( $b->ID, 'parish_event_time', true );
+
+			// Sort by date first.
+			$date_cmp = strcmp( $date_a, $date_b );
+			if ( 0 !== $date_cmp ) {
+				return $date_cmp;
+			}
+
+			// Then by priority (lower = higher priority, manual events = 0).
+			if ( $priority_a !== $priority_b ) {
+				return $priority_a <=> $priority_b;
+			}
+
+			// Then by time.
+			return strcmp( $time_a, $time_b );
+		} );
 
 		// Build HTML.
 		$html = '';

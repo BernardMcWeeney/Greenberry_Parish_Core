@@ -163,5 +163,14 @@ return array(
 			'default'           => '',
 			'label'             => __( 'Parish office hours', 'parish-core' ),
 		),
+
+		// Display Color (for color coding in mass times admin)
+		'color'                => array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_hex_color',
+			'show_in_rest'      => true,
+			'default'           => '',
+			'label'             => __( 'Church color', 'parish-core' ),
+		),
 	),
 );

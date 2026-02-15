@@ -104,11 +104,6 @@ class Parish_Admin_Colors {
 			return;
 		}
 
-		// Don't apply to block editors to avoid conflicts.
-		if ( $this->is_block_editor_page() ) {
-			return;
-		}
-
 		$colors = $this->get_colors();
 		$css    = $this->build_color_css( $colors );
 
@@ -149,18 +144,34 @@ class Parish_Admin_Colors {
 
 		// Generate color variants.
 		$highlight_dark = $this->adjust_brightness( $colors['highlight'], -20 );
+		$highlight_darker = $this->adjust_brightness( $colors['highlight'], -30 );
 		$highlight_light = $this->adjust_brightness( $colors['highlight'], 15 );
 		$menu_dark = $this->adjust_brightness( $colors['base_menu'], -15 );
 		$menu_submenu = $this->adjust_brightness( $colors['base_menu'], -25 );
 		$links_dark = $this->adjust_brightness( $colors['links'], -15 );
 		$buttons_dark = $this->adjust_brightness( $colors['buttons'], -10 );
 		$buttons_light = $this->adjust_brightness( $colors['buttons'], 10 );
+		$highlight_rgb = $this->hex_to_rgb( $colors['highlight'] );
 
 		// Calculate accessible text color for buttons.
 		$button_text = $this->get_contrast_color( $colors['buttons'] );
 
 		return "
 /* Parish Core Admin Color Scheme - Accessibility Focused */
+
+/* WordPress admin design tokens */
+:root,
+body.wp-admin,
+body.wp-admin.admin-color-fresh,
+body.wp-admin.admin-color-modern {
+	--wp-admin-theme-color: {$colors['highlight']};
+	--wp-admin-theme-color-darker-10: {$highlight_dark};
+	--wp-admin-theme-color-darker-20: {$highlight_darker};
+	--wp-admin-theme-color-rgb: {$highlight_rgb};
+	--wp-components-color-accent: {$colors['highlight']};
+	--wp-components-color-accent-darker-10: {$highlight_dark};
+	--wp-components-color-accent-darker-20: {$highlight_darker};
+}
 
 /* Page Background */
 body.wp-admin {
@@ -318,6 +329,13 @@ a:focus {
 	color: {$button_text};
 }
 
+.wp-core-ui .button-link,
+.wp-core-ui .button-link:active,
+.wp-core-ui .button-link:focus,
+.wp-core-ui .button-link:hover {
+	color: {$colors['links']};
+}
+
 .wp-core-ui .button-primary:active {
 	background: {$buttons_dark};
 	border-color: {$buttons_dark};
@@ -448,6 +466,27 @@ a:focus {
 	color: {$colors['links']};
 }
 
+/* Notices and chips */
+.notice.notice-info,
+.notice.notice-success,
+.notice.notice-warning,
+.notice.notice-error {
+	border-left-color: {$colors['highlight']};
+}
+
+.components-button.is-primary {
+	background: {$colors['buttons']};
+	border-color: {$colors['buttons']};
+	color: {$button_text};
+}
+
+.components-button.is-primary:hover,
+.components-button.is-primary:focus {
+	background: {$buttons_light};
+	border-color: {$buttons_dark};
+	color: {$button_text};
+}
+
 /* Screen meta links */
 #screen-meta-links .show-settings {
 	border-color: {$colors['highlight']};
@@ -521,5 +560,24 @@ a:focus {
 	 */
 	private function url_encode_color( string $color ): string {
 		return str_replace( '#', '%23', $color );
+	}
+
+	/**
+	 * Convert hex color to "r, g, b" string.
+	 *
+	 * @param string $hex Hex color.
+	 */
+	private function hex_to_rgb( string $hex ): string {
+		$hex = ltrim( $hex, '#' );
+
+		if ( 3 === strlen( $hex ) ) {
+			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+		}
+
+		$r = hexdec( substr( $hex, 0, 2 ) );
+		$g = hexdec( substr( $hex, 2, 2 ) );
+		$b = hexdec( substr( $hex, 4, 2 ) );
+
+		return sprintf( '%d, %d, %d', $r, $g, $b );
 	}
 }

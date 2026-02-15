@@ -32,13 +32,6 @@ class Parish_Readings {
 	private string $api_base_url = 'https://catholic-readings-api.app.greenberry.ie/api/v1/';
 
 	/**
-	 * API base URL for Liturgy.day API.
-	 *
-	 * @var string
-	 */
-	private string $liturgy_day_api_url = 'https://liturgy.day/api/';
-
-	/**
 	 * Cache duration in seconds (24 hours).
 	 *
 	 * @var int
@@ -240,30 +233,24 @@ class Parish_Readings {
 				'base_url'  => 'http://calapi.inadiutorium.cz/api/v0/en/',
 			),
 
-			// Liturgy.day API endpoints.
+			// Liturgical endpoints - uses local calculation (no external API).
 			'liturgy_day' => array(
 				'name'      => __( 'Liturgical Day', 'parish-core' ),
-				'path'      => 'day/',
 				'shortcode' => 'liturgical_day',
 				'schedule'  => 'daily',
-				'base_url'  => $this->liturgy_day_api_url,
-				'requires_date' => true,
+				'local'     => true, // Uses local calculation instead of external API.
 			),
 			'liturgy_week' => array(
 				'name'      => __( 'Liturgical Week', 'parish-core' ),
-				'path'      => 'week/',
 				'shortcode' => 'liturgical_week',
 				'schedule'  => 'weekly',
-				'base_url'  => $this->liturgy_day_api_url,
-				'requires_date' => true,
+				'local'     => true, // Uses local calculation instead of external API.
 			),
 			'rosary_days' => array(
 				'name'      => __( 'Rosary Days', 'parish-core' ),
-				'path'      => 'rosary-days/',
 				'shortcode' => 'rosary_days',
 				'schedule'  => 'daily',
-				'base_url'  => $this->liturgy_day_api_url,
-				'requires_date' => true,
+				'local'     => true, // Uses local calculation instead of external API.
 			),
 		);
 	}
@@ -476,8 +463,8 @@ class Parish_Readings {
 				continue;
 			}
 
-			// Liturgy.day endpoints don't require API key.
-			if ( isset( $config['base_url'] ) && strpos( $config['base_url'], 'liturgy.day' ) !== false ) {
+			// Local endpoints use local calculation (no API key required).
+			if ( ! empty( $config['local'] ) ) {
 				$result = $this->fetch_liturgy_day_endpoint( $endpoint );
 			} else {
 				$result = $this->fetch_endpoint( $endpoint, $api_key );
@@ -493,7 +480,7 @@ class Parish_Readings {
 	}
 
 	/**
-	 * Fetch a liturgy.day endpoint.
+	 * Calculate liturgical data locally (no external API).
 	 *
 	 * @param string $endpoint Endpoint key.
 	 */
@@ -505,43 +492,48 @@ class Parish_Readings {
 			);
 		}
 
-		$config   = $this->endpoints[ $endpoint ];
-		$base_url = $config['base_url'] ?? $this->liturgy_day_api_url;
-		$date     = current_time( 'Y-m-d' );
-		$url      = $base_url . $config['path'] . $date;
+		// Calculate data locally instead of calling external API.
+		$data = array();
 
-		$args = array(
-			'headers' => array(
-				'Accept' => 'application/json',
-			),
-			'timeout' => 30,
-		);
+		switch ( $endpoint ) {
+			case 'liturgy_day':
+				$season = $this->calculate_liturgical_season();
+				$rosary = $this->calculate_todays_rosary();
+				$data   = array(
+					'date'          => current_time( 'Y-m-d' ),
+					'season'        => $season,
+					'rosary-series' => $rosary['rosary-series'],
+					'sunday-cycle'  => $this->calculate_sunday_cycle(),
+					'weekday-cycle' => $this->calculate_weekday_cycle(),
+					'loth-volume'   => $this->calculate_loth_volume( $season ),
+				);
+				break;
 
-		$response = wp_remote_get( $url, $args );
+			case 'liturgy_week':
+				$season = $this->calculate_liturgical_season();
+				$data   = array(
+					'season'      => $season,
+					'rosary-week' => $this->calculate_week_rosary( $season ),
+				);
+				break;
 
-		if ( is_wp_error( $response ) ) {
-			return array(
-				'success' => false,
-				'message' => $response->get_error_message(),
-			);
-		}
+			case 'rosary_days':
+				$season = $this->calculate_liturgical_season();
+				$data   = array(
+					'rosary-days' => array(
+						'Joyful'    => array( 'Monday', 'Saturday' ),
+						'Sorrowful' => array( 'Tuesday', 'Friday' ),
+						'Glorious'  => array( 'Sunday', 'Wednesday' ),
+						'Luminous'  => array( 'Thursday' ),
+					),
+				);
+				break;
 
-		$code = wp_remote_retrieve_response_code( $response );
-		if ( $code !== 200 ) {
-			return array(
-				'success' => false,
-				'message' => sprintf( __( 'API returned status %d', 'parish-core' ), $code ),
-			);
-		}
-
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
-
-		if ( json_last_error() !== JSON_ERROR_NONE ) {
-			return array(
-				'success' => false,
-				'message' => __( 'Invalid JSON response.', 'parish-core' ),
-			);
+			default:
+				return array(
+					'success' => false,
+					'message' => __( 'Unknown liturgical endpoint.', 'parish-core' ),
+				);
 		}
 
 		// Store in options and transient cache.
@@ -551,9 +543,49 @@ class Parish_Readings {
 
 		return array(
 			'success'    => true,
-			'message'    => __( 'Fetched successfully.', 'parish-core' ),
+			'message'    => __( 'Calculated successfully.', 'parish-core' ),
 			'last_fetch' => current_time( 'mysql' ),
 		);
+	}
+
+	/**
+	 * Calculate the Sunday lectionary cycle (A, B, or C).
+	 *
+	 * @return string Cycle letter.
+	 */
+	private function calculate_sunday_cycle(): string {
+		$year = (int) current_time( 'Y' );
+		// Cycle follows a 3-year pattern: A (year % 3 == 1), B (year % 3 == 2), C (year % 3 == 0).
+		$cycles = array( 'C', 'A', 'B' );
+		return $cycles[ $year % 3 ];
+	}
+
+	/**
+	 * Calculate the weekday lectionary cycle (I or II).
+	 *
+	 * @return string Cycle number.
+	 */
+	private function calculate_weekday_cycle(): string {
+		$year = (int) current_time( 'Y' );
+		// Odd years = Year I, Even years = Year II.
+		return ( $year % 2 === 1 ) ? 'I' : 'II';
+	}
+
+	/**
+	 * Calculate Liturgy of the Hours volume.
+	 *
+	 * @param string $season Liturgical season.
+	 * @return string Volume number.
+	 */
+	private function calculate_loth_volume( string $season ): string {
+		$volumes = array(
+			'Advent'        => 'I',
+			'Christmas'     => 'I',
+			'Lent'          => 'II',
+			'Easter'        => 'II',
+			'Ordinary Time' => 'III/IV',
+		);
+		return $volumes[ $season ] ?? 'III';
 	}
 
 	/**
@@ -581,8 +613,8 @@ class Parish_Readings {
 
 		$config = $this->endpoints[ $endpoint ];
 
-		// Handle liturgy.day endpoints separately.
-		if ( isset( $config['base_url'] ) && strpos( $config['base_url'], 'liturgy.day' ) !== false ) {
+		// Handle local endpoints (liturgical calculations).
+		if ( ! empty( $config['local'] ) ) {
 			return $this->fetch_liturgy_day_endpoint( $endpoint );
 		}
 
@@ -941,23 +973,6 @@ class Parish_Readings {
 			$html .= '<p class="liturgical-loth">';
 			$html .= '<strong>' . esc_html__( 'Liturgy of the Hours:', 'parish-core' ) . '</strong> ';
 			$html .= sprintf( esc_html__( 'Volume %s', 'parish-core' ), esc_html( $loth_volume ) );
-			$html .= '</p>';
-		}
-
-		if ( $rosary_series ) {
-			$mystery_info = $this->rosary_mysteries[ $rosary_series ] ?? null;
-			$rosary_link  = $atts['link_rosary'] ?? '';
-
-			$html .= '<p class="liturgical-rosary">';
-			$html .= '<strong>' . esc_html__( 'Today\'s Rosary:', 'parish-core' ) . '</strong> ';
-
-			if ( $rosary_link && $mystery_info ) {
-				$link_url = trailingslashit( $rosary_link ) . '#' . $mystery_info['anchor'];
-				$html .= '<a href="' . esc_url( $link_url ) . '">' . esc_html( $mystery_info['name'] ) . '</a>';
-			} else {
-				$html .= esc_html( $mystery_info['name'] ?? $rosary_series . ' Mysteries' );
-			}
-
 			$html .= '</p>';
 		}
 
@@ -1561,17 +1576,18 @@ class Parish_Readings {
 			$last_fetch = $this->get_last_fetch( $key );
 			$has_data   = null !== $this->get_reading( $key );
 
-			// Determine if this is a liturgy.day endpoint (no API key required).
-			$is_liturgy_day = isset( $config['base_url'] ) && strpos( $config['base_url'], 'liturgy.day' ) !== false;
+			// Determine if this is a local endpoint (no API key required).
+			$is_local = ! empty( $config['local'] );
 
 			$status[ $key ] = array(
-				'name'        => $config['name'],
-				'shortcode'   => '[' . $config['shortcode'] . ']',
-				'schedule'    => $config['schedule'],
-				'last_fetch'  => $last_fetch,
-				'has_data'    => $has_data,
-				'fetchable'   => true,
-				'requires_key' => ! $is_liturgy_day,
+				'name'         => $config['name'],
+				'shortcode'    => '[' . $config['shortcode'] . ']',
+				'schedule'     => $config['schedule'],
+				'last_fetch'   => $last_fetch,
+				'has_data'     => $has_data,
+				'fetchable'    => true,
+				'requires_key' => ! $is_local,
+				'local'        => $is_local,
 			);
 		}
 

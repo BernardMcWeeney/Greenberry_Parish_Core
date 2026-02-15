@@ -3,7 +3,7 @@
  * Plugin Name: Parish Core
  * Plugin URI: https://github.com/greenberry/parish-core
  * Description: A comprehensive parish management system for Catholic parishes.
- * Version: 8.0.0
+ * Version: 9.1.0
  * Author: Greenberry
  * Author URI: https://greenberry.ie
  * License: GPL v2 or later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PARISH_CORE_VERSION', '7.12.0' );
+define( 'PARISH_CORE_VERSION', '9.1.0' );
 define( 'PARISH_CORE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PARISH_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'PARISH_CORE_BASENAME', plugin_basename( __FILE__ ) );
@@ -71,9 +71,6 @@ function parish_core_includes(): void {
 		'class-parish-rosary-shortcodes.php',
 		'class-parish-rosary-blocks.php',
 
-		// Events migrator.
-		'class-parish-events-migrator.php',
-
 		// Other modules you already have.
 		'class-parish-rest-api.php',
 		'class-parish-admin-ui.php',
@@ -81,6 +78,7 @@ function parish_core_includes(): void {
 		'class-parish-admin-colors.php',
 		'class-parish-slider.php',
 		'class-parish-readings.php',
+		'class-parish-feast-days.php',
 	);
 
 	foreach ( $includes as $file ) {
@@ -385,6 +383,11 @@ function parish_core_maybe_migrate(): void {
 		parish_core_migrate_livestream_urls();
 	}
 
+	// One-time migration: convert legacy Parish News CPT posts to WordPress posts.
+	if ( ! get_option( 'parish_core_news_posts_migrated', false ) ) {
+		parish_core_migrate_news_posts_to_wp_posts();
+	}
+
 	// Update version if changed.
 	if ( $db_version !== $current_version ) {
 		update_option( 'parish_core_db_version', $current_version );
@@ -435,6 +438,99 @@ function parish_core_migrate_livestream_urls(): void {
 }
 
 /**
+ * One-time migration: convert legacy parish_news CPT to default WordPress posts.
+ */
+function parish_core_migrate_news_posts_to_wp_posts(): void {
+	$news_posts = get_posts(
+		array(
+			'post_type'      => 'parish_news',
+			'posts_per_page' => -1,
+			'post_status'    => 'any',
+			'fields'         => 'ids',
+		)
+	);
+
+	if ( empty( $news_posts ) ) {
+		update_option( 'parish_core_news_posts_migrated', true );
+		return;
+	}
+
+	// Register temporary taxonomies for migration if they are missing.
+	if ( ! taxonomy_exists( 'parish_news_category' ) ) {
+		register_taxonomy( 'parish_news_category', 'parish_news', array( 'public' => false ) );
+	}
+	if ( ! taxonomy_exists( 'parish_news_tag' ) ) {
+		register_taxonomy( 'parish_news_tag', 'parish_news', array( 'public' => false ) );
+	}
+
+	$migrated = 0;
+	$errors   = 0;
+
+	foreach ( $news_posts as $post_id ) {
+		$category_ids = array();
+		$tag_names    = array();
+
+		$legacy_categories = wp_get_post_terms( $post_id, 'parish_news_category' );
+		if ( is_array( $legacy_categories ) ) {
+			foreach ( $legacy_categories as $term ) {
+				$existing = term_exists( $term->name, 'category' );
+				if ( ! $existing ) {
+					$created = wp_insert_term( $term->name, 'category' );
+					if ( ! is_wp_error( $created ) ) {
+						$category_ids[] = (int) $created['term_id'];
+					}
+					continue;
+				}
+
+				$category_ids[] = (int) ( is_array( $existing ) ? ( $existing['term_id'] ?? 0 ) : $existing );
+			}
+		}
+
+		$legacy_tags = wp_get_post_terms( $post_id, 'parish_news_tag' );
+		if ( is_array( $legacy_tags ) ) {
+			foreach ( $legacy_tags as $term ) {
+				$tag_names[] = $term->name;
+			}
+		}
+
+		$updated = wp_update_post(
+			array(
+				'ID'        => $post_id,
+				'post_type' => 'post',
+			),
+			true
+		);
+
+		if ( is_wp_error( $updated ) ) {
+			++$errors;
+			continue;
+		}
+
+		if ( ! empty( $category_ids ) ) {
+			wp_set_post_categories( $post_id, array_unique( array_filter( $category_ids ) ), false );
+		}
+
+		if ( ! empty( $tag_names ) ) {
+			wp_set_post_tags( $post_id, array_unique( $tag_names ), false );
+		}
+
+		++$migrated;
+	}
+
+	update_option( 'parish_core_news_posts_migrated', true );
+
+	if ( $migrated > 0 || $errors > 0 ) {
+		error_log(
+			sprintf(
+				'Parish Core: Migrated %d parish_news posts to default posts (%d errors).',
+				$migrated,
+				$errors
+			)
+		);
+	}
+}
+
+/**
  * Keep your existing default settings function unchanged
  * (you already have it below in your current file).
  */
@@ -463,6 +559,10 @@ function parish_core_get_default_settings(): array {
 		'readings_api_key'        => '',
 		'readings_schedules'      => '{}',
 
+		// Feast Days settings.
+		'feast_days_sync_enabled' => false,
+		'feast_days_months_ahead' => 3,
+
 		// Mass Times settings.
 		'default_livestream_url'  => 'https://bohermeenparish.ie/online-live-mass/',
 
@@ -476,6 +576,31 @@ function parish_core_get_default_settings(): array {
 		'admin_color_links'        => '#2271b1',
 		'admin_color_buttons'      => '#2271b1',
 		'admin_color_form_inputs'  => '#2271b1',
+		'menu_options'             => array(
+			'menu_order' => array(
+				'parish-core',
+				'parish-about',
+				'parish-events',
+				'parish-mass-times',
+				'parish-slider',
+				'cpts',
+				'parish-readings',
+				'parish-settings',
+				'remaining',
+			),
+			'flatten_roles' => array(
+				'editor'      => true,
+				'author'      => true,
+				'contributor' => true,
+				'subscriber'  => true,
+			),
+			'replace_dashboard_roles' => array(
+				'editor'      => true,
+				'author'      => true,
+				'contributor' => true,
+				'subscriber'  => true,
+			),
+		),
 
 		// Parish Identity (About Parish - editor level).
 		'parish_name'          => '',

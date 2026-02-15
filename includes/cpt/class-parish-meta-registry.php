@@ -78,6 +78,13 @@ class Parish_Meta_Registry {
 		}
 
 		foreach ( $files as $file ) {
+			$normalized_path = str_replace( '\\', '/', $file );
+
+			// Remove legacy Parish News meta schema in favor of default WordPress posts.
+			if ( str_ends_with( $normalized_path, '/news/meta.php' ) ) {
+				continue;
+			}
+
 			$def = require $file;
 
 			if ( is_array( $def ) && ! empty( $def['post_type'] ) && ! empty( $def['fields'] ) ) {

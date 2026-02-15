@@ -92,6 +92,11 @@ class Parish_Core {
 			Parish_Rosary_Blocks::register();
 		}
 
+		// Feast Days integration (liturgical calendar sync).
+		if ( class_exists( 'Parish_Feast_Days' ) && self::is_feature_enabled( 'events' ) ) {
+			Parish_Feast_Days::instance();
+		}
+
 	}
 
 	public static function get_settings(): array {
@@ -126,7 +131,6 @@ class Parish_Core {
 			'parish_cemetery',
 			'parish_group',
 			'parish_newsletter',
-			'parish_news',
 			'parish_gallery',
 			'parish_reflection',
 			'parish_prayer',
@@ -144,7 +148,7 @@ class Parish_Core {
 			'parish_cemetery'     => 'cemeteries',
 			'parish_group'        => 'groups',
 			'parish_newsletter'   => 'newsletters',
-			'parish_news'         => 'news',
+			'post'               => 'news',
 			'parish_gallery'      => 'gallery',
 			'parish_reflection'   => 'reflections',
 			'parish_prayer'       => 'prayers',

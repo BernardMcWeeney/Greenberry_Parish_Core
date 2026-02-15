@@ -15,6 +15,7 @@
 		Button,
 		Notice,
 		TabPanel,
+		SelectControl,
 		apiFetch,
 		LoadingSpinner,
 	} = window.ParishCoreAdmin;
@@ -181,6 +182,55 @@
 		);
 	}
 
+	function FeastDaySyncButton({ monthsAhead }) {
+		const [syncing, setSyncing] = useState(false);
+		const [result, setResult] = useState(null);
+
+		const doSync = function () {
+			setSyncing(true);
+			setResult(null);
+			apiFetch({
+				path: '/parish/v1/feast-days/sync',
+				method: 'POST',
+				data: {
+					months_ahead: parseInt(monthsAhead, 10) || 3,
+				},
+				})
+				.then(function (res) {
+					setSyncing(false);
+					var isSuccess = !!(res && res.success);
+					var errors = (res && res.results && Array.isArray(res.results.errors)) ? res.results.errors : [];
+					var detail = errors.length > 0 ? ' ' + errors[0] : '';
+					setResult({
+						type: isSuccess ? 'success' : 'error',
+						message: (res && res.message ? res.message : 'Sync completed.') + detail,
+					});
+				})
+				.catch(function (err) {
+					setSyncing(false);
+					setResult({
+						type: 'error',
+						message: err.message || 'Sync failed. Please try again.',
+					});
+				});
+		};
+
+		return el(
+			'div',
+			{ style: { marginTop: '16px' } },
+			el(
+				Button,
+				{ isSecondary: true, isBusy: syncing, onClick: doSync, disabled: syncing },
+				syncing ? 'Syncing...' : 'Sync Feast Days Now'
+			),
+			result && el(
+				Notice,
+				{ status: result.type, isDismissible: true, onRemove: function () { setResult(null); }, style: { marginTop: '8px' } },
+				result.message
+			)
+		);
+	}
+
 	function Settings() {
 		const [settings, setSettings] = useState({});
 		const [loading, setLoading] = useState(true);
@@ -240,7 +290,7 @@
 			{ key: 'enable_cemeteries', label: 'Cemeteries' },
 			{ key: 'enable_groups', label: 'Parish Groups' },
 			{ key: 'enable_newsletters', label: 'Newsletters' },
-			{ key: 'enable_news', label: 'Parish News' },
+			{ key: 'enable_news', label: 'News / Posts' },
 			{ key: 'enable_gallery', label: 'Gallery' },
 			{ key: 'enable_reflections', label: 'Reflections' },
 			{ key: 'enable_prayers', label: 'Prayers' },
@@ -266,9 +316,69 @@
 			});
 		};
 
+		const roleLabels = settings.menu_roles || {
+			editor: 'Editor',
+			author: 'Author',
+			contributor: 'Contributor',
+			subscriber: 'Subscriber',
+		};
+		const roleKeys = Object.keys(roleLabels);
+		const menuOptions = settings.menu_options || {};
+		const flattenRoles = menuOptions.flatten_roles || {};
+		const replaceDashboardRoles = menuOptions.replace_dashboard_roles || {};
+		const menuOrderLabels = settings.menu_order_labels || {
+			'parish-core': 'Dashboard',
+			'parish-about': 'About Parish',
+			'parish-events': 'Events',
+			'parish-mass-times': 'Mass Times',
+			'parish-slider': 'Slider',
+			cpts: 'Content Types (CPTs)',
+			'parish-readings': 'Readings API',
+			'parish-settings': 'Settings',
+			remaining: 'Other Items',
+		};
+		const menuOrder = menuOptions.menu_order || Object.keys(menuOrderLabels);
+
+		const updateRoleOption = function (groupKey, role, value) {
+			setSettings(function (prev) {
+				var nextMenuOptions = Object.assign({}, prev.menu_options || {});
+				var nextGroup = Object.assign({}, nextMenuOptions[groupKey] || {});
+				nextGroup[role] = !!value;
+				nextMenuOptions[groupKey] = nextGroup;
+
+				return Object.assign({}, prev, {
+					menu_options: nextMenuOptions,
+				});
+			});
+		};
+
+		const updateMenuOrder = function (nextOrder) {
+			setSettings(function (prev) {
+				var nextMenuOptions = Object.assign({}, prev.menu_options || {});
+				nextMenuOptions.menu_order = nextOrder;
+				return Object.assign({}, prev, {
+					menu_options: nextMenuOptions,
+				});
+			});
+		};
+
+		const moveMenuOrderItem = function (index, direction) {
+			var target = index + direction;
+			if (target < 0 || target >= menuOrder.length) {
+				return;
+			}
+
+			var nextOrder = menuOrder.slice();
+			var item = nextOrder[index];
+			nextOrder[index] = nextOrder[target];
+			nextOrder[target] = item;
+			updateMenuOrder(nextOrder);
+		};
+
 		const tabs = [
 			{ name: 'features', title: 'Features', className: 'tab-features' },
 			{ name: 'colors', title: 'Admin Colors', className: 'tab-colors' },
+			{ name: 'menu-options', title: 'Menu options', className: 'tab-menu-options' },
 			{ name: 'shortcodes', title: 'Shortcodes & Blocks', className: 'tab-shortcodes' },
 		];
 
@@ -315,6 +425,44 @@
 												upd(t.key, v);
 											},
 										});
+									})
+								)
+							),
+							el(
+								PanelBody,
+								{ title: 'Events Settings', initialOpen: true },
+								el(
+									'p',
+									{ className: 'description' },
+									'Configure events calendar and feast day integration.'
+								),
+								el(ToggleControl, {
+									label: 'Sync Feast Days',
+									help: 'Automatically sync liturgical feast days from the calendar API to your events. Feast days will appear in your events calendar.',
+									checked: settings.feast_days_sync_enabled === true,
+									onChange: function (v) {
+										upd('feast_days_sync_enabled', v);
+									},
+								}),
+								settings.feast_days_sync_enabled && el(
+									Fragment,
+									null,
+									el(SelectControl, {
+										label: 'Months Ahead to Sync',
+										value: String(settings.feast_days_months_ahead || 3),
+										options: [
+											{ label: '1 month', value: '1' },
+											{ label: '2 months', value: '2' },
+											{ label: '3 months (recommended)', value: '3' },
+											{ label: '6 months', value: '6' },
+											{ label: '12 months', value: '12' },
+										],
+										onChange: function (v) {
+											upd('feast_days_months_ahead', parseInt(v, 10));
+										},
+									}),
+									el(FeastDaySyncButton, {
+										monthsAhead: settings.feast_days_months_ahead || 3,
 									})
 								)
 							)
@@ -398,6 +546,96 @@
 						);
 					}
 
+					if (tab.name === 'menu-options') {
+						return el(
+							Panel,
+							null,
+							el(
+								PanelBody,
+								{ title: 'Role-Based Menu Options', initialOpen: true },
+								el(
+									'p',
+									{ className: 'description' },
+									'Choose how Parish menu items appear for each default non-admin WordPress role.'
+								),
+									el(
+										'div',
+										{ className: 'menu-options-grid' },
+										roleKeys.map(function (role) {
+										return el(
+											'div',
+											{ key: role, className: 'menu-role-card' },
+											el('h4', null, roleLabels[role]),
+											el(ToggleControl, {
+												label: 'Show Parish pages as top-level menu items',
+												checked: flattenRoles[role] !== false,
+												onChange: function (v) {
+													updateRoleOption('flatten_roles', role, v);
+												},
+											}),
+											el(ToggleControl, {
+												label: 'Replace WordPress Dashboard with Parish Dashboard',
+												checked: replaceDashboardRoles[role] !== false,
+												onChange: function (v) {
+													updateRoleOption('replace_dashboard_roles', role, v);
+												},
+											})
+											);
+										})
+									),
+									el(
+										'h4',
+										{ style: { marginTop: '24px', marginBottom: '8px' } },
+										'Parish Menu Order'
+									),
+									el(
+										'p',
+										{ className: 'description' },
+										'Use these controls to set the order of Parish menu items.'
+									),
+									el(
+										'div',
+										{ className: 'menu-order-list' },
+										menuOrder.map(function (token, index) {
+											return el(
+												'div',
+												{ key: token, className: 'menu-order-item' },
+												el('span', { className: 'menu-order-label' }, menuOrderLabels[token] || token),
+												el(
+													'div',
+													{ className: 'menu-order-actions' },
+													el(
+														Button,
+														{
+															isSmall: true,
+															isSecondary: true,
+															disabled: index === 0,
+															onClick: function () {
+																moveMenuOrderItem(index, -1);
+															},
+														},
+														'Up'
+													),
+													el(
+														Button,
+														{
+															isSmall: true,
+															isSecondary: true,
+															disabled: index === menuOrder.length - 1,
+															onClick: function () {
+																moveMenuOrderItem(index, 1);
+															},
+														},
+														'Down'
+													)
+												)
+											);
+										})
+									)
+								)
+							);
+						}
+
 					if (tab.name === 'shortcodes') {
 						return el(
 							Panel,
@@ -412,7 +650,7 @@
 
 					return null;
 				}
-			),
+				),
 			el(
 				'div',
 				{ className: 'parish-save-bar' },

@@ -162,8 +162,8 @@ class Parish_Slider {
 				'feature'     => 'newsletters',
 			),
 			'latest_news' => array(
-				'name'        => __( 'Latest Parish News', 'parish-core' ),
-				'description' => __( 'Shows the most recent news item', 'parish-core' ),
+				'name'        => __( 'Latest News Post', 'parish-core' ),
+				'description' => __( 'Shows the most recent WordPress post', 'parish-core' ),
 				'icon'        => 'megaphone',
 				'category'    => 'content',
 				'callback'    => array( $this, 'get_news_slide_data' ),
@@ -611,18 +611,20 @@ class Parish_Slider {
 
 	/**
 	 * Get rosary slide data with custom image support.
+	 *
+	 * Uses Parish_Rosary_Schedule for reliable mystery set determination
+	 * instead of external API which can be inconsistent.
 	 */
 	public function get_rosary_slide_data( array $settings = array() ): ?array {
 		$series = '';
 
-		if ( class_exists( 'Parish_Readings' ) ) {
-			$readings = Parish_Readings::instance();
-			$data     = $readings->get_reading( 'liturgy_day' );
-			$series   = $data['rosary-series'] ?? '';
+		// Use Parish_Rosary_Schedule for reliable rosary series determination.
+		if ( class_exists( 'Parish_Rosary_Schedule' ) ) {
+			$series = ucfirst( Parish_Rosary_Schedule::get_todays_mystery_set() );
 		}
 
 		if ( empty( $series ) ) {
-			// Fallback calculation.
+			// Fallback calculation if class not available.
 			$day_of_week = current_time( 'l' );
 			$schedule    = array(
 				'Sunday'    => 'Glorious',
@@ -767,12 +769,12 @@ class Parish_Slider {
 	 * Get news slide data.
 	 */
 	public function get_news_slide_data( array $settings = array() ): ?array {
-		if ( ! post_type_exists( 'parish_news' ) ) {
+		if ( ! post_type_exists( 'post' ) ) {
 			return null;
 		}
 
 		$posts = get_posts( array(
-			'post_type'      => 'parish_news',
+			'post_type'      => 'post',
 			'posts_per_page' => 1,
 			'post_status'    => 'publish',
 		) );

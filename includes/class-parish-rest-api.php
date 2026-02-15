@@ -76,13 +76,6 @@ class Parish_REST_API {
 			'permission_callback' => '__return_true',
 		));
 
-		// Events - Migration endpoint.
-		register_rest_route( $this->namespace, '/events/migrate', array(
-			'methods'             => 'POST',
-			'callback'            => array( $this, 'migrate_events' ),
-			'permission_callback' => array( $this, 'can_manage' ),
-		));
-
 		// Events - List view for admin.
 		register_rest_route( $this->namespace, '/events/list', array(
 			'methods'             => 'GET',
@@ -124,10 +117,6 @@ class Parish_REST_API {
 			'methods' => 'POST', 'callback' => array( $this, 'fetch_readings' ), 'permission_callback' => array( $this, 'can_manage' ),
 		));
 
-		register_rest_route( $this->namespace, '/readings/(?P<endpoint>[a-z_]+)', array(
-			'methods' => 'GET', 'callback' => array( $this, 'get_reading' ), 'permission_callback' => '__return_true',
-		));
-
 		// Readings schedule management.
 		register_rest_route( $this->namespace, '/readings/schedules', array(
 			'methods'             => 'GET',
@@ -157,6 +146,11 @@ class Parish_REST_API {
 			'methods'             => 'GET',
 			'callback'            => array( $this, 'get_schedule_options' ),
 			'permission_callback' => array( $this, 'can_manage' ),
+		));
+
+		// Keep this dynamic endpoint route after fixed /readings/* routes.
+		register_rest_route( $this->namespace, '/readings/(?P<endpoint>[a-z_]+)', array(
+			'methods' => 'GET', 'callback' => array( $this, 'get_reading' ), 'permission_callback' => '__return_true',
 		));
 
 		// Shortcode reference.
@@ -313,6 +307,158 @@ class Parish_REST_API {
 	public function can_edit(): bool { return current_user_can( 'edit_posts' ); }
 	public function can_manage(): bool { return current_user_can( 'manage_options' ); }
 
+	/**
+	 * Supported default non-admin WordPress roles.
+	 *
+	 * @return string[]
+	 */
+	private function get_default_non_admin_roles(): array {
+		return array(
+			'editor',
+			'author',
+			'contributor',
+			'subscriber',
+		);
+	}
+
+	/**
+	 * Labels for default non-admin roles.
+	 */
+	private function get_default_non_admin_role_labels(): array {
+		return array(
+			'editor'      => __( 'Editor', 'parish-core' ),
+			'author'      => __( 'Author', 'parish-core' ),
+			'contributor' => __( 'Contributor', 'parish-core' ),
+			'subscriber'  => __( 'Subscriber', 'parish-core' ),
+		);
+	}
+
+	/**
+	 * Default menu options for non-admin role behavior.
+	 */
+	private function get_default_menu_options(): array {
+		return array(
+			'menu_order' => $this->get_default_menu_order(),
+			'flatten_roles' => array(
+				'editor'      => true,
+				'author'      => true,
+				'contributor' => true,
+				'subscriber'  => true,
+			),
+			'replace_dashboard_roles' => array(
+				'editor'      => true,
+				'author'      => true,
+				'contributor' => true,
+				'subscriber'  => true,
+			),
+		);
+	}
+
+	/**
+	 * Menu order tokens with labels.
+	 */
+	private function get_menu_order_labels(): array {
+		return array(
+			'parish-core'       => __( 'Dashboard', 'parish-core' ),
+			'parish-about'      => __( 'About Parish', 'parish-core' ),
+			'parish-events'     => __( 'Events', 'parish-core' ),
+			'parish-mass-times' => __( 'Mass Times', 'parish-core' ),
+			'parish-slider'     => __( 'Slider', 'parish-core' ),
+			'cpts'              => __( 'Content Types (CPTs)', 'parish-core' ),
+			'parish-readings'   => __( 'Readings API', 'parish-core' ),
+			'parish-settings'   => __( 'Settings', 'parish-core' ),
+			'remaining'         => __( 'Other Items', 'parish-core' ),
+		);
+	}
+
+	/**
+	 * Default menu order tokens.
+	 *
+	 * @return string[]
+	 */
+	private function get_default_menu_order(): array {
+		return array_keys( $this->get_menu_order_labels() );
+	}
+
+	/**
+	 * Normalize menu order tokens.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string[]
+	 */
+	private function normalize_menu_order( $value ): array {
+		$defaults = $this->get_default_menu_order();
+
+		if ( ! is_array( $value ) ) {
+			return $defaults;
+		}
+
+		$order = array();
+		foreach ( $value as $token ) {
+			$token = is_string( $token ) ? trim( $token ) : '';
+			if ( '' === $token || ! in_array( $token, $defaults, true ) || in_array( $token, $order, true ) ) {
+				continue;
+			}
+			$order[] = $token;
+		}
+
+		foreach ( $defaults as $token ) {
+			if ( in_array( $token, $order, true ) ) {
+				continue;
+			}
+			$order[] = $token;
+		}
+
+		return $order;
+	}
+
+	/**
+	 * Normalize menu options from settings storage.
+	 *
+	 * @param mixed $raw Raw menu options value.
+	 */
+	private function normalize_menu_options( $raw ): array {
+		$defaults = $this->get_default_menu_options();
+
+		if ( is_string( $raw ) ) {
+			$decoded = json_decode( $raw, true );
+			$raw     = is_array( $decoded ) ? $decoded : array();
+		}
+
+		if ( ! is_array( $raw ) ) {
+			$raw = array();
+		}
+
+		$flatten_roles           = is_array( $raw['flatten_roles'] ?? null ) ? $raw['flatten_roles'] : array();
+		$replace_dashboard_roles = is_array( $raw['replace_dashboard_roles'] ?? null ) ? $raw['replace_dashboard_roles'] : array();
+		$menu_order              = $this->normalize_menu_order( $raw['menu_order'] ?? $defaults['menu_order'] );
+
+		foreach ( $this->get_default_non_admin_roles() as $role ) {
+			$flatten_roles[ $role ] = isset( $flatten_roles[ $role ] )
+				? (bool) $flatten_roles[ $role ]
+				: (bool) $defaults['flatten_roles'][ $role ];
+
+			$replace_dashboard_roles[ $role ] = isset( $replace_dashboard_roles[ $role ] )
+				? (bool) $replace_dashboard_roles[ $role ]
+				: (bool) $defaults['replace_dashboard_roles'][ $role ];
+		}
+
+		return array(
+			'flatten_roles'           => $flatten_roles,
+			'replace_dashboard_roles' => $replace_dashboard_roles,
+			'menu_order'              => $menu_order,
+		);
+	}
+
+	/**
+	 * Sanitize menu options payload from API.
+	 *
+	 * @param mixed $value Request value.
+	 */
+	private function sanitize_menu_options( $value ): array {
+		return $this->normalize_menu_options( $value );
+	}
+
 	// =========================================================================
 	// DASHBOARD
 	// =========================================================================
@@ -347,12 +493,65 @@ class Parish_REST_API {
 		$data['recent_death_notices'] = $this->get_recent_posts( 'parish_death_notice', 5, 'death_notices' );
 		$data['recent_newsletters']   = $this->get_recent_posts( 'parish_newsletter', 5, 'newsletters' );
 		$data['upcoming_events']      = $this->get_upcoming_events();
+		$data['next_mass_times']      = $this->get_next_mass_times();
+		$data['recent_posts']         = $this->get_all_recent_posts( 7 );
 
 		return rest_ensure_response( $data );
 	}
 
+	/**
+	 * Get recently published posts across all parish post types.
+	 *
+	 * @param int $limit Number of posts to return.
+	 * @return array Recent posts with type labels.
+	 */
+	private function get_all_recent_posts( int $limit = 7 ): array {
+		$post_types = array(
+			'parish_newsletter'   => array( 'label' => __( 'Newsletter', 'parish-core' ), 'feature' => 'newsletters' ),
+			'parish_death_notice' => array( 'label' => __( 'Death Notice', 'parish-core' ), 'feature' => 'death_notices' ),
+			'parish_reflection'   => array( 'label' => __( 'Reflection', 'parish-core' ), 'feature' => 'reflections' ),
+			'parish_event'        => array( 'label' => __( 'Event', 'parish-core' ), 'feature' => 'events' ),
+			'post'                => array( 'label' => __( 'Post', 'parish-core' ), 'feature' => 'news' ),
+			'parish_baptism'      => array( 'label' => __( 'Baptism', 'parish-core' ), 'feature' => 'baptism_notices' ),
+			'parish_wedding'      => array( 'label' => __( 'Wedding', 'parish-core' ), 'feature' => 'wedding_notices' ),
+		);
+
+		$enabled_types = array();
+		foreach ( $post_types as $type => $cfg ) {
+			if ( Parish_Core::is_feature_enabled( $cfg['feature'] ) && post_type_exists( $type ) ) {
+				$enabled_types[] = $type;
+			}
+		}
+
+		if ( empty( $enabled_types ) ) {
+			return array();
+		}
+
+		$posts = get_posts( array(
+			'post_type'      => $enabled_types,
+			'posts_per_page' => $limit,
+			'post_status'    => 'publish',
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+		) );
+
+		$result = array();
+		foreach ( $posts as $p ) {
+			$type_config = $post_types[ $p->post_type ] ?? null;
+			$result[] = array(
+				'id'         => $p->ID,
+				'title'      => $p->post_title,
+				'date'       => wp_date( 'M j', strtotime( $p->post_date ) ),
+				'type_label' => $type_config ? $type_config['label'] : ucfirst( str_replace( 'parish_', '', $p->post_type ) ),
+				'edit_url'   => get_edit_post_link( $p->ID, 'raw' ),
+			);
+		}
+
+		return $result;
+	}
+
 	private function get_enabled_features(): array {
-		$features = array( 'death_notices', 'baptism_notices', 'wedding_notices', 'churches', 'schools', 'cemeteries', 'groups', 'newsletters', 'news', 'gallery', 'reflections', 'events', 'liturgical', 'prayers', 'slider' );
+		$features = array( 'death_notices', 'baptism_notices', 'wedding_notices', 'churches', 'schools', 'cemeteries', 'groups', 'newsletters', 'news', 'gallery', 'reflections', 'events', 'liturgical', 'prayers', 'slider', 'mass_times' );
 		$enabled = array();
 		foreach ( $features as $f ) { $enabled[ $f ] = Parish_Core::is_feature_enabled( $f ); }
 		return $enabled;
@@ -362,9 +561,12 @@ class Parish_REST_API {
 		$custom = json_decode( $settings['parish_quick_actions'] ?? '[]', true ) ?: array();
 		if ( ! empty( $custom ) ) return $custom;
 		$defaults = array();
+		$defaults[] = array( 'label' => __( 'Parish Details', 'parish-core' ), 'url' => admin_url( 'admin.php?page=parish-about' ), 'icon' => 'admin-home' );
+		if ( Parish_Core::is_feature_enabled( 'mass_times' ) ) $defaults[] = array( 'label' => __( 'Mass Times', 'parish-core' ), 'url' => admin_url( 'admin.php?page=parish-mass-times' ), 'icon' => 'clock' );
+		if ( Parish_Core::is_feature_enabled( 'events' ) ) $defaults[] = array( 'label' => __( 'Events', 'parish-core' ), 'url' => admin_url( 'admin.php?page=parish-events' ), 'icon' => 'calendar-alt' );
 		if ( Parish_Core::is_feature_enabled( 'newsletters' ) ) $defaults[] = array( 'label' => __( 'Add Newsletter', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_newsletter' ), 'icon' => 'media-document' );
-		if ( Parish_Core::is_feature_enabled( 'reflections' ) ) $defaults[] = array( 'label' => __( 'Add Reflection', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_reflection' ), 'icon' => 'format-quote' );
 		if ( Parish_Core::is_feature_enabled( 'death_notices' ) ) $defaults[] = array( 'label' => __( 'Add Death Notice', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_death_notice' ), 'icon' => 'plus-alt' );
+		if ( Parish_Core::is_feature_enabled( 'reflections' ) ) $defaults[] = array( 'label' => __( 'Add Reflection', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_reflection' ), 'icon' => 'format-quote' );
 		if ( Parish_Core::is_feature_enabled( 'baptism_notices' ) ) $defaults[] = array( 'label' => __( 'Add Baptism Notice', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_baptism' ), 'icon' => 'groups' );
 		if ( Parish_Core::is_feature_enabled( 'wedding_notices' ) ) $defaults[] = array( 'label' => __( 'Add Wedding Notice', 'parish-core' ), 'url' => admin_url( 'post-new.php?post_type=parish_wedding' ), 'icon' => 'heart' );
 		return $defaults;
@@ -380,7 +582,9 @@ class Parish_REST_API {
 			'parish_cemetery'     => array( 'label' => __( 'Cemeteries', 'parish-core' ), 'feature' => 'cemeteries' ),
 			'parish_group'        => array( 'label' => __( 'Parish Groups', 'parish-core' ), 'feature' => 'groups' ),
 			'parish_newsletter'   => array( 'label' => __( 'Newsletters', 'parish-core' ), 'feature' => 'newsletters' ),
-			'parish_news'         => array( 'label' => __( 'Parish News', 'parish-core' ), 'feature' => 'news' ),
+			'post'                => array( 'label' => __( 'News Posts', 'parish-core' ), 'feature' => 'news' ),
+			'parish_mass_time'    => array( 'label' => __( 'Mass Times', 'parish-core' ), 'feature' => 'mass_times' ),
+			'parish_event'        => array( 'label' => __( 'Events', 'parish-core' ), 'feature' => 'events' ),
 			'parish_gallery'      => array( 'label' => __( 'Gallery', 'parish-core' ), 'feature' => 'gallery' ),
 			'parish_reflection'   => array( 'label' => __( 'Reflections', 'parish-core' ), 'feature' => 'reflections' ),
 			'parish_prayer'       => array( 'label' => __( 'Prayers', 'parish-core' ), 'feature' => 'prayers' ),
@@ -454,11 +658,139 @@ class Parish_REST_API {
 
 	private function get_upcoming_events(): array {
 		if ( ! Parish_Core::is_feature_enabled( 'events' ) ) return array();
-		$events = json_decode( Parish_Core::get_setting( 'parish_events', '[]' ), true ) ?: array();
+
 		$today = current_time( 'Y-m-d' );
+
+		// Prefer Events CPT data when available.
+		if ( post_type_exists( 'parish_event' ) ) {
+			$query = new \WP_Query(
+				array(
+					'post_type'      => 'parish_event',
+					'posts_per_page' => 5,
+					'post_status'    => 'publish',
+					'orderby'        => 'meta_value',
+					'meta_key'       => 'parish_event_date',
+					'order'          => 'ASC',
+					'meta_query'     => array(
+						array(
+							'key'     => 'parish_event_date',
+							'value'   => $today,
+							'compare' => '>=',
+							'type'    => 'DATE',
+						),
+					),
+				)
+			);
+
+			$events = array();
+			foreach ( $query->posts as $post ) {
+				$date          = get_post_meta( $post->ID, 'parish_event_date', true );
+				$event_church  = (int) get_post_meta( $post->ID, 'parish_event_church_id', true );
+				$church_name   = '';
+				$date_display  = $date ? wp_date( 'D j M', strtotime( $date ) ) : '';
+
+				if ( $event_church > 0 ) {
+					$church = get_post( $event_church );
+					$church_name = $church ? html_entity_decode( $church->post_title, ENT_QUOTES, 'UTF-8' ) : '';
+				}
+
+				$events[] = array(
+					'id'          => $post->ID,
+					'title'       => $post->post_title,
+					'date'        => $date,
+					'date_display'=> $date_display,
+					'time'        => get_post_meta( $post->ID, 'parish_event_time', true ),
+					'location'    => get_post_meta( $post->ID, 'parish_event_location', true ),
+					'church_name' => $church_name,
+					'edit_url'    => get_edit_post_link( $post->ID, 'raw' ),
+				);
+			}
+
+			if ( ! empty( $events ) ) {
+				return $events;
+			}
+		}
+
+		// Fallback to legacy JSON settings events.
+		$events = json_decode( Parish_Core::get_setting( 'parish_events', '[]' ), true ) ?: array();
 		$upcoming = array_filter( $events, fn( $e ) => ( $e['date'] ?? '' ) >= $today );
 		usort( $upcoming, fn( $a, $b ) => strcmp( $a['date'] ?? '', $b['date'] ?? '' ) );
-		return array_slice( $upcoming, 0, 5 );
+
+		$output = array();
+		foreach ( array_slice( $upcoming, 0, 5 ) as $event ) {
+			$date = $event['date'] ?? '';
+			$output[] = array(
+				'id'           => $event['id'] ?? '',
+				'title'        => sanitize_text_field( $event['title'] ?? '' ),
+				'date'         => $date,
+				'date_display' => $date ? wp_date( 'D j M', strtotime( $date ) ) : '',
+				'time'         => sanitize_text_field( $event['time'] ?? '' ),
+				'location'     => sanitize_text_field( $event['location'] ?? '' ),
+				'church_name'  => '',
+				'edit_url'     => admin_url( 'admin.php?page=parish-events' ),
+			);
+		}
+
+		return $output;
+	}
+
+	private function get_next_mass_times( int $days = 7, int $limit = 8 ): array {
+		if ( ! Parish_Core::is_feature_enabled( 'mass_times' ) || ! class_exists( 'Parish_Schedule_Generator' ) ) {
+			return array();
+		}
+
+		$days = max( 1, $days );
+		$to_offset = $days - 1;
+		$from = wp_date( 'Y-m-d' );
+		$to   = wp_date( 'Y-m-d', strtotime( '+' . $to_offset . ' days' ) );
+
+		$occurrences = Parish_Schedule_Generator::instance()->generate(
+			$from,
+			$to,
+			array(
+				'active_only' => true,
+			)
+		);
+
+		if ( empty( $occurrences ) ) {
+			return array();
+		}
+
+		$now = wp_date( 'Y-m-d H:i' );
+		$upcoming = array_filter(
+			$occurrences,
+			static function ( array $occ ) use ( $now ): bool {
+				return ! empty( $occ['datetime'] ) && $occ['datetime'] >= $now;
+			}
+		);
+
+		// If all remaining occurrences are earlier today, still show nearest schedule items.
+		if ( empty( $upcoming ) ) {
+			$upcoming = $occurrences;
+		}
+
+		$output = array();
+		foreach ( array_slice( array_values( $upcoming ), 0, $limit ) as $occ ) {
+			$datetime = $occ['datetime'] ?? '';
+			$timestamp = $datetime ? strtotime( $datetime ) : 0;
+			$date = $occ['date'] ?? '';
+			$time = $occ['time'] ?? '';
+
+			$output[] = array(
+				'post_id'          => (int) ( $occ['post_id'] ?? 0 ),
+				'title'            => sanitize_text_field( $occ['title'] ?? '' ),
+				'type_label'       => sanitize_text_field( $occ['type_label'] ?? __( 'Mass', 'parish-core' ) ),
+				'date'             => $date,
+				'time'             => $time,
+				'datetime'         => $datetime,
+				'date_display'     => $date ? wp_date( 'D j M', strtotime( $date ) ) : '',
+				'time_display'     => $timestamp ? wp_date( 'g:i A', $timestamp ) : $time,
+				'church_name'      => sanitize_text_field( $occ['church_name'] ?? __( 'All Churches', 'parish-core' ) ),
+				'is_livestreamed'  => ! empty( $occ['is_livestreamed'] ),
+			);
+		}
+
+		return $output;
 	}
 
 	private function get_latest_reflection_data(): ?array {
@@ -692,11 +1024,15 @@ class Parish_REST_API {
 	// SETTINGS
 	// =========================================================================
 	public function get_settings(): \WP_REST_Response {
-		$s = Parish_Core::get_settings();
+		$s            = Parish_Core::get_settings();
+		$menu_options = $this->normalize_menu_options( $s['menu_options'] ?? array() );
+
 		return rest_ensure_response( array(
 			'enable_death_notices' => (bool) ( $s['enable_death_notices'] ?? true ),
 			'enable_baptism_notices' => (bool) ( $s['enable_baptism_notices'] ?? true ),
 			'enable_wedding_notices' => (bool) ( $s['enable_wedding_notices'] ?? true ),
+			'enable_mass_times' => (bool) ( $s['enable_mass_times'] ?? true ),
+			'enable_rosary' => (bool) ( $s['enable_rosary'] ?? true ),
 			'enable_churches' => (bool) ( $s['enable_churches'] ?? true ),
 			'enable_schools' => (bool) ( $s['enable_schools'] ?? true ),
 			'enable_cemeteries' => (bool) ( $s['enable_cemeteries'] ?? true ),
@@ -719,19 +1055,32 @@ class Parish_REST_API {
 			'admin_color_links' => $s['admin_color_links'] ?? '#2271b1',
 			'admin_color_buttons' => $s['admin_color_buttons'] ?? '#2271b1',
 			'admin_color_form_inputs' => $s['admin_color_form_inputs'] ?? '#2271b1',
+			'menu_options' => $menu_options,
+			'menu_roles' => $this->get_default_non_admin_role_labels(),
+			'menu_order_labels' => $this->get_menu_order_labels(),
+			'feast_days_sync_enabled' => (bool) ( $s['feast_days_sync_enabled'] ?? false ),
+			'feast_days_months_ahead' => (int) ( $s['feast_days_months_ahead'] ?? 3 ),
 		));
 	}
 
 	public function update_settings( \WP_REST_Request $request ): \WP_REST_Response {
 		$params = $request->get_json_params();
-		$toggles = array( 'enable_death_notices', 'enable_baptism_notices', 'enable_wedding_notices', 'enable_churches', 'enable_schools', 'enable_cemeteries', 'enable_groups', 'enable_newsletters', 'enable_news', 'enable_gallery', 'enable_reflections', 'enable_prayers', 'enable_events', 'enable_liturgical', 'enable_slider', 'admin_colors_enabled' );
+		$toggles = array( 'enable_death_notices', 'enable_baptism_notices', 'enable_wedding_notices', 'enable_mass_times', 'enable_rosary', 'enable_churches', 'enable_schools', 'enable_cemeteries', 'enable_groups', 'enable_newsletters', 'enable_news', 'enable_gallery', 'enable_reflections', 'enable_prayers', 'enable_events', 'enable_liturgical', 'enable_slider', 'admin_colors_enabled', 'feast_days_sync_enabled' );
 		$colors = array( 'admin_color_menu_text', 'admin_color_base_menu', 'admin_color_highlight', 'admin_color_notification', 'admin_color_background', 'admin_color_links', 'admin_color_buttons', 'admin_color_form_inputs' );
 		$sanitized = array();
 		foreach ( $toggles as $key ) { if ( isset( $params[ $key ] ) ) $sanitized[ $key ] = (bool) $params[ $key ]; }
 		foreach ( $colors as $key ) { if ( isset( $params[ $key ] ) ) $sanitized[ $key ] = sanitize_hex_color( $params[ $key ] ) ?: '#1d2327'; }
 		if ( isset( $params['readings_api_key'] ) ) $sanitized['readings_api_key'] = sanitize_text_field( $params['readings_api_key'] );
+		if ( isset( $params['menu_options'] ) ) $sanitized['menu_options'] = $this->sanitize_menu_options( $params['menu_options'] );
+		if ( isset( $params['feast_days_months_ahead'] ) ) $sanitized['feast_days_months_ahead'] = absint( $params['feast_days_months_ahead'] ) ?: 3;
 
 		Parish_Core::update_settings( $sanitized );
+
+		// Apply feast-day cron changes immediately when settings are saved.
+		if ( class_exists( 'Parish_Feast_Days' ) ) {
+			Parish_Feast_Days::instance()->schedule_sync();
+		}
+
 		return rest_ensure_response( array( 'success' => true, 'message' => __( 'Settings saved.', 'parish-core' ) ) );
 	}
 
@@ -1029,35 +1378,6 @@ class Parish_REST_API {
 		);
 	}
 
-	/**
-	 * Migrate events from JSON to CPT.
-	 */
-	public function migrate_events( \WP_REST_Request $request ): \WP_REST_Response {
-		if ( ! class_exists( 'Parish_Events_Migrator' ) ) {
-			return rest_ensure_response(
-				array(
-					'success' => false,
-					'message' => __( 'Migrator class not found.', 'parish-core' ),
-				)
-			);
-		}
-
-		$result = Parish_Events_Migrator::migrate_json_to_cpt();
-
-		return rest_ensure_response(
-			array(
-				'success'  => empty( $result['errors'] ),
-				'migrated' => $result['migrated'],
-				'errors'   => $result['errors'],
-				'message'  => sprintf(
-					/* translators: %d: Number of events migrated */
-					__( 'Successfully migrated %d events.', 'parish-core' ),
-					$result['migrated']
-				),
-			)
-		);
-	}
-
 	// =========================================================================
 	// CHURCHES
 	// =========================================================================
@@ -1147,7 +1467,25 @@ class Parish_REST_API {
 	 */
 	public function update_endpoint_schedule( \WP_REST_Request $request ): \WP_REST_Response {
 		$endpoint = sanitize_text_field( $request->get_param( 'endpoint' ) );
-		$params   = $request->get_json_params();
+		$params   = $request->get_json_params() ?: $request->get_params();
+
+		if ( empty( $endpoint ) ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => __( 'Invalid endpoint.', 'parish-core' ),
+			) );
+		}
+
+		if ( class_exists( 'Parish_Readings' ) ) {
+			$readings  = Parish_Readings::instance();
+			$endpoints = $readings->get_endpoints();
+			if ( ! isset( $endpoints[ $endpoint ] ) ) {
+				return rest_ensure_response( array(
+					'success' => false,
+					'message' => __( 'Unknown readings endpoint.', 'parish-core' ),
+				) );
+			}
+		}
 
 		// Get current schedules.
 		$schedules = json_decode( Parish_Core::get_setting( 'readings_schedules', '{}' ), true ) ?: array();
@@ -2076,10 +2414,12 @@ class Parish_REST_API {
 	private function format_mass_time_post( \WP_Post $post ): array {
 		$church_id = absint( get_post_meta( $post->ID, 'parish_mass_time_church_id', true ) );
 		$church_name = __( 'All Churches', 'parish-core' );
+		$church_color = '';
 		if ( $church_id > 0 ) {
 			$church = get_post( $church_id );
 			if ( $church ) {
 				$church_name = html_entity_decode( $church->post_title, ENT_QUOTES, 'UTF-8' );
+				$church_color = get_post_meta( $church_id, 'parish_color', true );
 			}
 		}
 
@@ -2096,6 +2436,7 @@ class Parish_REST_API {
 			'title'            => $post->post_title,
 			'church_id'        => $church_id,
 			'church_name'      => $church_name,
+			'church_color'     => $church_color,
 			'liturgical_type'  => get_post_meta( $post->ID, 'parish_mass_time_liturgical_type', true ) ?: 'mass',
 			'start_datetime'   => get_post_meta( $post->ID, 'parish_mass_time_start_datetime', true ),
 			'duration_minutes' => absint( get_post_meta( $post->ID, 'parish_mass_time_duration_minutes', true ) ) ?: 60,

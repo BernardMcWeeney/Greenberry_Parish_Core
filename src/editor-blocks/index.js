@@ -20,6 +20,9 @@ import './today-mass';
 import './events';
 import './events-calendar';
 
+// Import church sidebar (color picker).
+import './church-sidebar';
+
 /**
  * Related Church Selector Block
  *

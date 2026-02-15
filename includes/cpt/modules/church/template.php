@@ -623,30 +623,14 @@ return array(
 					'backgroundColor' => 'contrast-3',
 				),
 			),
-			// Schedule container with shortcode
+			// Mass Schedule Block
 			array(
-				'core/group',
+				'parish/mass-schedule',
 				array(
-					'style'  => array(
-						'color'   => array( 'background' => '#fafafa' ),
-						'spacing' => array(
-							'padding' => array(
-								'top'    => 'var:preset|spacing|10',
-								'bottom' => 'var:preset|spacing|10',
-								'left'   => 'var:preset|spacing|10',
-								'right'  => 'var:preset|spacing|10',
-							),
-						),
-					),
-					'layout' => array( 'type' => 'constrained' ),
-				),
-				array(
-					array(
-						'core/shortcode',
-						array(
-							'text' => '[parish_times]',
-						),
-					),
+					'showIcon'       => true,
+					'showLivestream' => true,
+					'showSpecial'    => true,
+					'showAllDays'    => true,
 				),
 			),
 		),

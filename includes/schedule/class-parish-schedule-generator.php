@@ -151,6 +151,20 @@ class Parish_Schedule_Generator {
 				'_transient_timeout_parish_sched_%'
 			)
 		);
+
+		// Also clear shortcode caches.
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+				'_transient_parish_church_sched_%'
+			)
+		);
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+				'_transient_timeout_parish_church_sched_%'
+			)
+		);
 	}
 
 	/**
@@ -206,7 +220,7 @@ class Parish_Schedule_Generator {
 		// Get all Mass Time posts.
 		$args = array(
 			'post_type'      => 'parish_mass_time',
-			'posts_per_page' => -1,
+			'posts_per_page' => 500, // Reasonable limit to prevent memory issues.
 			'post_status'    => 'publish',
 			'meta_query'     => $meta_query,
 		);
@@ -320,11 +334,13 @@ class Parish_Schedule_Generator {
 		}
 
 		// Get church info.
-		$church_name = __( 'All Churches', 'parish-core' );
+		$church_name  = __( 'All Churches', 'parish-core' );
+		$church_color = '';
 		if ( $church_id > 0 ) {
 			$church = get_post( $church_id );
 			if ( $church ) {
-				$church_name = html_entity_decode( $church->post_title, ENT_QUOTES, 'UTF-8' );
+				$church_name  = html_entity_decode( $church->post_title, ENT_QUOTES, 'UTF-8' );
+				$church_color = get_post_meta( $church_id, 'parish_color', true );
 			}
 		}
 
@@ -338,6 +354,7 @@ class Parish_Schedule_Generator {
 			'title'            => $post->post_title,
 			'church_id'        => $church_id,
 			'church_name'      => $church_name,
+			'church_color'     => $church_color,
 			'type'             => $type,
 			'type_label'       => $type_label,
 			'duration_minutes' => $duration,

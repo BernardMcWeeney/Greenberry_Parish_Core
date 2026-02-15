@@ -55,47 +55,8 @@ class Parish_Rosary_Schedule {
 	 * @return bool True if in Lent, false otherwise.
 	 */
 	public static function is_lent(): bool {
-		// Try Liturgy.day API first.
-		$liturgical_data = self::fetch_liturgical_season();
-
-		if ( $liturgical_data && isset( $liturgical_data['season'] ) ) {
-			return 'lent' === strtolower( $liturgical_data['season'] );
-		}
-
-		// Fallback: calculate manually.
+		// Use local calculation (reliable, no external API dependency).
 		return self::calculate_lent_manually();
-	}
-
-	/**
-	 * Fetch liturgical season from Liturgy.day API.
-	 *
-	 * @return array|null Liturgical data array or null on failure.
-	 */
-	private static function fetch_liturgical_season(): ?array {
-		$today     = wp_date( 'Y-m-d' );
-		$cache_key = 'parish_liturgical_' . $today;
-
-		$cached = get_transient( $cache_key );
-		if ( false !== $cached ) {
-			return $cached;
-		}
-
-		$url      = "https://liturgy.day/api/day/{$today}";
-		$response = wp_remote_get( $url, array( 'timeout' => 10 ) );
-
-		if ( is_wp_error( $response ) ) {
-			return null;
-		}
-
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
-
-		if ( $data ) {
-			set_transient( $cache_key, $data, DAY_IN_SECONDS );
-			return $data;
-		}
-
-		return null;
 	}
 
 	/**

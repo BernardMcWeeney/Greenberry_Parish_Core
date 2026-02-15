@@ -429,9 +429,16 @@ class Parish_Shortcodes {
 			return '';
 		}
 
-		$church_id      = (int) $atts['church_id'];
-		$filter_type    = sanitize_text_field( $atts['type'] );
+		$church_id       = (int) $atts['church_id'];
+		$filter_type     = sanitize_text_field( $atts['type'] );
 		$show_livestream = $atts['show_livestream'] === 'yes';
+
+		// Check transient cache for this shortcode (5 minute cache).
+		$cache_key = 'parish_church_sched_' . md5( wp_json_encode( $atts ) );
+		$cached    = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			return $cached;
+		}
 
 		// Clock icon SVG.
 		$clock_icon = '<svg class="schedule-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
@@ -473,7 +480,7 @@ class Parish_Shortcodes {
 
 		$mass_time_posts = get_posts( array(
 			'post_type'      => 'parish_mass_time',
-			'posts_per_page' => -1,
+			'posts_per_page' => 200, // Reasonable limit to prevent memory issues.
 			'post_status'    => 'publish',
 			'meta_query'     => $meta_query,
 		) );
@@ -655,6 +662,9 @@ class Parish_Shortcodes {
 		}
 
 		$html .= '</div>'; // .parish-church-schedule
+
+		// Cache the output for 5 minutes.
+		set_transient( $cache_key, $html, 5 * MINUTE_IN_SECONDS );
 
 		return $html;
 	}
@@ -938,7 +948,7 @@ class Parish_Shortcodes {
 			}
 			if ( $atts['show_livestream'] === 'yes' && ! empty( $event['is_livestreamed'] ) ) {
 				$url = $event['livestream_url'] ?: '#';
-				$html .= '<a href="' . esc_url( $url ) . '" class="livestream-link">📺 ' . esc_html__( 'Watch Live', 'parish-core' ) . '</a>';
+				$html .= '<a href="' . esc_url( $url ) . '" class="livestream-link">📺 ' . esc_html__( 'Watch Online', 'parish-core' ) . '</a>';
 			}
 			$html .= '</div>';
 			$html .= '</div>';
@@ -1172,7 +1182,7 @@ class Parish_Shortcodes {
 				$html .= '<p class="church-name">';
 				$html .= esc_html( $church_data['name'] );
 				if ( $church_data['has_live'] ) {
-					$html .= '<span class="livestream-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7 3 5"/><path d="M9 6V3"/><path d="m13 7 2-2"/><path d="M17 6v3"/><path d="M19 10h3"/><path d="M21 14 3 14"/><rect width="18" height="8" x="3" y="14" rx="2"/><path d="M7 18h10"/></svg>' . esc_html__( 'Live', 'parish-core' ) . '</span>';
+					$html .= '<span class="livestream-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7 3 5"/><path d="M9 6V3"/><path d="m13 7 2-2"/><path d="M17 6v3"/><path d="M19 10h3"/><path d="M21 14 3 14"/><rect width="18" height="8" x="3" y="14" rx="2"/><path d="M7 18h10"/></svg>' . esc_html__( 'Online', 'parish-core' ) . '</span>';
 				}
 				$html .= '</p>';
 
