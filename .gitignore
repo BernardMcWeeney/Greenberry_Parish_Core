@@ -16,6 +16,12 @@
 /readme.html
 /wp-*.php
 /xmlrpc.php
+node_modules/
+.wrangler/
+.DS_Store
+dist/
+.dev.vars
+.env
 
 # Configuration
 wp-config.php
