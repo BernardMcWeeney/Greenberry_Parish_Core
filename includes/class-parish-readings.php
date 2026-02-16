@@ -301,8 +301,14 @@ class Parish_Readings {
 		$current_config_hash = md5( wp_json_encode( $schedules ) );
 		$stored_config_hash  = get_option( 'parish_readings_schedule_hash', '' );
 
-		// Only reschedule cron events if configuration has changed.
-		if ( $current_config_hash !== $stored_config_hash ) {
+		// Check if the global cron hook is scheduled.
+		$hook                  = 'parish_fetch_readings_cron';
+		$global_hook_scheduled = wp_next_scheduled( $hook );
+
+		// Force reschedule if: config changed OR global hook is missing.
+		$needs_reschedule = ( $current_config_hash !== $stored_config_hash ) || ! $global_hook_scheduled;
+
+		if ( $needs_reschedule ) {
 			// Schedule each endpoint with its specific configuration.
 			foreach ( array_keys( $this->endpoints ) as $endpoint ) {
 				$schedule_config = $schedules[ $endpoint ] ?? array(
@@ -317,9 +323,8 @@ class Parish_Readings {
 			update_option( 'parish_readings_schedule_hash', $current_config_hash );
 		}
 
-		// Schedule the legacy global cron hook for fetch_all_readings() - only if not already scheduled.
-		$hook = 'parish_fetch_readings_cron';
-		if ( ! wp_next_scheduled( $hook ) ) {
+		// Schedule the global cron hook for fetch_all_readings() - ensure it's always scheduled.
+		if ( ! $global_hook_scheduled ) {
 			$timezone  = wp_timezone();
 			$now       = new DateTime( 'now', $timezone );
 			$next_run  = new DateTime( 'tomorrow 05:00:00', $timezone );
@@ -328,7 +333,12 @@ class Parish_Readings {
 				$next_run = $today_5am;
 			}
 
-			wp_schedule_event( $next_run->getTimestamp(), 'daily', $hook );
+			$scheduled = wp_schedule_event( $next_run->getTimestamp(), 'daily', $hook );
+
+			// Log scheduling for debugging if WP_DEBUG is enabled.
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG && false === $scheduled ) {
+				error_log( 'Parish Core: Failed to schedule parish_fetch_readings_cron event.' );
+			}
 		}
 	}
 
@@ -1636,5 +1646,124 @@ class Parish_Readings {
 		);
 
 		return array_merge( $status, $additional );
+	}
+
+	/**
+	 * Get status of all scheduled cron events for debugging.
+	 *
+	 * @return array Cron status information.
+	 */
+	public function get_cron_status(): array {
+		$status = array();
+
+		// Check global hook.
+		$global_hook      = 'parish_fetch_readings_cron';
+		$global_next_run  = wp_next_scheduled( $global_hook );
+		$status['global'] = array(
+			'hook'       => $global_hook,
+			'scheduled'  => (bool) $global_next_run,
+			'next_run'   => $global_next_run ? gmdate( 'Y-m-d H:i:s', $global_next_run ) : null,
+			'recurrence' => 'daily',
+		);
+
+		// Check per-endpoint hooks.
+		$schedules = json_decode( Parish_Core::get_setting( 'readings_schedules', '{}' ), true ) ?: array();
+
+		foreach ( array_keys( $this->endpoints ) as $endpoint ) {
+			$hook     = "parish_fetch_{$endpoint}";
+			$next_run = wp_next_scheduled( $hook );
+
+			$schedule_config = $schedules[ $endpoint ] ?? array( 'schedule' => 'daily_once' );
+			$schedule_type   = $schedule_config['schedule'] ?? 'daily_once';
+
+			$endpoint_status = array(
+				'hook'          => $hook,
+				'scheduled'     => (bool) $next_run,
+				'next_run'      => $next_run ? gmdate( 'Y-m-d H:i:s', $next_run ) : null,
+				'schedule_type' => $schedule_type,
+			);
+
+			// Check indexed hooks for daily_twice.
+			if ( 'daily_twice' === $schedule_type ) {
+				$endpoint_status['indexed_hooks'] = array();
+				foreach ( array( 0, 1 ) as $idx ) {
+					$indexed_hook = "{$hook}_{$idx}";
+					$indexed_next = wp_next_scheduled( $indexed_hook );
+					$endpoint_status['indexed_hooks'][ $idx ] = array(
+						'hook'      => $indexed_hook,
+						'scheduled' => (bool) $indexed_next,
+						'next_run'  => $indexed_next ? gmdate( 'Y-m-d H:i:s', $indexed_next ) : null,
+					);
+				}
+			}
+
+			$status['endpoints'][ $endpoint ] = $endpoint_status;
+		}
+
+		// Add hash info for debugging.
+		$status['config_hash'] = array(
+			'current' => md5( wp_json_encode( $schedules ) ),
+			'stored'  => get_option( 'parish_readings_schedule_hash', '' ),
+		);
+
+		return $status;
+	}
+
+	/**
+	 * Force reschedule all cron events.
+	 * Useful for recovery after cron events are lost.
+	 *
+	 * @return array Results of rescheduling.
+	 */
+	public function force_reschedule_cron(): array {
+		$results = array();
+
+		// Clear the stored hash to force rescheduling.
+		delete_option( 'parish_readings_schedule_hash' );
+
+		// Clear and reschedule global hook.
+		$global_hook = 'parish_fetch_readings_cron';
+		wp_clear_scheduled_hook( $global_hook );
+
+		$timezone  = wp_timezone();
+		$now       = new DateTime( 'now', $timezone );
+		$next_run  = new DateTime( 'tomorrow 05:00:00', $timezone );
+		$today_5am = new DateTime( 'today 05:00:00', $timezone );
+		if ( $now < $today_5am ) {
+			$next_run = $today_5am;
+		}
+
+		$scheduled = wp_schedule_event( $next_run->getTimestamp(), 'daily', $global_hook );
+		$results['global'] = array(
+			'hook'      => $global_hook,
+			'scheduled' => false !== $scheduled,
+			'next_run'  => $next_run->format( 'Y-m-d H:i:s' ),
+		);
+
+		// Reschedule per-endpoint hooks.
+		$schedules = json_decode( Parish_Core::get_setting( 'readings_schedules', '{}' ), true ) ?: array();
+
+		foreach ( array_keys( $this->endpoints ) as $endpoint ) {
+			$schedule_config = $schedules[ $endpoint ] ?? array(
+				'schedule' => 'daily_once',
+				'time'     => '05:00',
+			);
+
+			$this->schedule_endpoint( $endpoint, $schedule_config );
+
+			$hook     = "parish_fetch_{$endpoint}";
+			$next_run = wp_next_scheduled( $hook );
+
+			$results['endpoints'][ $endpoint ] = array(
+				'hook'      => $hook,
+				'scheduled' => (bool) $next_run,
+				'next_run'  => $next_run ? gmdate( 'Y-m-d H:i:s', $next_run ) : null,
+			);
+		}
+
+		// Update stored hash.
+		update_option( 'parish_readings_schedule_hash', md5( wp_json_encode( $schedules ) ) );
+
+		return $results;
 	}
 }

@@ -3,7 +3,7 @@
  * Plugin Name: Parish Core
  * Plugin URI: https://github.com/greenberry/parish-core
  * Description: A comprehensive parish management system for Catholic parishes.
- * Version: 9.1.0
+ * Version: 9.2.0
  * Author: Greenberry
  * Author URI: https://greenberry.ie
  * License: GPL v2 or later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PARISH_CORE_VERSION', '9.1.0' );
+define( 'PARISH_CORE_VERSION', '9.2.0' );
 define( 'PARISH_CORE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PARISH_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'PARISH_CORE_BASENAME', plugin_basename( __FILE__ ) );
@@ -127,9 +127,40 @@ register_activation_hook( __FILE__, 'parish_core_activate' );
 
 function parish_core_deactivate(): void {
 	flush_rewrite_rules();
+
+	// Clear global readings cron.
 	wp_clear_scheduled_hook( 'parish_fetch_readings_cron' );
+
+	// Clear all per-endpoint readings cron hooks.
+	$endpoints = array(
+		'daily_readings',
+		'sunday_homily',
+		'saint_of_the_day',
+		'next_sunday_reading',
+		'next_sunday_reading_irish',
+		'daily_readings_irish',
+		'mass_reading_details',
+		'feast_day_details',
+		'liturgy_day',
+		'liturgy_week',
+		'rosary_days',
+	);
+	foreach ( $endpoints as $endpoint ) {
+		wp_clear_scheduled_hook( "parish_fetch_{$endpoint}" );
+		// Also clear indexed hooks for daily_twice schedules.
+		wp_clear_scheduled_hook( "parish_fetch_{$endpoint}_0" );
+		wp_clear_scheduled_hook( "parish_fetch_{$endpoint}_1" );
+	}
+
+	// Clear feast days sync cron.
+	wp_clear_scheduled_hook( 'parish_sync_feast_days' );
+
+	// Clear cleanup crons.
 	wp_clear_scheduled_hook( 'parish_cleanup_intentions' );
 	wp_clear_scheduled_hook( 'parish_cleanup_overrides' );
+
+	// Reset schedule hash so cron events are recreated on reactivation.
+	delete_option( 'parish_readings_schedule_hash' );
 }
 
 register_deactivation_hook( __FILE__, 'parish_core_deactivate' );

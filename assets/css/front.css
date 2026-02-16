@@ -1533,3 +1533,121 @@
 	color: #666;
 	font-style: italic;
 }
+
+/* ==========================================================================
+   EVENTS CALENDAR BLOCK
+   ========================================================================== */
+.parish-events-calendar-block {
+	width: 100%;
+	max-width: 100%;
+}
+
+.parish-events-calendar {
+	width: 100%;
+}
+
+.parish-calendar-grid {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 1px;
+	background: #ddd;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow-x: auto;
+	min-width: 100%;
+}
+
+/* On smaller screens, add horizontal scroll with minimum column widths */
+@media (max-width: 768px) {
+	.parish-calendar-grid {
+		grid-template-columns: repeat(7, minmax(100px, 1fr));
+		min-width: 700px;
+	}
+
+	.parish-events-calendar {
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+}
+
+.parish-calendar-day-header {
+	background: #f6f7f7;
+	padding: 0.75em 0.5em;
+	text-align: center;
+	font-weight: 600;
+	font-size: 0.85em;
+}
+
+.parish-calendar-day {
+	background: #fff;
+	min-height: 100px;
+	padding: 0.5em;
+	position: relative;
+}
+
+.parish-calendar-day-empty {
+	background: #fafafa;
+}
+
+.parish-calendar-today {
+	background: #f0f7ff;
+}
+
+.parish-calendar-day-number {
+	display: inline-block;
+	font-weight: 600;
+	font-size: 0.9em;
+	margin-bottom: 0.25em;
+}
+
+.parish-calendar-day-events {
+	font-size: 0.75em;
+	line-height: 1.3;
+}
+
+.parish-calendar-event {
+	display: block;
+	padding: 2px 4px;
+	margin: 2px 0;
+	border-radius: 2px;
+	text-decoration: none;
+	color: inherit;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.parish-calendar-event-more {
+	color: #666;
+	font-style: italic;
+}
+
+.parish-calendar-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1em;
+	padding: 0.5em 0;
+	flex-wrap: wrap;
+	gap: 0.5em;
+}
+
+.parish-calendar-nav {
+	padding: 0.5em 1em;
+	background: #f0f0f0;
+	border-radius: 4px;
+	text-decoration: none;
+	color: inherit;
+	display: flex;
+	align-items: center;
+	gap: 0.25em;
+}
+
+.parish-calendar-nav:hover {
+	background: #e0e0e0;
+}
+
+.parish-calendar-title {
+	margin: 0;
+	font-size: 1.25em;
+}

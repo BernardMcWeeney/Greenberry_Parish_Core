@@ -273,8 +273,8 @@ class Parish_Events_Calendar_Block {
 
 		$today = current_time( 'Y-m-d' );
 
-		// Build calendar HTML.
-		$html = '<div class="parish-events-calendar">';
+		// Build calendar HTML - wrapper allows horizontal scroll on small screens.
+		$html = '<div class="parish-events-calendar" style="width:100%;overflow-x:auto;">';
 
 		// Calendar header with navigation.
 		$html .= '<div class="parish-calendar-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1em;padding:0.5em 0;flex-wrap:wrap;gap:0.5em;">';
@@ -297,8 +297,8 @@ class Parish_Events_Calendar_Block {
 
 		$html .= '</div>';
 
-		// Calendar grid.
-		$html .= '<div class="parish-calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#ddd;border:1px solid #ddd;border-radius:8px;overflow:hidden;">';
+		// Calendar grid - ensure minimum column width so all 7 days are always visible.
+		$html .= '<div class="parish-calendar-grid" style="display:grid;grid-template-columns:repeat(7,minmax(90px,1fr));gap:1px;background:#ddd;border:1px solid #ddd;border-radius:8px;">';
 
 		// Day headers.
 		$day_names = array(

@@ -148,6 +148,19 @@ class Parish_REST_API {
 			'permission_callback' => array( $this, 'can_manage' ),
 		));
 
+		// Cron status and management.
+		register_rest_route( $this->namespace, '/readings/cron-status', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'get_readings_cron_status' ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		));
+
+		register_rest_route( $this->namespace, '/readings/reschedule-cron', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'reschedule_readings_cron' ),
+			'permission_callback' => array( $this, 'can_manage' ),
+		));
+
 		// Keep this dynamic endpoint route after fixed /readings/* routes.
 		register_rest_route( $this->namespace, '/readings/(?P<endpoint>[a-z_]+)', array(
 			'methods' => 'GET', 'callback' => array( $this, 'get_reading' ), 'permission_callback' => '__return_true',
@@ -1577,6 +1590,45 @@ class Parish_REST_API {
 		);
 
 		return rest_ensure_response( $options );
+	}
+
+	/**
+	 * Get cron status for readings API.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_readings_cron_status(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Readings' ) ) {
+			return rest_ensure_response( array(
+				'error' => 'Readings module not available.',
+			) );
+		}
+
+		$readings = Parish_Readings::instance();
+		return rest_ensure_response( $readings->get_cron_status() );
+	}
+
+	/**
+	 * Force reschedule all readings cron events.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function reschedule_readings_cron(): \WP_REST_Response {
+		if ( ! class_exists( 'Parish_Readings' ) ) {
+			return rest_ensure_response( array(
+				'success' => false,
+				'message' => 'Readings module not available.',
+			) );
+		}
+
+		$readings = Parish_Readings::instance();
+		$results  = $readings->force_reschedule_cron();
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'message' => __( 'Cron events rescheduled successfully.', 'parish-core' ),
+			'results' => $results,
+		) );
 	}
 
 	// =========================================================================
