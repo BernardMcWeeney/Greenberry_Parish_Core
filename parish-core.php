@@ -585,6 +585,7 @@ function parish_core_get_default_settings(): array {
 		'enable_slider'           => true,
 		'enable_travels'          => true,
 		'enable_mass_times'       => true,
+		'enable_services'         => true,
 
 		// Readings API settings (admin only).
 		'readings_api_key'        => '',

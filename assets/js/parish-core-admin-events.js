@@ -260,6 +260,17 @@
 			onDelete(form.id);
 		};
 
+		const getEditUrl = (id) => {
+			const adminUrl = (window.parishCore && window.parishCore.adminUrl) || '/wp-admin/';
+			return adminUrl + 'post.php?post=' + id + '&action=edit';
+		};
+
+		const handleOpenFullEditor = () => {
+			if (form.id) {
+				window.location.href = getEditUrl(form.id);
+			}
+		};
+
 		const upd = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
 		const churchOptions = [{ label: 'Select Church', value: 0 }].concat(
@@ -425,11 +436,17 @@
 			),
 			el('div', { className: 'modal-actions', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid #ddd', marginTop: '16px' } },
 				!isNew && form.id
-					? el(Button, {
-						isDestructive: true,
-						isBusy: deleting,
-						onClick: handleDelete,
-					}, deleting ? 'Deleting...' : 'Delete Event')
+					? el(Flex, { gap: 2 },
+						el(Button, {
+							isDestructive: true,
+							isBusy: deleting,
+							onClick: handleDelete,
+						}, deleting ? 'Deleting...' : 'Delete Event'),
+						el(Button, {
+							variant: 'secondary',
+							onClick: handleOpenFullEditor,
+						}, 'Edit in Full Editor')
+					)
 					: el('div'),
 				el('div', { style: { display: 'flex', gap: '8px' } },
 					el(Button, { variant: 'secondary', onClick: onClose }, 'Cancel'),
