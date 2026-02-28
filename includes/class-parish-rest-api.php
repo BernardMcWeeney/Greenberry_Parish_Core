@@ -968,6 +968,7 @@ class Parish_REST_API {
 					'image_url'      => esc_url_raw( $slide['image_url'] ?? '' ),
 					'image_fit'      => in_array( $slide['image_fit'] ?? '', array( 'cover', 'contain', 'fill' ), true ) ? $slide['image_fit'] : 'cover',
 					'image_position' => in_array( $slide['image_position'] ?? '', array( 'center', 'top', 'bottom', 'left', 'right' ), true ) ? $slide['image_position'] : 'center',
+					'background_style' => in_array( $slide['background_style'] ?? '', array( 'default', 'card', 'reflection' ), true ) ? $slide['background_style'] : 'default',
 					'display_mode'   => in_array( $slide['display_mode'] ?? '', array( 'full', 'title', 'image' ), true ) ? $slide['display_mode'] : 'full',
 					'text_align'     => in_array( $slide['text_align'] ?? '', array( 'left', 'center', 'right' ), true ) ? $slide['text_align'] : 'left',
 					'cta_text'       => sanitize_text_field( $slide['cta_text'] ?? '' ),
@@ -2477,6 +2478,8 @@ class Parish_REST_API {
 
 		$recurrence_raw = get_post_meta( $post->ID, 'parish_mass_time_recurrence', true );
 		$exception_dates_raw = get_post_meta( $post->ID, 'parish_mass_time_exception_dates', true );
+		$is_active_raw = get_post_meta( $post->ID, 'parish_mass_time_is_active', true );
+		$is_active     = '' === $is_active_raw ? true : (bool) $is_active_raw;
 
 		// Use the global sanitize functions to ensure consistent data structure
 		// This also validates that days contains only valid weekday names
@@ -2492,7 +2495,7 @@ class Parish_REST_API {
 			'liturgical_type'  => get_post_meta( $post->ID, 'parish_mass_time_liturgical_type', true ) ?: 'mass',
 			'start_datetime'   => get_post_meta( $post->ID, 'parish_mass_time_start_datetime', true ),
 			'duration_minutes' => absint( get_post_meta( $post->ID, 'parish_mass_time_duration_minutes', true ) ) ?: 60,
-			'is_active'        => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_active', true ),
+			'is_active'        => $is_active,
 			'is_special_event' => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_special_event', true ),
 			'is_recurring'     => (bool) get_post_meta( $post->ID, 'parish_mass_time_is_recurring', true ),
 			'recurrence'       => $recurrence,

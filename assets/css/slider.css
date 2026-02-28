@@ -80,6 +80,7 @@
 .parish-slider__image {
 	position: absolute;
 	inset: 0;
+	z-index: 1;
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
@@ -140,6 +141,8 @@
 .parish-slider__overlay {
 	position: absolute;
 	inset: 0;
+	z-index: 2;
+	pointer-events: none;
 	background-color: var(--slide-overlay-color, var(--slider-overlay-color));
 	opacity: var(--slider-overlay-opacity);
 }
@@ -177,6 +180,117 @@
 			transparent 70%
 		);
 	}
+}
+
+/* ==========================================================================
+   PER-SLIDE RIGHT-IMAGE STYLE (Default-Like)
+   ========================================================================== */
+@media (min-width: 1024px) {
+	.parish-slider__slide[data-bg-style="card"] .parish-slider__image {
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		width: auto;
+		height: auto;
+		transform: scale(1);
+		background-position: right center;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	.parish-slider__slide[data-bg-style="card"].is-active .parish-slider__image {
+		transform: scale(1.05);
+	}
+
+	.parish-slider__slide[data-bg-style="card"] .parish-slider__overlay {
+		inset: 0;
+		width: auto;
+		height: auto;
+		transform: none;
+		border-radius: 0;
+		opacity: var(--slider-overlay-opacity);
+		background: linear-gradient(
+			to right,
+			var(--slide-overlay-color, var(--slider-overlay-color)) 0%,
+			var(--slide-overlay-color, var(--slider-overlay-color)) 34%,
+			transparent 72%
+		);
+	}
+}
+
+/* ==========================================================================
+   REFLECTION STYLE - Split layout for low-res images
+   Only override: background position, image position, overlay gradient, button color
+   Everything else (text, alignment, padding) uses DEFAULT styles
+   ========================================================================== */
+
+/* Solid theme color as base background */
+.parish-slider__slide[data-bg-style="reflection"] {
+	background-color: var(--slide-overlay-color, var(--slider-overlay-color));
+}
+
+/* Disable Ken Burns - low res images look bad scaled */
+.parish-slider__slide[data-bg-style="reflection"] .parish-slider__image,
+.parish-slider__slide[data-bg-style="reflection"].is-active .parish-slider__image {
+	transform: none !important;
+	transition: none !important;
+}
+
+/* Mobile: Full width image with gradient fade to solid bottom */
+.parish-slider__slide[data-bg-style="reflection"] .parish-slider__overlay {
+	background: linear-gradient(
+		to bottom,
+		transparent 0%,
+		transparent 40%,
+		var(--slide-overlay-color, var(--slider-overlay-color)) 60%,
+		var(--slide-overlay-color, var(--slider-overlay-color)) 100%
+	);
+	opacity: 1;
+}
+
+/* Tablet+: Image on right with gradient fade */
+@media (min-width: 640px) {
+	.parish-slider__slide[data-bg-style="reflection"] .parish-slider__image {
+		inset: 0 0 0 40%;
+	}
+
+	.parish-slider__slide[data-bg-style="reflection"] .parish-slider__overlay {
+		background: linear-gradient(
+			to right,
+			var(--slide-overlay-color, var(--slider-overlay-color)) 0%,
+			var(--slide-overlay-color, var(--slider-overlay-color)) 35%,
+			transparent 55%
+		);
+	}
+}
+
+/* Desktop: Image on right ~50% */
+@media (min-width: 1024px) {
+	.parish-slider__slide[data-bg-style="reflection"] .parish-slider__image {
+		inset: 0 0 0 45%;
+	}
+
+	.parish-slider__slide[data-bg-style="reflection"] .parish-slider__overlay {
+		background: linear-gradient(
+			to right,
+			var(--slide-overlay-color, var(--slider-overlay-color)) 0%,
+			var(--slide-overlay-color, var(--slider-overlay-color)) 40%,
+			transparent 58%
+		);
+	}
+}
+
+/* White CTA button for contrast against solid color background */
+.parish-slider__slide[data-bg-style="reflection"] .parish-slider__cta {
+	background-color: rgba(255, 255, 255, 0.95);
+	color: var(--slide-overlay-color, var(--slider-overlay-color));
+}
+
+.parish-slider__slide[data-bg-style="reflection"] .parish-slider__cta:hover,
+.parish-slider__slide[data-bg-style="reflection"] .parish-slider__cta:focus {
+	background-color: #ffffff;
+	color: var(--slide-overlay-color, var(--slider-overlay-color));
 }
 
 /* ==========================================================================
@@ -423,7 +537,7 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 0.375rem;
-	padding: 0.625rem 1.125rem;
+	padding: 0.5rem 1rem;
 	background-color: var(--slider-cta-bg);
 	color: #ffffff;
 	font-size: 0.875rem;
@@ -460,34 +574,34 @@
 /* Tablet */
 @media (min-width: 640px) {
 	.parish-slider__cta {
-		padding: 0.75rem 1.375rem;
+		padding: 0.5rem 1.125rem;
 		font-size: 0.9375rem;
 	}
 
 	.parish-slider__cta-icon {
-		width: 1.0625rem;
-		height: 1.0625rem;
+		width: 1rem;
+		height: 1rem;
 	}
 }
 
 /* Desktop */
 @media (min-width: 1024px) {
 	.parish-slider__cta {
-		padding: 0.875rem 1.625rem;
+		padding: 0.625rem 1.25rem;
 		font-size: 1rem;
 	}
 
 	.parish-slider__cta-icon {
-		width: 1.125rem;
-		height: 1.125rem;
+		width: 1rem;
+		height: 1rem;
 	}
 }
 
 /* Large desktop */
 @media (min-width: 1400px) {
 	.parish-slider__cta {
-		padding: 0.9375rem 1.75rem;
-		font-size: 1.0625rem;
+		padding: 0.625rem 1.375rem;
+		font-size: 1rem;
 	}
 
 	.parish-slider__cta-icon {

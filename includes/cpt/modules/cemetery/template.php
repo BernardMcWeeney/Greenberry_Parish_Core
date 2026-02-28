@@ -477,6 +477,110 @@ return array(
 		),
 	),
 
+	// Cemetery Events Section
+	array(
+		'core/group',
+		array(
+			'metadata' => array( 'name' => 'Cemetery Events' ),
+			'style'    => array(
+				'spacing' => array(
+					'margin' => array(
+						'top'    => 'var:preset|spacing|30',
+						'bottom' => 'var:preset|spacing|30',
+					),
+				),
+			),
+			'layout'   => array( 'type' => 'constrained' ),
+		),
+		array(
+			array(
+				'core/group',
+				array(
+					'style'  => array(
+						'spacing' => array( 'blockGap' => '0.5rem' ),
+					),
+					'layout' => array( 'type' => 'flex', 'flexWrap' => 'nowrap' ),
+				),
+				array(
+					array(
+						'font-awesome/icon',
+						array(
+							'iconLayers' => array(
+								array(
+									'iconDefinition' => array(
+										'iconName' => 'clock',
+										'prefix'   => 'fas',
+										'icon'     => array( 512, 512, null, null, 'M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z' ),
+									),
+									'spin'           => false,
+									'transform'      => null,
+									'color'          => '#4a8391',
+								),
+							),
+						),
+					),
+					array(
+						'core/heading',
+						array(
+							'level'     => 3,
+							'textAlign' => 'left',
+							'content'   => '<strong>' . __( 'Cemetery Events', 'parish-core' ) . '</strong>',
+							'style'     => array(
+								'spacing'    => array(
+									'margin' => array( 'top' => '0', 'bottom' => '0' ),
+								),
+								'typography' => array(
+									'fontStyle'  => 'normal',
+									'fontWeight' => '500',
+								),
+								'elements'   => array(
+									'link' => array(
+										'color'  => array( 'text' => '#323232' ),
+										':hover' => array(
+											'color' => array( 'text' => 'var:preset|color|accent' ),
+										),
+									),
+								),
+								'color'      => array( 'text' => '#323232' ),
+							),
+							'fontSize'  => 'large',
+						),
+					),
+				),
+			),
+			array(
+				'core/separator',
+				array(
+					'className'       => 'is-style-wide',
+					'backgroundColor' => 'contrast-3',
+				),
+			),
+			array(
+				'core/group',
+				array(
+					'style'  => array(
+						'color'   => array( 'background' => '#fafafa' ),
+						'spacing' => array(
+							'padding' => array(
+								'top'    => 'var:preset|spacing|10',
+								'bottom' => 'var:preset|spacing|10',
+								'left'   => 'var:preset|spacing|10',
+								'right'  => 'var:preset|spacing|10',
+							),
+						),
+					),
+					'layout' => array( 'type' => 'constrained' ),
+				),
+				array(
+					array(
+						'parish/events',
+						array(),
+					),
+				),
+			),
+		),
+	),
+
 	// History Section
 	array(
 		'core/group',

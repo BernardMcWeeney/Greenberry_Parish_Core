@@ -31,6 +31,6 @@ return array(
 		'rewrite'       => array( 'slug' => 'cemeteries', 'with_front' => false ),
 		'show_in_menu'  => 'parish-core',
 		'template'      => Parish_CPT_Templates::get_cemetery_template(),
-		'template_lock' => 'all',
+		'template_lock' => false, // Allow adding, removing, and editing blocks.
 	),
 );

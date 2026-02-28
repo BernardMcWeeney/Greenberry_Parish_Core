@@ -254,12 +254,12 @@
 			{
 				title: slide.id ? 'Edit Slide' : 'Add New Slide',
 				onRequestClose: onClose,
-				className: 'parish-slider-modal',
-				style: { maxWidth: '600px' },
+				className: 'parish-slider-modal parish-slider-modal--edit',
+				isDismissible: true,
 			},
 			el(
 				'div',
-				{ className: 'slide-editor', style: { maxHeight: '70vh', overflowY: 'auto' } },
+				{ className: 'slide-editor' },
 
 				// Slide Type Selection
 				el(
@@ -400,6 +400,23 @@
 						__next40pxDefaultSize: true,
 					})
 				),
+
+				// Per-slide background style
+				el(SelectControl, {
+					label: 'Background Style',
+					value: editedSlide.background_style || 'default',
+					options: [
+						{ label: 'Default (full background)', value: 'default' },
+						{ label: 'Right Image + Left Gradient', value: 'card' },
+						{ label: 'Reflection (split layout for low-res images)', value: 'reflection' },
+					],
+					onChange: function (v) {
+						updateField('background_style', v);
+					},
+					__nextHasNoMarginBottom: true,
+					__next40pxDefaultSize: true,
+					help: 'Reflection style is ideal for weekly reflection images (1024x448) - displays image on right with solid theme color on left.',
+				}),
 
 				// Display Mode
 				el(SelectControl, {
@@ -1245,7 +1262,7 @@
 			// Modals
 			showAddModal &&
 				el(SlideEditorModal, {
-					slide: { type: 'manual', enabled: true },
+					slide: { type: 'manual', enabled: true, background_style: 'default' },
 					dynamicSources: dynamicSources,
 					onSave: addSlide,
 					onClose: function () {

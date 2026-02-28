@@ -3,7 +3,7 @@
  * Plugin Name: Parish Core
  * Plugin URI: https://github.com/greenberry/parish-core
  * Description: A comprehensive parish management system for Catholic parishes.
- * Version: 9.2.0
+ * Version: 9.8.6
  * Author: Greenberry
  * Author URI: https://greenberry.ie
  * License: GPL v2 or later
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PARISH_CORE_VERSION', '9.2.0' );
+define( 'PARISH_CORE_VERSION', '9.8.6' );
 define( 'PARISH_CORE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PARISH_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'PARISH_CORE_BASENAME', plugin_basename( __FILE__ ) );
@@ -158,9 +158,11 @@ function parish_core_deactivate(): void {
 	// Clear cleanup crons.
 	wp_clear_scheduled_hook( 'parish_cleanup_intentions' );
 	wp_clear_scheduled_hook( 'parish_cleanup_overrides' );
+	wp_clear_scheduled_hook( 'parish_cleanup_mass_times' );
 
 	// Reset schedule hash so cron events are recreated on reactivation.
 	delete_option( 'parish_readings_schedule_hash' );
+	delete_option( 'parish_mass_time_lifecycle_last_run' );
 }
 
 register_deactivation_hook( __FILE__, 'parish_core_deactivate' );
@@ -344,7 +346,7 @@ function parish_sanitize_exception_dates( $value ): array {
 }
 
 /**
- * Schedule cleanup cron jobs for intentions and overrides.
+ * Schedule cleanup cron jobs for intentions, overrides, and mass times.
  */
 function parish_core_schedule_cleanup_crons(): void {
 	// Schedule intention cleanup (daily at 3am).
@@ -355,6 +357,11 @@ function parish_core_schedule_cleanup_crons(): void {
 	// Schedule override cleanup (weekly on Sunday at 4am).
 	if ( ! wp_next_scheduled( 'parish_cleanup_overrides' ) ) {
 		wp_schedule_event( strtotime( 'next sunday 04:00:00' ), 'weekly', 'parish_cleanup_overrides' );
+	}
+
+	// Schedule one-off Mass Time lifecycle cleanup (daily at 3:30am).
+	if ( ! wp_next_scheduled( 'parish_cleanup_mass_times' ) ) {
+		wp_schedule_event( strtotime( 'tomorrow 03:30:00' ), 'daily', 'parish_cleanup_mass_times' );
 	}
 }
 
@@ -401,6 +408,137 @@ function parish_core_cleanup_overrides(): void {
 }
 
 add_action( 'parish_cleanup_overrides', 'parish_core_cleanup_overrides' );
+
+/**
+ * Get the start-of-week timestamp for a given timestamp in site timezone.
+ *
+ * @param int          $timestamp Source timestamp.
+ * @param DateTimeZone $timezone  Site timezone.
+ * @return int Week start timestamp at 00:00:00.
+ */
+function parish_core_get_week_start_timestamp( int $timestamp, DateTimeZone $timezone ): int {
+	$date          = ( new DateTime( '@' . $timestamp ) )->setTimezone( $timezone )->setTime( 0, 0, 0 );
+	$start_of_week = (int) get_option( 'start_of_week', 1 ); // 0 = Sunday, 1 = Monday.
+	$weekday       = (int) $date->format( 'w' );
+	$days_back     = ( $weekday - $start_of_week + 7 ) % 7;
+
+	if ( $days_back > 0 ) {
+		$date->modify( "-{$days_back} days" );
+	}
+
+	return $date->getTimestamp();
+}
+
+/**
+ * Cleanup lifecycle for one-off Mass Times (non-recurring):
+ * 1. Keep active through event week.
+ * 2. Mark inactive at the start of the following week.
+ * 3. Delete at the start of the week after that.
+ */
+function parish_core_cleanup_mass_times(): void {
+	$timezone           = wp_timezone();
+	$now                = new DateTime( 'now', $timezone );
+	$today_key          = $now->format( 'Y-m-d' );
+	$current_week_start = parish_core_get_week_start_timestamp( $now->getTimestamp(), $timezone );
+
+	$mass_time_ids = get_posts(
+		array(
+			'post_type'      => 'parish_mass_time',
+			'posts_per_page' => -1,
+			'post_status'    => 'publish',
+			'fields'         => 'ids',
+		)
+	);
+
+	if ( empty( $mass_time_ids ) ) {
+		update_option( 'parish_mass_time_lifecycle_last_run', $today_key, false );
+		return;
+	}
+
+	$generator = class_exists( 'Parish_Schedule_Generator' ) ? Parish_Schedule_Generator::instance() : null;
+
+	foreach ( $mass_time_ids as $mass_time_id ) {
+		$is_recurring = (bool) get_post_meta( $mass_time_id, 'parish_mass_time_is_recurring', true );
+		if ( $is_recurring ) {
+			continue;
+		}
+
+		$start_datetime = get_post_meta( $mass_time_id, 'parish_mass_time_start_datetime', true );
+		if ( empty( $start_datetime ) ) {
+			continue;
+		}
+
+		$event_start = strtotime( $start_datetime );
+		if ( ! $event_start ) {
+			continue;
+		}
+
+		$duration_minutes = absint( get_post_meta( $mass_time_id, 'parish_mass_time_duration_minutes', true ) );
+		if ( $duration_minutes < 1 ) {
+			$duration_minutes = 60;
+		}
+		$event_end = strtotime( '+' . $duration_minutes . ' minutes', $event_start );
+
+		// Don't change status until the event has actually ended.
+		if ( $now->getTimestamp() < $event_end ) {
+			continue;
+		}
+
+		$event_week_start = parish_core_get_week_start_timestamp( $event_start, $timezone );
+		if ( $current_week_start < $event_week_start ) {
+			continue;
+		}
+
+		$weeks_elapsed = (int) floor( ( $current_week_start - $event_week_start ) / WEEK_IN_SECONDS );
+
+		// Two weeks after event week starts, remove the post.
+		if ( $weeks_elapsed >= 2 ) {
+			if ( $generator ) {
+				$generator->clear_cache( $mass_time_id );
+			}
+			wp_delete_post( $mass_time_id, true );
+			continue;
+		}
+
+		// One week after event week starts, move to inactive.
+		if ( $weeks_elapsed >= 1 ) {
+			$is_active_raw = get_post_meta( $mass_time_id, 'parish_mass_time_is_active', true );
+			$is_active     = '' === $is_active_raw ? true : (bool) $is_active_raw;
+
+			if ( $is_active ) {
+				update_post_meta( $mass_time_id, 'parish_mass_time_is_active', false );
+				if ( $generator ) {
+					$generator->clear_cache( $mass_time_id );
+				}
+			}
+		}
+	}
+
+	update_option( 'parish_mass_time_lifecycle_last_run', $today_key, false );
+}
+
+add_action( 'parish_cleanup_mass_times', 'parish_core_cleanup_mass_times' );
+
+/**
+ * Fallback lifecycle cleanup runner for environments where WP-Cron is delayed.
+ * Runs at most once per day on regular requests.
+ */
+function parish_core_maybe_cleanup_mass_times(): void {
+	if ( wp_doing_cron() ) {
+		return;
+	}
+
+	$today_key = wp_date( 'Y-m-d' );
+	$last_run  = get_option( 'parish_mass_time_lifecycle_last_run', '' );
+
+	if ( $today_key === $last_run ) {
+		return;
+	}
+
+	parish_core_cleanup_mass_times();
+}
+
+add_action( 'init', 'parish_core_maybe_cleanup_mass_times', 20 );
 
 /**
  * Run database migrations on version upgrade.

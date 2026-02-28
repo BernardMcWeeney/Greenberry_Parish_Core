@@ -30,7 +30,8 @@ return array(
 
 		// Override common supports: reflections are intentionally simple.
 		// Must include 'custom-fields' for Block Bindings meta to save.
-		'supports'      => array( 'title', 'editor', 'custom-fields' ),
+		// Include 'thumbnail' because the template uses core/post-featured-image.
+		'supports'      => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
 
 		'menu_icon'     => 'dashicons-format-quote',
 		'rewrite'       => array( 'slug' => 'reflections', 'with_front' => false ),

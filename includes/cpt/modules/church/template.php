@@ -560,7 +560,6 @@ return array(
 			'layout'   => array( 'type' => 'constrained' ),
 		),
 		array(
-			// Header with icon
 			array(
 				'core/group',
 				array(
@@ -623,14 +622,133 @@ return array(
 					'backgroundColor' => 'contrast-3',
 				),
 			),
-			// Mass Schedule Block
 			array(
-				'parish/mass-schedule',
+				'core/group',
 				array(
-					'showIcon'       => true,
-					'showLivestream' => true,
-					'showSpecial'    => true,
-					'showAllDays'    => true,
+					'style'  => array(
+						'color'   => array( 'background' => '#fafafa' ),
+						'spacing' => array(
+							'padding' => array(
+								'top'    => 'var:preset|spacing|10',
+								'bottom' => 'var:preset|spacing|10',
+								'left'   => 'var:preset|spacing|10',
+								'right'  => 'var:preset|spacing|10',
+							),
+						),
+					),
+					'layout' => array( 'type' => 'constrained' ),
+				),
+				array(
+					array(
+						'parish/church-schedule',
+						array(
+							'eventTypes' => array( 'mass', 'confession', 'adoration', 'rosary', 'other' ),
+						),
+					),
+				),
+			),
+		),
+	),
+
+	// Church Events Section
+	array(
+		'core/group',
+		array(
+			'metadata' => array( 'name' => 'Church Events' ),
+			'style'    => array(
+				'spacing' => array(
+					'margin' => array(
+						'top'    => 'var:preset|spacing|30',
+						'bottom' => 'var:preset|spacing|30',
+					),
+				),
+			),
+			'layout'   => array( 'type' => 'constrained' ),
+		),
+		array(
+			array(
+				'core/group',
+				array(
+					'style'  => array(
+						'spacing' => array( 'blockGap' => '0.5rem' ),
+					),
+					'layout' => array( 'type' => 'flex', 'flexWrap' => 'nowrap' ),
+				),
+				array(
+					array(
+						'font-awesome/icon',
+						array(
+							'iconLayers' => array(
+								array(
+									'iconDefinition' => array(
+										'iconName' => 'clock',
+										'prefix'   => 'fas',
+										'icon'     => array( 512, 512, null, null, 'M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z' ),
+									),
+									'spin'           => false,
+									'transform'      => null,
+									'color'          => '#4a8391',
+								),
+							),
+						),
+					),
+					array(
+						'core/heading',
+						array(
+							'level'     => 3,
+							'textAlign' => 'left',
+							'content'   => '<strong>' . __( 'Church Events', 'parish-core' ) . '</strong>',
+							'style'     => array(
+								'spacing'    => array(
+									'margin' => array( 'top' => '0', 'bottom' => '0' ),
+								),
+								'typography' => array(
+									'fontStyle'  => 'normal',
+									'fontWeight' => '500',
+								),
+								'elements'   => array(
+									'link' => array(
+										'color'  => array( 'text' => '#323232' ),
+										':hover' => array(
+											'color' => array( 'text' => 'var:preset|color|accent' ),
+										),
+									),
+								),
+								'color'      => array( 'text' => '#323232' ),
+							),
+							'fontSize'  => 'large',
+						),
+					),
+				),
+			),
+			array(
+				'core/separator',
+				array(
+					'className'       => 'is-style-wide',
+					'backgroundColor' => 'contrast-3',
+				),
+			),
+			array(
+				'core/group',
+				array(
+					'style'  => array(
+						'color'   => array( 'background' => '#fafafa' ),
+						'spacing' => array(
+							'padding' => array(
+								'top'    => 'var:preset|spacing|10',
+								'bottom' => 'var:preset|spacing|10',
+								'left'   => 'var:preset|spacing|10',
+								'right'  => 'var:preset|spacing|10',
+							),
+						),
+					),
+					'layout' => array( 'type' => 'constrained' ),
+				),
+				array(
+					array(
+						'parish/events',
+						array(),
+					),
 				),
 			),
 		),
@@ -705,16 +823,15 @@ return array(
 									),
 								),
 							),
-							array(
-								'core/list',
-								array(),
 								array(
-									array( 'core/list-item', array( 'content' => __( 'Wheelchair Accessible', 'parish-core' ) ) ),
-									array( 'core/list-item', array( 'content' => __( 'Hearing Loop', 'parish-core' ) ) ),
-									array( 'core/list-item', array( 'content' => __( 'Parking Available', 'parish-core' ) ) ),
-									array( 'core/list-item', array( 'content' => __( 'Historic Site', 'parish-core' ) ) ),
+									'core/list',
+									array(),
+									array(
+										array( 'core/list-item', array( 'content' => __( 'Wheelchair Accessible', 'parish-core' ) ) ),
+										array( 'core/list-item', array( 'content' => __( 'Hearing Loop', 'parish-core' ) ) ),
+										array( 'core/list-item', array( 'content' => __( 'Parking Available', 'parish-core' ) ) ),
+									),
 								),
-							),
 						),
 					),
 					// Facilities Column
@@ -732,407 +849,15 @@ return array(
 									),
 								),
 							),
-							array(
-								'core/list',
-								array(),
 								array(
-									array( 'core/list-item', array( 'content' => __( 'Sacristy', 'parish-core' ) ) ),
-									array( 'core/list-item', array( 'content' => __( 'Meeting Room', 'parish-core' ) ) ),
-									array( 'core/list-item', array( 'content' => __( 'Toilet Facilities', 'parish-core' ) ) ),
-									array( 'core/list-item', array( 'content' => __( 'Confession Room', 'parish-core' ) ) ),
-								),
-							),
-						),
-					),
-				),
-			),
-		),
-	),
-
-	// Related Links Section
-	array(
-		'core/group',
-		array(
-			'metadata' => array( 'name' => 'Related Links' ),
-			'style'    => array(
-				'spacing' => array(
-					'margin' => array(
-						'top'    => 'var:preset|spacing|30',
-						'bottom' => 'var:preset|spacing|30',
-					),
-				),
-			),
-			'layout'   => array( 'type' => 'constrained' ),
-		),
-		array(
-			array(
-				'core/heading',
-				array(
-					'level'     => 3,
-					'textAlign' => 'left',
-					'content'   => '<strong>' . __( 'Related Links', 'parish-core' ) . '</strong>',
-					'style'     => array(
-						'spacing'    => array(
-							'margin' => array( 'top' => '0', 'bottom' => '0' ),
-						),
-						'typography' => array(
-							'fontStyle'  => 'normal',
-							'fontWeight' => '500',
-						),
-						'elements'   => array(
-							'link' => array(
-								'color'  => array( 'text' => '#323232' ),
-								':hover' => array(
-									'color' => array( 'text' => 'var:preset|color|accent' ),
-								),
-							),
-						),
-						'color'      => array( 'text' => '#323232' ),
-					),
-					'fontSize'  => 'large',
-				),
-			),
-			array(
-				'core/separator',
-				array(
-					'className'       => 'is-style-wide',
-					'backgroundColor' => 'contrast-3',
-				),
-			),
-			array(
-				'core/columns',
-				array(),
-				array(
-					// Link Card 1 - Live Mass
-					array(
-						'core/column',
-						array(
-							'style'  => array(
-								'color'   => array( 'background' => '#fafafa' ),
-								'spacing' => array(
-									'padding' => array(
-										'top'    => 'var:preset|spacing|10',
-										'bottom' => 'var:preset|spacing|10',
-										'left'   => 'var:preset|spacing|10',
-										'right'  => 'var:preset|spacing|10',
-									),
-								),
-							),
-							'layout' => array( 'type' => 'default' ),
-						),
-						array(
-							array(
-								'core/group',
-								array(
-									'layout' => array( 'type' => 'flex', 'flexWrap' => 'nowrap' ),
-								),
-								array(
+									'core/list',
+									array(),
 									array(
-										'core/columns',
-										array(),
-										array(
-											array(
-												'core/column',
-												array(
-													'verticalAlignment' => 'center',
-													'width'             => '10%',
-												),
-												array(
-													array(
-														'font-awesome/icon',
-														array(
-															'iconLayers'    => array(
-																array(
-																	'iconDefinition' => array(
-																		'iconName' => 'video',
-																		'prefix'   => 'fas',
-																		'icon'     => array( 576, 512, null, null, 'M0 128C0 92.7 28.7 64 64 64l256 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64L64 448c-35.3 0-64-28.7-64-64L0 128zM559.1 99.8c10.4 5.6 16.9 16.4 16.9 28.2l0 256c0 11.8-6.5 22.6-16.9 28.2s-23 5-32.9-1.6l-96-64L416 336l0-48 0-64 0-48 14.2-9.5 96-64c9.8-6.5 22.4-7.2 32.9-1.6z' ),
-																	),
-																	'spin'           => false,
-																	'transform'      => null,
-																	'color'          => '#4a8391',
-																	'style'          => array( 'fontSize' => '1.5em' ),
-																),
-															),
-															'justification' => 'center',
-														),
-													),
-												),
-											),
-											array(
-												'core/column',
-												array( 'width' => '90%' ),
-												array(
-													array(
-														'core/heading',
-														array(
-															'level'       => 4,
-															'content'     => __( 'Live Mass', 'parish-core' ),
-															'fontSize'    => 'medium',
-															'placeholder' => __( 'Link title...', 'parish-core' ),
-															'metadata'    => array(
-																'bindings' => array(
-																	'content' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link1_title' ),
-																	),
-																	'url' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link1_url' ),
-																	),
-																),
-															),
-														),
-													),
-													array(
-														'core/paragraph',
-														array(
-															'style'       => array(
-																'spacing' => array(
-																	'margin' => array( 'top' => '0', 'bottom' => '0' ),
-																),
-															),
-															'textColor'   => 'contrast-2',
-															'fontSize'    => 'small',
-															'placeholder' => __( 'Link description...', 'parish-core' ),
-															'metadata'    => array(
-																'bindings' => array(
-																	'content' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link1_description' ),
-																	),
-																),
-															),
-														),
-													),
-												),
-											),
-										),
+										array( 'core/list-item', array( 'content' => __( 'Sacristy', 'parish-core' ) ) ),
+										array( 'core/list-item', array( 'content' => __( 'Toilet Facilities', 'parish-core' ) ) ),
+										array( 'core/list-item', array( 'content' => __( 'Confession Room', 'parish-core' ) ) ),
 									),
 								),
-							),
-						),
-					),
-
-					// Link Card 2 - Cemetery
-					array(
-						'core/column',
-						array(
-							'style'  => array(
-								'color'   => array( 'background' => '#fafafa' ),
-								'spacing' => array(
-									'padding' => array(
-										'top'    => 'var:preset|spacing|10',
-										'bottom' => 'var:preset|spacing|10',
-										'left'   => 'var:preset|spacing|10',
-										'right'  => 'var:preset|spacing|10',
-									),
-								),
-							),
-							'layout' => array( 'type' => 'default' ),
-						),
-						array(
-							array(
-								'core/group',
-								array(
-									'layout' => array( 'type' => 'flex', 'flexWrap' => 'nowrap' ),
-								),
-								array(
-									array(
-										'core/columns',
-										array(),
-										array(
-											array(
-												'core/column',
-												array(
-													'verticalAlignment' => 'center',
-													'width'             => '10%',
-												),
-												array(
-													array(
-														'font-awesome/icon',
-														array(
-															'iconLayers'    => array(
-																array(
-																	'iconDefinition' => array(
-																		'iconName' => 'cross',
-																		'prefix'   => 'fas',
-																		'icon'     => array( 384, 512, null, null, 'M176 0c-26.5 0-48 21.5-48 48l0 80-80 0c-26.5 0-48 21.5-48 48l0 32c0 26.5 21.5 48 48 48l80 0 0 208c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-208 80 0c26.5 0 48-21.5 48-48l0-32c0-26.5-21.5-48-48-48l-80 0 0-80c0-26.5-21.5-48-48-48L176 0z' ),
-																	),
-																	'spin'           => false,
-																	'transform'      => null,
-																	'color'          => '#4a8391',
-																	'style'          => array( 'fontSize' => '1.5em' ),
-																),
-															),
-															'justification' => 'center',
-														),
-													),
-												),
-											),
-											array(
-												'core/column',
-												array( 'width' => '90%' ),
-												array(
-													array(
-														'core/heading',
-														array(
-															'level'       => 4,
-															'content'     => __( 'Cemetery', 'parish-core' ),
-															'fontSize'    => 'medium',
-															'placeholder' => __( 'Link title...', 'parish-core' ),
-															'metadata'    => array(
-																'bindings' => array(
-																	'content' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link2_title' ),
-																	),
-																	'url' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link2_url' ),
-																	),
-																),
-															),
-														),
-													),
-													array(
-														'core/paragraph',
-														array(
-															'style'       => array(
-																'spacing' => array(
-																	'margin' => array( 'top' => '0', 'bottom' => '0' ),
-																),
-															),
-															'textColor'   => 'contrast-2',
-															'fontSize'    => 'small',
-															'placeholder' => __( 'Link description...', 'parish-core' ),
-															'metadata'    => array(
-																'bindings' => array(
-																	'content' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link2_description' ),
-																	),
-																),
-															),
-														),
-													),
-												),
-											),
-										),
-									),
-								),
-							),
-						),
-					),
-
-					// Link Card 3 - Mass Readings
-					array(
-						'core/column',
-						array(
-							'style'  => array(
-								'color'   => array( 'background' => '#fafafa' ),
-								'spacing' => array(
-									'padding' => array(
-										'top'    => 'var:preset|spacing|10',
-										'bottom' => 'var:preset|spacing|10',
-										'left'   => 'var:preset|spacing|10',
-										'right'  => 'var:preset|spacing|10',
-									),
-								),
-							),
-							'layout' => array( 'type' => 'default' ),
-						),
-						array(
-							array(
-								'core/group',
-								array(
-									'layout' => array( 'type' => 'flex', 'flexWrap' => 'nowrap' ),
-								),
-								array(
-									array(
-										'core/columns',
-										array(),
-										array(
-											array(
-												'core/column',
-												array(
-													'verticalAlignment' => 'center',
-													'width'             => '10%',
-												),
-												array(
-													array(
-														'font-awesome/icon',
-														array(
-															'iconLayers'    => array(
-																array(
-																	'iconDefinition' => array(
-																		'iconName' => 'book-bible',
-																		'prefix'   => 'fas',
-																		'icon'     => array( 448, 512, null, null, 'M96 0C43 0 0 43 0 96L0 416c0 53 43 96 96 96l288 0 32 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l0-64c17.7 0 32-14.3 32-32l0-320c0-17.7-14.3-32-32-32L384 0 96 0zm0 384l256 0 0 64L96 448c-17.7 0-32-14.3-32-32s14.3-32 32-32zm32-240c0-8.8 7.2-16 16-16l32 0c8.8 0 16 7.2 16 16l0 32 0 16 32 0 0-16 0-32c0-8.8 7.2-16 16-16l32 0c8.8 0 16 7.2 16 16l0 32 0 48 0 48 0 48c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-32-32 0 0 32c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-48 0-48 0-48 0-32z' ),
-																	),
-																	'spin'           => false,
-																	'transform'      => null,
-																	'color'          => '#4a8391',
-																	'style'          => array( 'fontSize' => '1.5em' ),
-																),
-															),
-															'justification' => 'center',
-														),
-													),
-												),
-											),
-											array(
-												'core/column',
-												array( 'width' => '90%' ),
-												array(
-													array(
-														'core/heading',
-														array(
-															'level'       => 4,
-															'content'     => __( 'Mass Readings', 'parish-core' ),
-															'fontSize'    => 'medium',
-															'placeholder' => __( 'Link title...', 'parish-core' ),
-															'metadata'    => array(
-																'bindings' => array(
-																	'content' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link3_title' ),
-																	),
-																	'url' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link3_url' ),
-																	),
-																),
-															),
-														),
-													),
-													array(
-														'core/paragraph',
-														array(
-															'style'       => array(
-																'spacing' => array(
-																	'margin' => array( 'top' => '0', 'bottom' => '0' ),
-																),
-															),
-															'textColor'   => 'contrast-2',
-															'fontSize'    => 'small',
-															'placeholder' => __( 'Link description...', 'parish-core' ),
-															'metadata'    => array(
-																'bindings' => array(
-																	'content' => array(
-																		'source' => 'parish/post-meta',
-																		'args'   => array( 'key' => 'parish_link3_description' ),
-																	),
-																),
-															),
-														),
-													),
-												),
-											),
-										),
-									),
-								),
-							),
 						),
 					),
 				),
@@ -1292,7 +1017,6 @@ return array(
 					'backgroundColor' => 'contrast-3',
 				),
 			),
-			// Map embed
 			array(
 				'core/group',
 				array(
@@ -1302,184 +1026,7 @@ return array(
 					array(
 						'core/html',
 						array(
-							'content' => '<iframe src="" width="100%" height="400" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>',
-						),
-					),
-				),
-			),
-			// Location info columns
-			array(
-				'core/columns',
-				array(),
-				array(
-					// Parish Centre Address
-					array(
-						'core/column',
-						array(),
-						array(
-							array(
-								'core/columns',
-								array(),
-								array(
-									array(
-										'core/column',
-										array(
-											'width'  => '2%',
-											'layout' => array( 'type' => 'default' ),
-										),
-										array(
-											array(
-												'font-awesome/icon',
-												array(
-													'iconLayers' => array(
-														array(
-															'iconDefinition' => array(
-																'iconName' => 'location-dot',
-																'prefix'   => 'fas',
-																'icon'     => array( 384, 512, null, null, 'M0 188.6C0 84.4 86 0 192 0S384 84.4 384 188.6c0 119.3-120.2 262.3-170.4 316.8-11.8 12.8-31.5 12.8-43.3 0-50.2-54.5-170.4-197.5-170.4-316.8zM192 256a64 64 0 1 0 0-128 64 64 0 1 0 0 128z' ),
-															),
-															'spin'           => false,
-															'transform'      => null,
-															'style'          => array( 'fontSize' => '1em' ),
-															'color'          => '#609fae',
-														),
-													),
-												),
-											),
-										),
-									),
-									array(
-										'core/column',
-										array( 'width' => '66.66%' ),
-										array(
-											array(
-												'core/heading',
-												array(
-													'level'     => 4,
-													'textAlign' => 'left',
-													'content'   => __( 'Parish Centre', 'parish-core' ),
-													'style'     => array(
-														'spacing'    => array(
-															'margin' => array( 'top' => '0', 'bottom' => '0' ),
-														),
-														'typography' => array(
-															'fontStyle'  => 'normal',
-															'fontWeight' => '500',
-														),
-														'color'      => array( 'text' => '#323232' ),
-													),
-													'fontSize'  => 'medium',
-												),
-											),
-											array(
-												'core/paragraph',
-												array(
-													'style'       => array(
-														'spacing' => array(
-															'margin' => array( 'top' => '5px', 'bottom' => '5px' ),
-														),
-													),
-													'fontSize'    => 'small',
-													'placeholder' => __( 'Parish centre address...', 'parish-core' ),
-													'metadata'    => array(
-														'bindings' => array(
-															'content' => array(
-																'source' => 'parish/post-meta',
-																'args'   => array( 'key' => 'parish_office_address' ),
-															),
-														),
-													),
-												),
-											),
-										),
-									),
-								),
-							),
-						),
-					),
-					// Parish Centre Opening Hours
-					array(
-						'core/column',
-						array(),
-						array(
-							array(
-								'core/columns',
-								array(),
-								array(
-									array(
-										'core/column',
-										array(
-											'width'  => '2%',
-											'layout' => array( 'type' => 'default' ),
-										),
-										array(
-											array(
-												'font-awesome/icon',
-												array(
-													'iconLayers' => array(
-														array(
-															'iconDefinition' => array(
-																'iconName' => 'clock',
-																'prefix'   => 'fas',
-																'icon'     => array( 512, 512, null, null, 'M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z' ),
-															),
-															'spin'           => false,
-															'transform'      => null,
-															'style'          => array( 'fontSize' => '1em' ),
-															'color'          => '#609fae',
-														),
-													),
-												),
-											),
-										),
-									),
-									array(
-										'core/column',
-										array( 'width' => '66.66%' ),
-										array(
-											array(
-												'core/heading',
-												array(
-													'level'     => 4,
-													'textAlign' => 'left',
-													'content'   => __( 'Parish Centre Opening Hours', 'parish-core' ),
-													'style'     => array(
-														'spacing'    => array(
-															'margin' => array( 'top' => '0', 'bottom' => '0' ),
-														),
-														'typography' => array(
-															'fontStyle'  => 'normal',
-															'fontWeight' => '500',
-														),
-														'color'      => array( 'text' => '#323232' ),
-													),
-													'fontSize'  => 'medium',
-												),
-											),
-											array(
-												'core/paragraph',
-												array(
-													'style'       => array(
-														'spacing' => array(
-															'margin' => array( 'top' => '5px', 'bottom' => '5px' ),
-														),
-													),
-													'fontSize'    => 'small',
-													'placeholder' => __( 'Parish centre opening hours...', 'parish-core' ),
-													'metadata'    => array(
-														'bindings' => array(
-															'content' => array(
-																'source' => 'parish/post-meta',
-																'args'   => array( 'key' => 'parish_office_hours' ),
-															),
-														),
-													),
-												),
-											),
-										),
-									),
-								),
-							),
+							'content' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2365.667225271815!2d-6.754289222974414!3d53.63507415308049!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x48675b884854e84d%3A0xbd545982f70c7c2!2sSt%20Cuthbert&#39;s%20Church!5e0!3m2!1sen!2sie!4v1769025893111!5m2!1sen!2sie" width="100%" height="400" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>',
 						),
 					),
 				),

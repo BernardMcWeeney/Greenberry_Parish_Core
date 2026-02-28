@@ -350,12 +350,17 @@ class Parish_Slider {
 			$image_url = $slide['image_url'];
 		}
 
+		$background_style       = $slide['background_style'] ?? 'default';
+		$default_image_fit      = 'cover';
+		$default_image_position = 'card' === $background_style ? 'right' : 'center';
+
 		return array(
 			'id'             => $slide['id'] ?? uniqid(),
 			'type'           => 'manual',
 			'image'          => $image_url,
-			'image_fit'      => $slide['image_fit'] ?? 'cover',
-			'image_position' => $slide['image_position'] ?? 'center',
+			'image_fit'      => $slide['image_fit'] ?? $default_image_fit,
+			'image_position' => $slide['image_position'] ?? $default_image_position,
+			'background_style' => $background_style,
 			'display_mode'   => $slide['display_mode'] ?? 'full',
 			'title'          => $slide['title'] ?? '',
 			'subtitle'       => $slide['subtitle'] ?? '',
@@ -415,13 +420,18 @@ class Parish_Slider {
 			$overlay_color = $dynamic_data['liturgical_color'];
 		}
 
+		$background_style       = $slide['background_style'] ?? 'default';
+		$default_image_fit      = 'cover';
+		$default_image_position = 'card' === $background_style ? 'right' : 'center';
+
 		return array(
 			'id'              => $slide['id'] ?? uniqid(),
 			'type'            => 'dynamic',
 			'source'          => $source,
 			'image'           => $image_url,
-			'image_fit'       => $slide['image_fit'] ?? 'cover',
-			'image_position'  => $slide['image_position'] ?? 'center',
+			'image_fit'       => $slide['image_fit'] ?? $default_image_fit,
+			'image_position'  => $slide['image_position'] ?? $default_image_position,
+			'background_style' => $background_style,
 			'display_mode'    => $slide['display_mode'] ?? 'full',
 			'title'           => ! empty( $slide['title_override'] ) ? $slide['title_override'] : ( $dynamic_data['title'] ?? '' ),
 			'subtitle'        => ! empty( $slide['subtitle_override'] ) ? $slide['subtitle_override'] : ( $dynamic_data['subtitle'] ?? '' ),
@@ -1062,24 +1072,32 @@ class Parish_Slider {
 
 	/**
 	 * Get prayer slide data.
+	 * Uses day-of-year seeding to ensure same prayer shows all day, then changes at midnight.
 	 */
 	public function get_prayer_slide_data( array $settings = array() ): ?array {
 		if ( ! post_type_exists( 'parish_prayer' ) ) {
 			return null;
 		}
 
+		// Get all published prayers.
 		$posts = get_posts( array(
 			'post_type'      => 'parish_prayer',
-			'posts_per_page' => 1,
+			'posts_per_page' => -1,
 			'post_status'    => 'publish',
-			'orderby'        => 'rand',
+			'orderby'        => 'ID',
+			'order'          => 'ASC',
 		) );
 
 		if ( empty( $posts ) ) {
 			return null;
 		}
 
-		$post    = $posts[0];
+		// Use day-of-year to deterministically select a prayer.
+		// This ensures the same prayer shows all day but rotates daily.
+		$day_of_year = (int) current_time( 'z' ); // 0-365
+		$index       = $day_of_year % count( $posts );
+		$post        = $posts[ $index ];
+
 		$excerpt = wp_trim_words( $post->post_content, 20 );
 
 		return array(
@@ -1250,10 +1268,14 @@ class Parish_Slider {
 					$display_mode   = $slide['display_mode'] ?? 'full';
 					$image_fit      = $slide['image_fit'] ?? 'cover';
 					$image_position = $slide['image_position'] ?? 'center';
+					$bg_style       = $slide['background_style'] ?? 'default';
+					$slide_source   = $slide['source'] ?? 'manual';
 				?>
 					<div class="parish-slider__slide <?php echo $index === 0 ? 'is-active' : ''; ?>" 
 						 data-index="<?php echo esc_attr( $index ); ?>"
 						 data-align="<?php echo esc_attr( $slide['text_align'] ?? 'left' ); ?>"
+						 data-source="<?php echo esc_attr( $slide_source ); ?>"
+						 data-bg-style="<?php echo esc_attr( $bg_style ); ?>"
 						 data-display="<?php echo esc_attr( $display_mode ); ?>"
 						 data-image-fit="<?php echo esc_attr( $image_fit ); ?>"
 						 data-image-position="<?php echo esc_attr( $image_position ); ?>"

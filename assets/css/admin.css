@@ -1623,10 +1623,52 @@
 	max-width: 700px;
 }
 
+/* Fix double scrollbar issue - control modal height and single scroll point */
+.parish-slider-modal--edit .components-modal__content {
+	max-height: 85vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.parish-slider-modal--edit .components-modal__header {
+	flex-shrink: 0;
+}
+
+.parish-slider-modal--edit .slide-editor {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 8px 4px 8px 0;
+	margin-right: -4px;
+}
+
+/* Custom scrollbar for slide editor */
+.parish-slider-modal--edit .slide-editor::-webkit-scrollbar {
+	width: 6px;
+}
+
+.parish-slider-modal--edit .slide-editor::-webkit-scrollbar-track {
+	background: #f0f0f0;
+	border-radius: 3px;
+}
+
+.parish-slider-modal--edit .slide-editor::-webkit-scrollbar-thumb {
+	background: #c1c1c1;
+	border-radius: 3px;
+}
+
+.parish-slider-modal--edit .slide-editor::-webkit-scrollbar-thumb:hover {
+	background: #a0a0a0;
+}
+
 @media (max-width: 768px) {
 	.parish-slider-modal .components-modal__content {
 		min-width: auto;
 		width: 95vw;
+	}
+
+	.parish-slider-modal--edit .components-modal__content {
+		max-height: 90vh;
 	}
 }
 

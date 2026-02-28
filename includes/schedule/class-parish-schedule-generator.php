@@ -586,15 +586,28 @@ class Parish_Schedule_Generator {
 		// Normalize day names to handle case inconsistencies.
 		$normalized_days = array_map( 'ucfirst', array_map( 'strtolower', array_values( $days ) ) );
 
-		// Determine the week number of the base date using timezone-aware function.
-		$base_week = (int) wp_date( 'W', $base_ts );
+		// Determine base week start in site timezone for stable parity across years.
+		$start_of_week   = (int) get_option( 'start_of_week', 1 ); // 0=Sunday, 1=Monday.
+		$base_week_start = ( new DateTime( '@' . $base_ts ) )->setTimezone( $tz )->setTime( 0, 0, 0 );
+		$base_weekday    = (int) $base_week_start->format( 'w' );
+		$base_days_back  = ( $base_weekday - $start_of_week + 7 ) % 7;
+		if ( $base_days_back > 0 ) {
+			$base_week_start->modify( "-{$base_days_back} days" );
+		}
+		$base_week_ts = $base_week_start->getTimestamp();
 
 		while ( $current <= $end_day ) {
-			$current_week = (int) wp_date( 'W', $current );
-			$week_diff    = abs( $current_week - $base_week );
+			$current_week_start = ( new DateTime( '@' . $current ) )->setTimezone( $tz )->setTime( 0, 0, 0 );
+			$current_weekday    = (int) $current_week_start->format( 'w' );
+			$current_days_back  = ( $current_weekday - $start_of_week + 7 ) % 7;
+			if ( $current_days_back > 0 ) {
+				$current_week_start->modify( "-{$current_days_back} days" );
+			}
+
+			$week_diff = (int) floor( ( $current_week_start->getTimestamp() - $base_week_ts ) / WEEK_IN_SECONDS );
 
 			// Check if this is an "on" week (every other week).
-			if ( 0 === $week_diff % 2 ) {
+			if ( $week_diff >= 0 && 0 === $week_diff % 2 ) {
 				// Use wp_date for timezone-aware day name.
 				$day_name = wp_date( 'l', $current );
 				if ( in_array( $day_name, $normalized_days, true ) ) {
